@@ -21,7 +21,7 @@ Need to know if the motion between two videos is different in a statistically si
 
 ![SwarmVision Statistics](https://raw.githubusercontent.com/justasb/SwarmVision/master/Screenshots/Stats.JPG)
 
-#Download - Download, Unzip, & Install
+#Download, Unzip, & Install
 
 1. [Download the ZIP file](https://github.com/justasb/SwarmVision/raw/master/Download/SwarmVision.zip)
 2. Unzip the downloaded file
