@@ -11,8 +11,8 @@ namespace SwarmVision.VideoPlayer
     public class FrameDecoder : Stream
     {
         public event EventHandler<OnFrameReady> FrameReady;
-        public const int FrameBufferCapacity = 5; //Max frames to decode ahead
-        public const int MinimumWorkingFrames = 1; //Don't start processing until this many frames have been decoded
+        public const int FrameBufferCapacity = 30; //Max frames to decode ahead
+        public const int MinimumWorkingFrames = 5; //Don't start processing until this many frames have been decoded
         public LinkedList<Frame> FrameBuffer = new LinkedList<Frame>();
 
         public bool FramesInBufferMoreThanMinimum

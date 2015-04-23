@@ -4,9 +4,9 @@
     xmlns:oxy="http://oxyplot.org/wpf"
     xmlns:local="clr-namespace:SwarmVision"
     xmlns:userControls="clr-namespace:SwarmVision.UserControls" x:Name="windowMain" x:Class="SwarmVision.MainWindow"
-    Title="SwarmVision - Video Motion Analysis Tool for Behavioral Scientists" Height="490" Width="1323"
+    Title="SwarmVision - Video Motion Analysis Tool for Behavioral Scientists" Height="490" Width="1245"
     Icon="SwarmVision.ico" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen">
-    <Grid RenderTransformOrigin="0.554,0.442">
+    <Grid>
         <Label HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Height="302" Width="516" />
         <Label Content="Select Video:" HorizontalAlignment="Left" VerticalAlignment="Top" Height="26" Width="88"
                Margin="5,7,0,0" FontWeight="Bold" />
@@ -28,15 +28,15 @@
                 </TransformGroup>
             </Label.RenderTransform>
         </Label>
-        <userControls:VideoActivityChart x:Name="chartA" HorizontalAlignment="Left" Height="153" Margin="740,10,0,0"
-                                         VerticalAlignment="Top" Width="557" />
-        <userControls:VideoActivityChart x:Name="chartB" HorizontalAlignment="Left" Height="153" Margin="740,149,0,0"
-                                         VerticalAlignment="Top" Width="546" />
-        <userControls:ComparisonChart x:Name="comparisonChart" HorizontalAlignment="Left" Margin="740,296,0,0"
+        <userControls:VideoActivityChart x:Name="chartA" HorizontalAlignment="Left" Height="153" Margin="712,10,0,0"
+                                         VerticalAlignment="Top" Width="530" />
+        <userControls:VideoActivityChart x:Name="chartB" HorizontalAlignment="Left" Height="153" Margin="712,149,0,0"
+                                         VerticalAlignment="Top" Width="530" />
+        <userControls:ComparisonChart x:Name="comparisonChart" HorizontalAlignment="Left" Margin="712,298,0,0"
                                       VerticalAlignment="Top" Height="154" Width="247"
                                       ToolTip="Chart showing the average changed pixels on the Y axis for each video on X axis" />
-        <userControls:ComparisonTable x:Name="comparisonTable" HorizontalAlignment="Left" Height="136"
-                                      Margin="1008,307,0,0" VerticalAlignment="Top" Width="278" />
+        <userControls:ComparisonTable x:Name="comparisonTable" HorizontalAlignment="Left" Height="153"
+                                      Margin="964,299,0,0" VerticalAlignment="Top" Width="278" />
         <Slider x:Name="sliderTime" HorizontalAlignment="Left" Margin="24,345,0,0" VerticalAlignment="Top" Width="511"
                 Height="22" ValueChanged="timeSlider_ValueChanged" Maximum="1000" LargeChange="10" SmallChange="1"
                 TickFrequency="100" ToolTip="Slide to the desired location in the video"
@@ -45,44 +45,44 @@
                VerticalAlignment="Top" Width="148" HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
                ToolTip="Number of pixels that changed in the most recently shown frame" Background="#7FFFFFFF" />
         <Label Content="Motion Threshold:" HorizontalAlignment="Left" Margin="547,41,0,0" VerticalAlignment="Top"
-               Height="26" Width="173" />
+               Height="26" Width="153" />
         <Slider Margin="547,72,0,0" VerticalAlignment="Top" Height="23" Maximum="255" Minimum="1" LargeChange="10"
-                SmallChange="1" TickFrequency="10" Value="35" HorizontalAlignment="Left" Width="173"
+                SmallChange="1" TickFrequency="10" Value="35" HorizontalAlignment="Left" Width="153"
                 ValueChanged="thresholdSlider_ValueChanged"
                 ToolTip="Adjust the motion detection threshold. Lower threshold detects more motion." />
-        <Label x:Name="lblThreshold" Content="35" Margin="692,41,0,0" VerticalAlignment="Top"
+        <Label x:Name="lblThreshold" Content="35" Margin="672,41,0,0" VerticalAlignment="Top"
                HorizontalAlignment="Left" Height="26" Width="28" Padding="0,5" HorizontalContentAlignment="Center"
                RenderTransformOrigin="0.464,0" ToolTip="The color distance to use for detecting changed pixels" />
-        <CheckBox x:Name="chkShowMotion" Content="Highlight Motion" HorizontalAlignment="Left" Margin="578,100,0,0"
-                  VerticalAlignment="Top" Height="16" Width="113" IsChecked="True" Click="chkShowMotion_Click"
+        <CheckBox x:Name="chkShowMotion" Content="Highlight Motion" HorizontalAlignment="Left" Margin="572,100,0,0"
+                  VerticalAlignment="Top" Height="16" Width="108" IsChecked="True" Click="chkShowMotion_Click"
                   FlowDirection="RightToLeft"
                   ToolTip="If checked, shows video with yellow/blue squares indicating changed pixels" />
         <Button x:Name="btnShowCompare" Content="Compare Videos &lt;&lt;" HorizontalAlignment="Left"
-                Margin="547,421,0,0" VerticalAlignment="Top" Width="173" Height="22" Click="btnShowCompare_Click"
+                Margin="547,421,0,0" VerticalAlignment="Top" Width="153" Height="22" Click="btnShowCompare_Click"
                 ToolTip="Compare the activity of two videos and compute statistics" />
         <Button x:Name="btnROI" Content="Add Region of Interest" HorizontalAlignment="Left" Margin="547,305,0,0"
-                VerticalAlignment="Top" Width="173" Height="23" Click="btnROI_Click"
+                VerticalAlignment="Top" Width="153" Height="23" Click="btnROI_Click"
                 ToolTip="Restrict the motion detection to a desired region. The region size can be adjusted." />
         <Label Content="Speed" HorizontalAlignment="Left" Margin="545,220,0,0" VerticalAlignment="Top" />
         <Slider x:Name="sliderQuality" HorizontalAlignment="Left" Margin="547,259,0,0" VerticalAlignment="Top"
-                Width="173" Maximum="100" Minimum="25" SmallChange="25" Value="25"
+                Width="153" Maximum="100" Minimum="25" SmallChange="25" Value="25"
                 ValueChanged="sliderQuality_ValueChanged" IsSnapToTickEnabled="True" LargeChange="25"
                 TickFrequency="25"
                 ToolTip="Adjust the scale used for rendering frames. Smaller scale is faster, larger scale is more accurate." />
-        <Label Content="Accuracy" HorizontalAlignment="Left" Margin="668,220,0,0" VerticalAlignment="Top" />
-        <Label x:Name="lblQuality" Content="25%" HorizontalAlignment="Left" Margin="611,220,0,0"
-               VerticalAlignment="Top" Width="42" HorizontalContentAlignment="Center"
+        <Label Content="Accuracy" HorizontalAlignment="Left" Margin="643,220,0,0" VerticalAlignment="Top" />
+        <Label x:Name="lblQuality" Content="25%" HorizontalAlignment="Left" Margin="593,220,0,0"
+               VerticalAlignment="Top" Width="50" HorizontalContentAlignment="Center"
                ToolTip="The scale used for rendering video frames. Smaller scale improves performance." />
         <Label Content="Activity Settings" HorizontalAlignment="Left" Margin="547,8,0,0" VerticalAlignment="Top"
-               Width="173" HorizontalContentAlignment="Center" FontWeight="Bold" />
-        <Label Content="Motion Contrast:" HorizontalAlignment="Left" Margin="552,137,0,0" VerticalAlignment="Top"
-               Height="26" Width="173" />
+               Width="153" HorizontalContentAlignment="Center" FontWeight="Bold" />
+        <Label Content="Motion Contrast:" HorizontalAlignment="Left" Margin="547,137,0,0" VerticalAlignment="Top"
+               Height="26" Width="153" />
         <Slider x:Name="sliderContrast" Margin="547,168,0,0" VerticalAlignment="Top" Height="23" Minimum="1"
-                SmallChange="1" Value="1" HorizontalAlignment="Left" Width="173"
+                SmallChange="1" Value="1" HorizontalAlignment="Left" Width="153"
                 ValueChanged="contrastSlider_ValueChanged" IsSnapToTickEnabled="True"
                 ToolTip="Adjust the size of detected motion pixels. This is a visual only change and does not affect pixel statistics." />
-        <Label x:Name="lblContrast" Content="1X" Margin="682,137,0,0" VerticalAlignment="Top"
-               HorizontalAlignment="Left" Height="26" Width="43" Padding="0,5" HorizontalContentAlignment="Center"
+        <Label x:Name="lblContrast" Content="1X" Margin="668,137,0,0" VerticalAlignment="Top"
+               HorizontalAlignment="Left" Height="26" Width="32" Padding="0,5" HorizontalContentAlignment="Center"
                RenderTransformOrigin="0.558,2.038" ToolTip="Increases the size of the changed pixels" />
         <Label Content="ì" HorizontalAlignment="Left" Margin="450,38,0,0" VerticalAlignment="Top"
                FontFamily="Wingdings" FontSize="36" />
@@ -128,7 +128,7 @@
         <userControls:RegionOfInterest x:Name="roi" Height="302" Margin="10,38,0,0" HorizontalAlignment="Left"
                                        VerticalAlignment="Top" Width="516" Visibility="Hidden" />
 
-        <Border x:Name="borderComparison" BorderBrush="Gray" BorderThickness="1" Margin="730,15,0,15"
+        <Border x:Name="borderComparison" BorderBrush="Gray" BorderThickness="1" Margin="708,15,0,15"
                 HorizontalAlignment="Left" Width="1" Padding="0" />
         <Label x:Name="lblTime" Content="00:00:00" HorizontalAlignment="Left" Margin="477,421,0,0"
                VerticalAlignment="Top" Width="55" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
@@ -140,29 +140,29 @@
                Width="79" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                ToolTip="The rendering speed at frames per second" Background="#7FFFFFFF" />
         <Button x:Name="btnSaveActivity" Content="Save Activity Data" HorizontalAlignment="Left" Margin="547,393,0,0"
-                VerticalAlignment="Top" Width="173" Height="23" Click="btnSaveActivity_Click"
+                VerticalAlignment="Top" Width="153" Height="23" Click="btnSaveActivity_Click"
                 ToolTip="Saves the changed pixels for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video." />
-        <Button Content="Compute Statistics" HorizontalAlignment="Left" Margin="877,277,0,0" VerticalAlignment="Top"
+        <Button Content="Compute Statistics" HorizontalAlignment="Left" Margin="844,277,0,0" VerticalAlignment="Top"
                 Width="278" Click="btnComputeStats_Click" />
         <TextBox x:Name="txtLeft" HorizontalAlignment="Left" Height="19" Margin="547,350,0,0" TextWrapping="Wrap"
-                 Text="999" VerticalAlignment="Top" Width="41" Padding="0" HorizontalContentAlignment="Center"
+                 Text="999" VerticalAlignment="Top" Width="36" Padding="0" HorizontalContentAlignment="Center"
                  IsEnabled="False" ToolTip="The left position of the region of interest" />
-        <TextBox x:Name="txtTop" HorizontalAlignment="Left" Height="19" Margin="593,350,0,0" TextWrapping="Wrap"
+        <TextBox x:Name="txtTop" HorizontalAlignment="Left" Height="19" Margin="583,350,0,0" TextWrapping="Wrap"
                  Text="999" VerticalAlignment="Top" Width="37" Padding="0" HorizontalContentAlignment="Center"
                  IsEnabled="False" ToolTip="The top position of the region of interest" />
-        <TextBox x:Name="txtRight" HorizontalAlignment="Left" Height="19" Margin="635,350,0,0" TextWrapping="Wrap"
+        <TextBox x:Name="txtRight" HorizontalAlignment="Left" Height="19" Margin="620,350,0,0" TextWrapping="Wrap"
                  Text="999" VerticalAlignment="Top" Width="37" Padding="0" HorizontalContentAlignment="Center"
                  IsEnabled="False" ToolTip="The right position of the region of interest" />
-        <TextBox x:Name="txtBottom" HorizontalAlignment="Left" Height="19" Margin="677,350,0,0" TextWrapping="Wrap"
+        <TextBox x:Name="txtBottom" HorizontalAlignment="Left" Height="19" Margin="657,350,0,0" TextWrapping="Wrap"
                  Text="999" VerticalAlignment="Top" Width="43" Padding="0" HorizontalContentAlignment="Center"
                  IsEnabled="False" ToolTip="The bottom position of the region of interest" />
         <Label Content="Left" HorizontalAlignment="Left" Margin="547,333,0,0" VerticalAlignment="Top" Height="17"
-               Width="41" Padding="0" HorizontalContentAlignment="Center" />
-        <Label Content="Top" HorizontalAlignment="Left" Margin="593,333,0,0" VerticalAlignment="Top" Height="17"
+               Width="36" Padding="0" HorizontalContentAlignment="Center" />
+        <Label Content="Top" HorizontalAlignment="Left" Margin="583,333,0,0" VerticalAlignment="Top" Height="17"
                Width="37" Padding="0" HorizontalContentAlignment="Center" />
-        <Label Content="Right" HorizontalAlignment="Left" Margin="635,333,0,0" VerticalAlignment="Top" Height="17"
+        <Label Content="Right" HorizontalAlignment="Left" Margin="620,333,0,0" VerticalAlignment="Top" Height="17"
                Width="37" Padding="0" HorizontalContentAlignment="Center" />
-        <Label Content="Bottom" HorizontalAlignment="Left" Margin="677,333,0,0" VerticalAlignment="Top" Height="17"
+        <Label Content="Bottom" HorizontalAlignment="Left" Margin="657,333,0,0" VerticalAlignment="Top" Height="17"
                Width="43" Padding="0" HorizontalContentAlignment="Center" />
     </Grid>
 </Window>

@@ -26,21 +26,24 @@ namespace SwarmVision
     {
         private const string PlaySymbol = "4";
         private const string PauseSymbol = ";";
+
+        private double _fullSizeWidth;
         private double _quality = 0.25;
         private List<Point> _activity = new List<Point>();
+        private int _fpsStartFrame;
+        private Stopwatch _fpsStopwatch = new Stopwatch();
 
         private ChartModel _chart;
         private VideoDecoder _decoder;
         private FrameComparer _comparer;
         private FrameRenderer _renderer;
 
-        private int _fpsStartFrame;
-        private Stopwatch _fpsStopwatch = new Stopwatch();
-
         public MainWindow()
         {
             InitializeComponent();
 
+            _fullSizeWidth = Width;
+            
             ToggleCompare();
             SetupChart();
             SetupPlayer();
@@ -289,7 +292,7 @@ namespace SwarmVision
         {
             if (btnShowCompare.Content.ToString().Contains(">>"))
             {
-                Width = 1309;
+                Width = _fullSizeWidth + 15;
                 btnShowCompare.Content = btnShowCompare.Content.ToString().Replace(">>", "<<");
             }
             else
