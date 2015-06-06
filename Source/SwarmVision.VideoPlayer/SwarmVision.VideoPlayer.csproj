@@ -50,6 +50,7 @@
     <Compile Include="Frame.cs" />
     <Compile Include="FrameComparer.cs" />
     <Compile Include="FrameComparerResults.cs" />
+    <Compile Include="FrameFilterExtensions.cs" />
     <Compile Include="FrameRenderer.cs" />
     <Compile Include="PixelShader.cs" />
     <Compile Include="VideoDecoder.cs" />

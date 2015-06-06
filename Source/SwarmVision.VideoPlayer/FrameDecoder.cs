@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
@@ -29,12 +30,19 @@ namespace SwarmVision.VideoPlayer
         private PixelFormat pxFormat;
         private Stopwatch watch = new Stopwatch();
 
+        private Frame headTemplate;
+
         public FrameDecoder(int width, int height, PixelFormat pxFormat)
         {
             this.width = width;
             this.height = height;
             this.pxFormat = pxFormat;
             stride = GetStride(width, pxFormat);
+
+
+            headTemplate = Frame.FromBitmap(@"Y:\Documents\Dropbox\Research\Christina Burden\headTemplateCleaned.bmp");
+            //templateEdged = headTemplate.EdgeFilter();
+            //headTemplate.Dispose();
         }
 
         private static int GetStride(int width, PixelFormat pxFormat)
@@ -88,13 +96,35 @@ namespace SwarmVision.VideoPlayer
 
                 //Release the image buffer (after it has been stored above)
                 bmpBuffer = null;
+                count = 0;
 
                 //Once there is room, add frames
                 try
                 {
+                    //Show target edged
+                    //var targetEdged = frame.EdgeFilter();
+                    //frame.Dispose();
+                    //frame = targetEdged;
+
+                    //Show raw target -- comment ev else
+                    //---
+                    
+                    //Show template location
+                    var targetEdged = frame.EdgeFilter();
+                    frame.Dispose();
+
+                    var headLocation = targetEdged.LocationOfHead(headTemplate);
+                    var LRAlocation = targetEdged.LocationOfLRA(headLocation, leftRootAntenaTemplate);
+
+                    targetEdged.DrawRectangle(headLocation.X, headLocation.Y, headTemplate.Width, headTemplate.Height);
+                    targetEdged.DrawLine(LRAlocation.Start.X, LRAlocation.Start.Y, LRAlocation.End.X, LRAlocation.End.Y);
+
+                    frame = targetEdged;
+
                     FrameBuffer.AddLast(frame);
+
                 }
-                catch
+                catch(ThreadAbortException)
                 {
                 }
 
