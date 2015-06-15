@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SwarmVision.VideoPlayer
 {
-    public abstract class GeneticAlgoBase<T>
+    public abstract class GeneticAlgoBase<T> where T: IDisposable
     {
         protected Random Random = new Random();
         protected Dictionary<T, double> Generation = new Dictionary<T, double>();
@@ -15,9 +15,9 @@ namespace SwarmVision.VideoPlayer
         protected int NumberOfGenerations = 10;
         protected double PercentRandom = 0.05;
         protected Frame Target;
-        protected Frame Pattern;
         protected int PercentPruneLow = 20;
         protected int PercentPruneHigh = 80;
+        protected double InitialFitness = -1;
 
         protected abstract T CreateChild(T parent1, T parent2);
         protected abstract bool ValidChild(T child);
@@ -25,8 +25,14 @@ namespace SwarmVision.VideoPlayer
         protected abstract double ComputeFitness(T individual);
         protected abstract T CreateNewRandomMember();
 
-        public T GeneticSearch(Frame target, Frame pattern)
+        public T GeneticSearch(Frame target)
         {
+            Target = target;
+
+            //Reset the fitness of each member on new frame
+            for (var i = 0; i < Generation.Count; i++)
+                Generation[Generation.ElementAt(i).Key] = InitialFitness;
+
             //Create new generation
             for (var g = 0; g < NumberOfGenerations; g++)
             {
@@ -36,7 +42,7 @@ namespace SwarmVision.VideoPlayer
                     SurvivorCount = Generation.Count;
 
                     //Leave room to random members
-                    while (Generation.Count < (int)((1-PercentRandom) * GenerationSize))
+                    while (Generation.Count < (int)((1 - PercentRandom) * GenerationSize))
                     {
                         //Pick two random survivors (parents)
                         T randomSurvivor1;
@@ -48,7 +54,7 @@ namespace SwarmVision.VideoPlayer
 
                         //Don't add invalid locations or already exists
                         if (!Generation.ContainsKey(child) && ValidChild(child))
-                            Generation.Add(child, 0);
+                            Generation.Add(child, InitialFitness);
                     }
                 }
 
@@ -58,17 +64,17 @@ namespace SwarmVision.VideoPlayer
                     var newItem = CreateNewRandomMember();
 
                     if (ValidChild(newItem) && !Generation.ContainsKey(newItem))
-                        Generation.Add(newItem, 0);
+                        Generation.Add(newItem, InitialFitness);
                 }
 
-                //Evaluate fitness
-                for (var i = 0; i < GenerationSize; i++)
+                //Evaluate fitness (starting at bottom of list, where unevaluated units are)
+                for (var i = GenerationSize - 1; i >= 0; i--)
                 {
                     var individual = Generation.ElementAt(i);
 
-                    //If fitness already computed, don't recompute
-                    if (individual.Value > -1)
-                        continue;
+                    //If reached an evaluated unit, stop looping
+                    if (individual.Value > InitialFitness)
+                        break;
 
                     var fitness = ComputeFitness(individual.Key);
 
@@ -76,9 +82,19 @@ namespace SwarmVision.VideoPlayer
                 }
 
                 //Prune least fit X-Y% of population
+                var keep = (int) (Random.Next(PercentPruneLow, PercentPruneHigh + 1)/100.0*GenerationSize);
+
+                //Sort by fitness
                 Generation = Generation
                     .OrderBy(i => i.Value)
-                    .Take((int)(Random.Next(PercentPruneLow, PercentPruneHigh+1) / 100.0 * GenerationSize))
+                    .ToDictionary(i => i.Key, i => i.Value);
+
+                //Dispose of any about to be pruned members
+                for (var i = keep; i < Generation.Count; i++)
+                    Generation.ElementAt(i).Key.Dispose();
+
+                Generation = Generation
+                    .Take(keep)
                     .ToDictionary(i => i.Key, i => i.Value);
             }
 

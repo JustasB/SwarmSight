@@ -28,7 +28,7 @@ namespace SwarmVision
         private const string PauseSymbol = ";";
 
         private double _fullSizeWidth;
-        private double _quality = 0.25;
+        private double _quality = 1;
         private List<Point> _activity = new List<Point>();
         private int _fpsStartFrame;
         private Stopwatch _fpsStopwatch = new Stopwatch();
@@ -55,6 +55,12 @@ namespace SwarmVision
 
             AppDomain.CurrentDomain.UnhandledException +=
                 (sender, args) => { MessageBox.Show((args.ExceptionObject as Exception).Message); };
+
+            //TEST
+            txtFileName.Text =
+                @"Y:\Documents\Visual Studio 2012\Projects\WpfApplication1\WpfApplication1\bin\Debug\out.mp4";
+
+            OnPlayClicked(null, null);
         }
 
         private void SetupChart()

@@ -113,13 +113,16 @@ namespace SwarmVision.VideoPlayer
                     var targetEdged = frame.EdgeFilter();
                     frame.Dispose();
 
-                    var headLocation = targetEdged.LocationOfHead(headTemplate);
-                    var LRAlocation = targetEdged.LocationOfLRA(headLocation, leftRootAntenaTemplate);
+                    var headLocation = targetEdged.LocationOfHead();
+                    //var LRAlocation = targetEdged.LocationOfLRA(headLocation, leftRootAntenaTemplate);
 
-                    targetEdged.DrawRectangle(headLocation.X, headLocation.Y, headTemplate.Width, headTemplate.Height);
-                    targetEdged.DrawLine(LRAlocation.Start.X, LRAlocation.Start.Y, LRAlocation.End.X, LRAlocation.End.Y);
+                    //targetEdged.DrawLine(LRAlocation.Start.X, LRAlocation.Start.Y, LRAlocation.End.X, LRAlocation.End.Y);
 
                     frame = targetEdged;
+
+                    //Rotate template
+                    //var rotated = headTemplate.Rotate(20.0f);
+                    //rotated.Dispose();
 
                     FrameBuffer.AddLast(frame);
 

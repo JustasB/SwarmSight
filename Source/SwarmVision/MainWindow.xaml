@@ -65,7 +65,7 @@
                 ToolTip="Restrict the motion detection to a desired region. The region size can be adjusted." />
         <Label Content="Speed" HorizontalAlignment="Left" Margin="545,220,0,0" VerticalAlignment="Top" />
         <Slider x:Name="sliderQuality" HorizontalAlignment="Left" Margin="547,259,0,0" VerticalAlignment="Top"
-                Width="153" Maximum="100" Minimum="25" SmallChange="25" Value="25"
+                Width="153" Maximum="100" Minimum="25" SmallChange="25" Value="100"
                 ValueChanged="sliderQuality_ValueChanged" IsSnapToTickEnabled="True" LargeChange="25"
                 TickFrequency="25"
                 ToolTip="Adjust the scale used for rendering frames. Smaller scale is faster, larger scale is more accurate." />

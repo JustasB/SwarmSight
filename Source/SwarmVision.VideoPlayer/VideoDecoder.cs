@@ -90,6 +90,9 @@ namespace SwarmVision.VideoPlayer
                     CustomOutputArgs = " -pix_fmt bgr24 "
                 };
 
+            //TEST
+            PlayStartTimeInSec = 10;
+
             //Set start time
             if (PlayStartTimeInSec > 0)
             {

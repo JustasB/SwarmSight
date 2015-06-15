@@ -2,10 +2,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using Classes;
+using SwarmVision.Models;
+using Point = System.Drawing.Point;
 
 namespace SwarmVision.VideoPlayer
 {
@@ -27,7 +32,10 @@ namespace SwarmVision.VideoPlayer
             var yMax = height;
 
             //Do each row in parallel
-            Parallel.For(yMin, yMax, new ParallelOptions() {/*MaxDegreeOfParallelism = 1*/}, (int y) =>
+            Parallel.For(yMin, yMax, new ParallelOptions()
+            {
+                //MaxDegreeOfParallelism = 1
+            }, (int y) =>
             {
                 var rowStart = stride * y; //Stride is width*3 bytes
 
@@ -76,7 +84,7 @@ namespace SwarmVision.VideoPlayer
                 {
                     var offset = x * 3 + rowStart;
 
-                    var colorDifference = Compare(x*stepSize, y*stepSize, target, pattern);
+                    var colorDifference = target.Compare(pattern, x * stepSize, y * stepSize);
 
                     resultFirstPx[offset + 0] = resultFirstPx[offset + 1] = resultFirstPx[offset + 2] =
                         (byte)(255-Math.Min(colorDifference*colorDifference, 255));
@@ -86,26 +94,208 @@ namespace SwarmVision.VideoPlayer
             return result;
         }
 
-        private static HeadSearchAlgorithm headSearchAlgo = new HeadSearchAlgorithm();
+        private static readonly HeadSearchAlgorithm HeadSearchAlgo = new HeadSearchAlgorithm();
 
-        public static Point LocationOfHead(this Frame target, Frame headPattern)
+        public static HeadModel LocationOfHead(this Frame target)
         {
-            return headSearchAlgo.GeneticSearch(target, headPattern);
+            return HeadSearchAlgo.GeneticSearch(target);
         }
 
-        private static AntenaSearchAlgorithm antenaSearchAlgo = new AntenaSearchAlgorithm();
-
-        public static Point LocationOfLRA(this Frame target, Frame LRApattern)
+        public static void DrawRectangle(this Frame target, int x, int y, int width, int height)
         {
-            return antenaSearchAlgo.GeneticSearch(target, LRApattern);
+            for (var row = 0; row < height; row++)
+            {
+                var offsetL = target.FirstPixelPointer + OffsetOf(x,         y+row, target.Stride, 3);
+                var offsetR = target.FirstPixelPointer + OffsetOf(x+width-1, y+row, target.Stride, 3);
+
+                offsetL[0] = offsetL[1] = offsetL[2] = offsetR[0] = offsetR[1] = offsetR[2] = 255;
+            }
+
+            for (var col = 0; col < width; col++)
+            {
+                var offsetT = target.FirstPixelPointer + OffsetOf(x + col, y,            target.Stride, 3);
+                var offsetB = target.FirstPixelPointer + OffsetOf(x + col, y + height-1, target.Stride, 3);
+
+                offsetT[0] = offsetT[1] = offsetT[2] = offsetB[0] = offsetB[1] = offsetB[2] = 255;
+            }
         }
 
-        public static bool ValidConvoltionLocation(this Frame target, Frame pattern, int targetStartX, int targetStartY)
+        public static Frame Trim(this Frame target)
         {
-            if (targetStartX + pattern.Width - 1 >= target.Width)
+            var height = target.Height;
+            var width = target.Width;
+            var minY = 0;
+            var maxY = height - 1;
+            var minX = 0;
+            var maxX = width - 1;
+
+            //Find top
+            for (var row = 0; row < height; row++)
+            {
+                for (var col = 0; col < width; col++)
+                {
+                    var offset = target.FirstPixelPointer + OffsetOf(col, row, target.Stride, 3);
+
+                    if (offset[0] > 5 || offset[1] > 5 || offset[2] > 5)
+                    {
+                        minY = row;
+                        row = height;
+
+                        break;
+                    }
+                }
+
+                
+            }
+
+            //Find bottom
+            for (var row = height-1; row >= minY; row--)
+            {
+                for (var col = 0; col < width; col++)
+                {
+                    var offset = target.FirstPixelPointer + OffsetOf(col, row, target.Stride, 3);
+
+                    if (offset[0] > 5 || offset[1] > 5 || offset[2] > 5)
+                    {
+                        maxY = row;
+                        row = minY-1;
+                        break;
+                    }
+                }
+            }
+
+            //Find left
+            for (var col = 0; col < width; col++)
+            {
+                for (var row = minY; row <= maxY; row++)
+                {
+                    var offset = target.FirstPixelPointer + OffsetOf(col, row, target.Stride, 3);
+
+                    if (offset[0] > 5 || offset[1] > 5 || offset[2] > 5)
+                    {
+                        minX = col;
+                        col = width;
+                        break;
+                    }
+                }
+            }
+
+            //Find right
+            for (var col = width-1; col >= minX; col--)
+            {
+                for (var row = minY; row <= maxY; row++)
+                {
+                    var offset = target.FirstPixelPointer + OffsetOf(col, row, target.Stride, 3);
+
+                    if (offset[0] > 5 || offset[1] > 5 || offset[2] > 5)
+                    {
+                        maxX = col;
+                        col = minX-1;
+                        break;
+                    }
+                }
+            }
+
+            var bmp = new Bitmap(maxX - minX + 1, maxY - minY + 1, PixelFormat.Format24bppRgb);
+            
+            using (var gfx = Graphics.FromImage(bmp))
+            {
+                gfx.DrawImage(target.Bitmap, new Point(-minX, -minY));
+            }
+
+            return Frame.FromBitmap(bmp);
+        }
+
+        public static double StdDev<T>(this IEnumerable<T> list, Func<T, double> values)
+        {
+            var mean = 0.0;
+            var sum = 0.0;
+            var stdDev = 0.0;
+            var n = 0;
+            foreach (var value in list.Select(values))
+            {
+                n++;
+                var delta = value - mean;
+                mean += delta / n;
+                sum += delta * (value - mean);
+            }
+            if (1 < n)
+                stdDev = Math.Sqrt(sum / (n - 1));
+
+            return stdDev;
+
+        }
+
+        public static Frame Rotate(this Frame target, double angle)
+        {
+            // When drawing the returned image to a form, modify your points by 
+            // (-(target.Width / 2) - 1, -(target.Height / 2) - 1) to draw for actual co-ordinates.
+
+            var rotatedSize = RotatedSize(target.Width, target.Height, angle);
+            
+            //create an empty Bitmap image 
+            var bmp = new Bitmap(rotatedSize.Item1, rotatedSize.Item2, PixelFormat.Format24bppRgb);
+
+            //turn the Bitmap into a Graphics object
+            var gfx = Graphics.FromImage(bmp);
+
+            gfx.Clear(Color.Black);
+
+            //set the point system origin to the center of our image
+            gfx.TranslateTransform((float)bmp.Width / 2, (float)bmp.Height / 2);
+
+            //now rotate the image
+            gfx.RotateTransform((float) angle);
+
+            //move the point system origin back to 0,0
+            gfx.TranslateTransform(-(float)bmp.Width / 2, -(float)bmp.Height / 2);
+
+            //set the InterpolationMode to HighQualityBicubic so to ensure a high
+            //quality image once it is transformed to the specified size
+            gfx.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+            //draw our new image onto the graphics object with its center on the center of rotation
+            gfx.DrawImage(target.Bitmap, new PointF((bmp.Width - target.Width) / 2.0f, (bmp.Height - target.Height) / 2.0f));
+
+            //dispose of our Graphics object
+            gfx.Dispose();
+
+            //return the image
+            return Frame.FromBitmap(bmp);
+        }
+
+        public static double NormalizeAngle(double angleDeg)
+        {
+            double angle = angleDeg/180*2*Math.PI;
+            double division = angle / (Math.PI / 2);
+            double fraction = Math.Ceiling(division) - division;
+
+            return (fraction * Math.PI / 2);
+        }
+
+        public static Tuple<int, int> RotatedSize(int width, int height, double angle)
+        {
+            var normalizedRotationAngle = (angle % 45.0) / 180.0 * Math.PI;
+            var newWidth = (int)Math.Ceiling(Math.Cos(normalizedRotationAngle) * width + Math.Sin(normalizedRotationAngle) * height);
+            var newHeight = (int)Math.Ceiling(Math.Cos(normalizedRotationAngle) * height + Math.Sin(normalizedRotationAngle) * width);
+
+            return new Tuple<int, int>(newWidth, newHeight);
+        }
+
+        public static bool ValidConvoltionLocation(this Frame target, int patternWidth, int patternHeight, int targetStartX, int targetStartY, double angle = 0)
+        {
+            if (angle % 180 != 0.0)
+            {
+                var rotatedSize = RotatedSize(patternWidth, patternHeight, angle);
+
+                patternWidth = rotatedSize.Item1;
+                patternHeight = rotatedSize.Item2;
+            }
+
+            if (targetStartX + patternWidth - 1 >= target.Width)
                 return false;
 
-            if (targetStartY + pattern.Height - 1 >= target.Height)
+            if (targetStartY + patternHeight - 1 >= target.Height)
                 return false;
 
             if (targetStartX < 0 || targetStartY < 0)
@@ -114,11 +304,11 @@ namespace SwarmVision.VideoPlayer
             return true;
         }
 
-        public static int Compare(this Frame target, Frame pattern, int targetStartX, int targetStartY)
+        public static double Compare(this Frame target, Frame pattern, int targetStartX, int targetStartY)
         {
             var result = 255; //Max possible average color difference
 
-            if (!target.ValidConvoltionLocation(pattern, targetStartX, targetStartY))
+            if (!target.ValidConvoltionLocation(pattern.Width, pattern.Height, targetStartX, targetStartY))
                 return result;
 
             //Performance optimizations
@@ -154,7 +344,7 @@ namespace SwarmVision.VideoPlayer
                 }
             });
 
-            return result / (pattern.Width * pattern.Height * 3);
+            return result / (pattern.Width * pattern.Height * 3.0);
         }
 
         private static int OffsetOf(int x, int y, int stride, int bytesPerPixel)
