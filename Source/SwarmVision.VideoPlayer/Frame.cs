@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -52,7 +53,10 @@ namespace SwarmVision.VideoPlayer
             if (bmpHandle.IsAllocated)
                 bmpHandle.Free();
 
+            addr = IntPtr.Zero;
+
             PixelBytes = null;
+            
         }
 
         public Frame Clone()
@@ -114,6 +118,40 @@ namespace SwarmVision.VideoPlayer
 
             FirstPixelPointer[offset] = FirstPixelPointer[offset + 1] = FirstPixelPointer[offset + 2] = 
                 (byte)(Math.Min(255, whiteness));
+        }
+
+        public Frame Resize(int toWidth, int toHeight)
+        {   
+            //Create new bitmap that will hold the resized image
+            var result = new Bitmap(toWidth, toHeight);
+
+            using (var gfx = Graphics.FromImage(result))
+            {
+                gfx.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                gfx.CompositingQuality = CompositingQuality.HighQuality;
+                gfx.SmoothingMode = SmoothingMode.HighQuality;
+
+                // Draw resized image
+                gfx.DrawImage(Bitmap, 0, 0, toWidth, toHeight);
+            }
+
+            return FromBitmap(result);
+        }
+
+        public double[] ToAccordInput()
+        {
+            var result = new double[Height*Width];
+
+            for (var row = 0; row < Height; row++)
+            for (var col = 0; col < Width; col++)
+            {
+                var pixValue = PixelBytes[row * Stride + 3 * col];
+                var normalized = pixValue/255.0;
+
+                result[row*Width + col] = normalized;
+            }
+
+            return result;
         }
     }
 }

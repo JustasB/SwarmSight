@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 
@@ -11,12 +12,14 @@ namespace SwarmVision.Models
         public static int Height = 83;
         public static int Width = 83;
 
-        private const string HeadTemplatePath = @"Y:\Documents\Dropbox\Research\Christina Burden\average Head.bmp";
+        private const string HeadTemplatePath = @"Y:\Documents\Dropbox\Research\Christina Burden\firstHead.bmp";
 
         public HeadView(HeadModel head)
         {
             Head = head;
         }
+
+        private static Bitmap headTemplate;
 
         public Bitmap Draw()
         {
@@ -29,15 +32,16 @@ namespace SwarmVision.Models
                 gfx.Clear(Color.White);
 
                 //Draw head
-                using (var headTemplate = new Bitmap(HeadTemplatePath))
-                {
-                    headHeight = headTemplate.Height;
-                    headWidth = headTemplate.Width;
-                    headTopY = (Height - headHeight) / 2;
+                if (headTemplate == null)
+                    headTemplate = new Bitmap(HeadTemplatePath);
+                
+                headHeight = headTemplate.Height;
+                headWidth = headTemplate.Width;
+                headTopY = (Height - headHeight) / 2;
 
-                    //Draw it at the center
-                    gfx.DrawImage(headTemplate, (Width - headWidth) / 2.0f, headTopY);
-                }
+                //Draw it at the center
+                gfx.DrawImage(headTemplate, (Width - headWidth) / 2.0f, headTopY);
+                
 
                 //Mandibles
                 DrawMandible(midLineX, headTopY, gfx, flip: true); //Right

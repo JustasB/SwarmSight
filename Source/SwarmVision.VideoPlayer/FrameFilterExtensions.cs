@@ -95,10 +95,11 @@ namespace SwarmVision.VideoPlayer
         }
 
         private static readonly HeadSearchAlgorithm HeadSearchAlgo = new HeadSearchAlgorithm();
+        //private static readonly SimulatedAnnealingAlgorithm HeadSearchAlgo = new SimulatedAnnealingAlgorithm();
 
         public static HeadModel LocationOfHead(this Frame target)
         {
-            return HeadSearchAlgo.GeneticSearch(target);
+            return HeadSearchAlgo.Search(target);
         }
 
         public static void DrawRectangle(this Frame target, int x, int y, int width, int height)
@@ -118,6 +119,30 @@ namespace SwarmVision.VideoPlayer
 
                 offsetT[0] = offsetT[1] = offsetT[2] = offsetB[0] = offsetB[1] = offsetB[2] = 255;
             }
+        }
+
+        public static void DrawFrame(this Frame target, Frame source, int x, int y)
+        {
+
+            for (var row = 0; row <source.Height; row++)
+            {
+                for (var col = 0; col < source.Width; col++)
+                {
+                    var offsetT = target.FirstPixelPointer + OffsetOf(x + col, y + row, target.Stride, 3);
+                    var offsetS = source.FirstPixelPointer + OffsetOf(col,     row,       source.Stride, 3);
+
+                    if (offsetS[0] > 3)
+                        offsetT[0] = offsetS[0];
+
+                    if (offsetS[1] > 3)
+                        offsetT[1] = offsetS[1];
+
+                    if (offsetS[2] > 3)
+                        offsetT[2] = offsetS[2];
+                }
+            }
+
+            
         }
 
         public static Frame Trim(this Frame target)
@@ -203,6 +228,8 @@ namespace SwarmVision.VideoPlayer
                 gfx.DrawImage(target.Bitmap, new Point(-minX, -minY));
             }
 
+            
+
             return Frame.FromBitmap(bmp);
         }
 
@@ -226,41 +253,40 @@ namespace SwarmVision.VideoPlayer
 
         }
 
-        public static Frame Rotate(this Frame target, double angle)
+        public static Frame RotateScale(this Frame target, double angle, double scale = 1.0, Color? bgColor = null)
         {
-            // When drawing the returned image to a form, modify your points by 
-            // (-(target.Width / 2) - 1, -(target.Height / 2) - 1) to draw for actual co-ordinates.
+            if (bgColor == null)
+                bgColor = Color.Black;
 
-            var rotatedSize = RotatedSize(target.Width, target.Height, angle);
-            
-            //create an empty Bitmap image 
-            var bmp = new Bitmap(rotatedSize.Item1, rotatedSize.Item2, PixelFormat.Format24bppRgb);
+            //New blank bmp that will hold the transformed target
+            var bmp = new Bitmap(target.Width, target.Height, PixelFormat.Format24bppRgb);
 
-            //turn the Bitmap into a Graphics object
+            //gfx will perform the transformations on bmp
             var gfx = Graphics.FromImage(bmp);
 
-            gfx.Clear(Color.Black);
+            //Set the background
+            gfx.Clear(bgColor.Value);
 
-            //set the point system origin to the center of our image
-            gfx.TranslateTransform((float)bmp.Width / 2, (float)bmp.Height / 2);
+            //Set the scaling (if greater than 5%)
+            if(Math.Abs(scale - 1.0) > 0.05)
+                gfx.ScaleTransform((float)scale, (float)scale, MatrixOrder.Append);
 
-            //now rotate the image
-            gfx.RotateTransform((float) angle);
+            //Move the world origin to center of bmp, adjusted for scale
+            gfx.TranslateTransform((float) (bmp.Width / 2.0 / scale), (float) (bmp.Height / 2.0 / scale));
 
-            //move the point system origin back to 0,0
-            gfx.TranslateTransform(-(float)bmp.Width / 2, -(float)bmp.Height / 2);
+            //Apply rotations around the center (if greater than 1 degree)
+            if(Math.Abs(angle) > 1)
+                gfx.RotateTransform((float) angle);
 
-            //set the InterpolationMode to HighQualityBicubic so to ensure a high
-            //quality image once it is transformed to the specified size
             gfx.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            gfx.SmoothingMode = SmoothingMode.HighQuality;
+            gfx.CompositingQuality = CompositingQuality.HighQuality;
 
-            //draw our new image onto the graphics object with its center on the center of rotation
-            gfx.DrawImage(target.Bitmap, new PointF((bmp.Width - target.Width) / 2.0f, (bmp.Height - target.Height) / 2.0f));
+            //Paint the original onto the new bitmap (offset from the center)
+            gfx.DrawImage(target.Bitmap, new PointF(-target.Width / 2.0f, -target.Height / 2.0f));
 
-            //dispose of our Graphics object
             gfx.Dispose();
 
-            //return the image
             return Frame.FromBitmap(bmp);
         }
 
@@ -282,7 +308,7 @@ namespace SwarmVision.VideoPlayer
             return new Tuple<int, int>(newWidth, newHeight);
         }
 
-        public static bool ValidConvoltionLocation(this Frame target, int patternWidth, int patternHeight, int targetStartX, int targetStartY, double angle = 0)
+        public static bool ValidConvolutionLocation(this Frame target, int patternWidth, int patternHeight, int targetStartX, int targetStartY, double angle = 0)
         {
             if (angle % 180 != 0.0)
             {
@@ -308,10 +334,13 @@ namespace SwarmVision.VideoPlayer
         {
             var result = 255; //Max possible average color difference
 
-            if (!target.ValidConvoltionLocation(pattern.Width, pattern.Height, targetStartX, targetStartY))
+            if (!target.ValidConvolutionLocation(pattern.Width, pattern.Height, targetStartX, targetStartY))
                 return result;
 
             //Performance optimizations
+            if(pattern.PixelBytes == null)
+                throw new ArgumentException("Pattern bytes are null");
+
             var targetPx0 = target.FirstPixelPointer;
             var patternPx0 = pattern.FirstPixelPointer;
             var height = pattern.Height;
@@ -323,26 +352,29 @@ namespace SwarmVision.VideoPlayer
             var yMin = 0;
             var yMax = height;
 
-            //Do each row in parallel
-            Parallel.For(yMin, yMax, new ParallelOptions() {MaxDegreeOfParallelism = 1}, (int y) =>
+            fixed (byte* tPx0 = target.PixelBytes, pPx0 = pattern.PixelBytes)
             {
-                var patternRowStart = stride * y; //Stride is width*3 bytes
-                var targetRowStart = targetStride*(y + targetStartY);
-
-                for (var x = xMin; x < xMax; x++)
+                //Do each row in parallel
+                Parallel.For(yMin, yMax, new ParallelOptions() { MaxDegreeOfParallelism = 1 }, (int y) =>
                 {
-                    var patternOffset = x * 3 + patternRowStart;
+                    var patternRowStart = stride * y; //Stride is width*3 bytes
+                    var targetRowStart = targetStride * (y + targetStartY);
 
-                    if(patternPx0[patternOffset] < 3)
-                        continue;
+                    for (var x = xMin; x < xMax; x++)
+                    {
+                        var patternOffset = x * 3 + patternRowStart;
 
-                    var targetOffset = (x + targetStartX)*3 + targetRowStart;
+                        if (patternPx0[patternOffset] < 3)
+                            continue;
 
-                    var colorDifference = MonochromeDifference(targetPx0, targetOffset, patternPx0, patternOffset);
+                        var targetOffset = (x + targetStartX) * 3 + targetRowStart;
 
-                    result += colorDifference;
-                }
-            });
+                        var colorDifference = MonochromeDifference(targetPx0, targetOffset, patternPx0, patternOffset);
+
+                        result += colorDifference;
+                    }
+                });
+            }
 
             return result / (pattern.Width * pattern.Height * 3.0);
         }

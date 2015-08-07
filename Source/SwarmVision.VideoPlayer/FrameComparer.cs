@@ -177,9 +177,17 @@ namespace SwarmVision.VideoPlayer
             stopwatch.Start();
 
             var result = new FrameComparerResults()
-                {
-                    Threshold = Threshold
-                };
+            {
+                Threshold = Threshold
+            };
+
+            result.FrameIndex = bitmapB.FrameIndex;
+            result.FrameTime = bitmapB.FrameTime;
+
+            result.ChangedPixelsCount = 0;
+            result.ChangedPixels = new List<Point>();
+
+            return result;
 
             //Performance optimizations
             var changedPixels = new List<Point>(bitmapA.Height*bitmapA.Width); //Pre-alloc all possible changed pix 
@@ -218,10 +226,9 @@ namespace SwarmVision.VideoPlayer
                     }
                 });
 
+
             result.ChangedPixelsCount = changedPixelsCount;
             result.ChangedPixels = changedPixels;
-            result.FrameIndex = bitmapB.FrameIndex;
-            result.FrameTime = bitmapB.FrameTime;
 
             return result;
         }
