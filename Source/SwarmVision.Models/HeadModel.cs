@@ -12,8 +12,8 @@ namespace SwarmVision.Models
         public double ScaleMax = 1.5;
 
         public double AngleIndex;
-        public double AngleMin = -45;
-        public double AngleMax = 45;
+        public double AngleMin = -90;
+        public double AngleMax = 90;
 
         public Point Origin;
 

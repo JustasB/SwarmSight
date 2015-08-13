@@ -13,6 +13,7 @@ namespace SwarmVision.VideoPlayer
         protected Dictionary<T, double> Generation = new Dictionary<T, double>();
         protected int ParentCount = 0;
         protected int GenerationSize = 10;
+        protected int MinGenerationSize = 10;
         protected int NumberOfGenerations = 2;
         protected double PercentRandom = 50;
         protected Frame Target;
@@ -26,8 +27,12 @@ namespace SwarmVision.VideoPlayer
         protected abstract double ComputeFitness(T individual);
         protected abstract T CreateNewRandomMember();
 
+        private int frame = 0;
+
         public T Search(Frame target)
         {
+            GenerationSize = MinGenerationSize + Math.Max(0, 5 - frame)*20;
+
             Target = target;
 
             //Reset the fitness of each member on new frame
@@ -35,7 +40,7 @@ namespace SwarmVision.VideoPlayer
                 Generation[Generation.ElementAt(i).Key] = InitialFitness;
 
             //Create new generation
-            for (var g = 0; g < NumberOfGenerations; g++)
+            for (var g = 0; g < (NumberOfGenerations + (Math.Max(5 - frame,0))); g++)
             {
                 var timer = new Stopwatch(); timer.Start();
 
@@ -111,6 +116,8 @@ namespace SwarmVision.VideoPlayer
 
                 Debug.WriteLine("Gen: " + g + " took (ms): " + timer.ElapsedMilliseconds + ", best fitness: " + Generation.First().Value);
             }
+
+            frame++;
 
             return SelectLocation();
         }
