@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using SwarmVision.Filters;
 
 namespace SwarmVision.VideoPlayer
 {
@@ -29,7 +30,8 @@ namespace SwarmVision.VideoPlayer
 
         private ConvertSettings _settings;
         private FFMpegConverter _filereader;
-        private FrameDecoder _decoder;
+        public FrameDecoder FrameDecoder;
+        public VideoProcessorBase Processor;
         private ConvertLiveMediaTask _readingTask;
         private Thread _readingThread;
 
@@ -37,15 +39,15 @@ namespace SwarmVision.VideoPlayer
         {
             get
             {
-                return _decoder != null &&
-                       _decoder.FrameBuffer != null &&
-                       _decoder.FrameBuffer.Count > 0;
+                return FrameDecoder != null &&
+                       FrameDecoder.FrameBuffer != null &&
+                       FrameDecoder.FrameBuffer.Count > 0;
             }
         }
 
         public LinkedList<Frame> FrameBuffer
         {
-            get { return _decoder.FrameBuffer; }
+            get { return FrameDecoder.FrameBuffer; }
         }
 
         public bool AtEndOfVideo
@@ -73,14 +75,15 @@ namespace SwarmVision.VideoPlayer
             _filereader = new FFMpegConverter();
 
             //Set the format of the output bitmap
-            _decoder = new FrameDecoder
-                (
+            FrameDecoder = new FrameDecoder
+            (
                 PlayerOutputWidth,
                 PlayerOutputHeight,
                 PixelFormat.Format24bppRgb
-                );
+            );
 
-            _decoder.FrameReady += OnFrameReady;
+            FrameDecoder.Processor = Processor;
+            FrameDecoder.FrameReady += OnFrameReady;
             _filereader.LogReceived += OnLogReceived;
 
             //Set conversion settings
@@ -89,9 +92,6 @@ namespace SwarmVision.VideoPlayer
                     VideoFrameSize = PlayerOutputWidth + "x" + PlayerOutputHeight,
                     CustomOutputArgs = " -pix_fmt bgr24 "
                 };
-
-            //TEST
-            PlayStartTimeInSec = 10;
 
             //Set start time
             if (PlayStartTimeInSec > 0)
@@ -113,7 +113,7 @@ namespace SwarmVision.VideoPlayer
                 (
                     VideoPath,
                     null, // autodetect stream format
-                    _decoder,
+                    FrameDecoder,
                     "rawvideo",
                     _settings
                 );
@@ -167,7 +167,7 @@ namespace SwarmVision.VideoPlayer
             mostRecentFrame.FrameTime = CurrentTime;
             mostRecentFrame.IsDecoded = true;
 
-            if (_decoder.FramesInBufferMoreThanMinimum)
+            if (FrameDecoder.FramesInBufferMoreThanMinimum)
                 IsBufferReady = true;
 
             if (CurrentFrame < VideoInfo.TotalFrames)
@@ -175,13 +175,42 @@ namespace SwarmVision.VideoPlayer
         }
 
         /// <summary>
+        /// If available, returns the next frame from the video. If not, returns null
+        /// </summary>
+        /// <returns></returns>
+        public Frame PlayNextFrame()
+        {
+            if (FramesInBuffer)
+            {
+                var result = FrameBuffer.First();
+
+                FrameBuffer.Remove(result);
+
+                return result;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Sets the decoder to start at specified time in video. Start() can
         /// be called after this method.
         /// </summary>
-        /// <param name="seconds"></param>
         public void SeekTo(double seconds)
         {
             PlayStartTimeInSec = seconds;
+        }
+
+        /// <summary>
+        /// Sets the decoder to start at specified time in video. Start() can
+        /// be called after this method.
+        /// </summary>
+        public void SeekTo(int frame)
+        {
+            if (VideoInfo == null)
+                throw new Exception("Video needs to be Open()'ed before seeking to a frame.");
+
+            PlayStartTimeInSec = frame / VideoInfo.FPS;
         }
 
         public void Stop()
@@ -212,8 +241,8 @@ namespace SwarmVision.VideoPlayer
 
         public void ClearBuffer()
         {
-            if (_decoder != null)
-                _decoder.ClearBuffer();
+            if (FrameDecoder != null)
+                FrameDecoder.ClearBuffer();
         }
 
         public void Dispose()
@@ -242,18 +271,18 @@ namespace SwarmVision.VideoPlayer
                 _filereader = null;
             }
 
-            if (_decoder != null)
+            if (FrameDecoder != null)
             {
-                _decoder.ClearBuffer();
+                FrameDecoder.ClearBuffer();
 
                 try
                 {
-                    _decoder.Dispose();
+                    FrameDecoder.Dispose();
                 }
                 catch
                 {
                 }
-                _decoder = null;
+                FrameDecoder = null;
             }
         }
 

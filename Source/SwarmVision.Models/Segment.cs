@@ -6,6 +6,10 @@ namespace SwarmVision.Models
     public class Segment
     {
         public Point Start;
+        public int StartXMin;
+        public int StartXMax;
+        public int StartYMin;
+        public int StartYMax;
 
         /// <summary>
         /// 0..1 value corresponding to the min, max angles
@@ -23,6 +27,8 @@ namespace SwarmVision.Models
         public double LengthMax = 10;
 
         public int Thickness = 1;
+        public int ThicknessMin = 1;
+        public int ThicknessMax = 10;
 
         public double Angle
         {

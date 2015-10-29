@@ -135,7 +135,11 @@
                ToolTip="Current video playback position" Background="#7FFFFFFF" />
         <Grid x:Name="chartPlaceholder_Copy" HorizontalAlignment="Left" Height="85" Margin="20,365,0,0"
               VerticalAlignment="Top" Width="516"
-              ToolTip="A chart showing how many pixels have changed for each frame of the video" />
+              ToolTip="A chart showing how many pixels have changed for each frame of the video" >
+            <ComboBox x:Name="ddlParams" HorizontalAlignment="Left" Margin="331,0,0,0" VerticalAlignment="Top" Width="175" Loaded="ddlParams_Loaded" SelectionChanged="ddlParams_SelectionChanged"/>
+            <Button Content="Button" HorizontalAlignment="Left" Margin="456,27,0,0" VerticalAlignment="Top" Width="50" Click="Button_Click"/>
+            <TextBox x:Name="txtValue" HorizontalAlignment="Left" Height="23" Margin="331,27,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120"/>
+        </Grid>
         <Label x:Name="lblFPS" Content="FPS: 0" HorizontalAlignment="Left" Margin="229,421,0,0" VerticalAlignment="Top"
                Width="79" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                ToolTip="The rendering speed at frames per second" Background="#7FFFFFFF" />

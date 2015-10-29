@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using SwarmVision.Filters;
 using SwarmVision.VideoPlayer;
 
 namespace Classes

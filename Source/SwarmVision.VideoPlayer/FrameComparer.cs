@@ -10,6 +10,7 @@ namespace SwarmVision.VideoPlayer
 {
     public class FrameComparer
     {
+        public VideoProcessorBase Processor;
         public static List<long> PerformanceHistory = new List<long>(1000);
 
         public int Threshold = 50;
@@ -20,7 +21,6 @@ namespace SwarmVision.VideoPlayer
         public EventHandler<FrameComparisonArgs> FrameCompared;
         public EventHandler<EventArgs> Stopped;
 
-        private Frame _previousFrame;
         public bool IsPaused;
         private Thread _bufferMonitor;
 
@@ -96,12 +96,6 @@ namespace SwarmVision.VideoPlayer
         private void Reset()
         {
             MostRecentFrameIndex = -1;
-
-            if (_previousFrame != null)
-            {
-                _previousFrame.Dispose();
-                _previousFrame = null;
-            }
         }
 
         /// <summary>
@@ -120,36 +114,30 @@ namespace SwarmVision.VideoPlayer
                     if (!currentFrame.IsDecoded)
                         continue;
 
-                    if (_previousFrame != null)
+                    var compareResult = (FrameComparerResults) Processor.OnProcessing(currentFrame);
+                        
+                    //Notify of comparison results
+                    if (FrameCompared != null)
+                        FrameCompared(this, new FrameComparisonArgs() {Results = compareResult});
+
+                    //Set a limit on how many frames behind to render
+                    if (Renderer.Queue.Count < 10)
                     {
-                        var compareResult = Compare(currentFrame, _previousFrame);
+                        currentFrame.Watch.Stop();
 
-                        //Notify of comparison results
-                        if (FrameCompared != null)
-                            FrameCompared(this, new FrameComparisonArgs() {Results = compareResult});
-
-                        //Set a limit on how many frames behind to render
-                        if (Renderer.Queue.Count < 10)
+                        //Add a cloned frame to rendering queue
+                        Renderer.Queue.AddLast(new ComparedFrame()
                         {
-                            currentFrame.Watch.Stop();
+                            Frame = currentFrame.Clone(),
+                            ComparerResults = compareResult,
+                        });
 
-                            //Add a cloned frame to rendering queue
-                            Renderer.Queue.AddLast(new ComparedFrame()
-                                {
-                                    Frame = currentFrame.Clone(),
-                                    ComparerResults = compareResult,
-                                });
-
-                            Debug.Print(new string('R', Renderer.Queue.Count));
-                        }
-
-                        _previousFrame.Dispose();
+                        Debug.Print(new string('R', Renderer.Queue.Count));
                     }
+                        
 
                     //Retain location
                     MostRecentFrameIndex = currentFrame.FrameIndex;
-
-                    _previousFrame = currentFrame;
                     Decoder.FrameBuffer.Remove(currentFrame);
                 }
                 else if (Decoder.AtEndOfVideo)
@@ -169,68 +157,6 @@ namespace SwarmVision.VideoPlayer
                     Thread.Sleep(5);
                 }
             }
-        }
-
-        public unsafe FrameComparerResults Compare(Frame bitmapA, Frame bitmapB)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            var result = new FrameComparerResults()
-            {
-                Threshold = Threshold
-            };
-
-            result.FrameIndex = bitmapB.FrameIndex;
-            result.FrameTime = bitmapB.FrameTime;
-
-            result.ChangedPixelsCount = 0;
-            result.ChangedPixels = new List<Point>();
-
-            return result;
-
-            //Performance optimizations
-            var changedPixels = new List<Point>(bitmapA.Height*bitmapA.Width); //Pre-alloc all possible changed pix 
-            var efficientTreshold = Threshold*3;
-            var aFirstPx = bitmapA.FirstPixelPointer;
-            var bFirstPx = bitmapB.FirstPixelPointer;
-            var height = bitmapA.Height;
-            var width = bitmapA.Width;
-            var stride = bitmapA.Stride;
-            var changedPixelsCount = 0;
-            var xMin = (int) (width*LeftBountPCT);
-            var xMax = (int) (width*RightBountPCT);
-            var yMin = (int) (height*TopBountPCT);
-            ;
-            var yMax = (int) (height*BottomBountPCT);
-
-            //Do each row in parallel
-            Parallel.For(yMin, yMax, new ParallelOptions() {/*MaxDegreeOfParallelism = 1*/}, (int y) =>
-                {
-                    var rowStart = stride*y; //Stride is width*3 bytes
-
-                    for (var x = xMin; x < xMax; x++)
-                    {
-                        var offset = x*3 + rowStart;
-
-                        var colorDifference =
-                            Math.Abs(aFirstPx[offset + 0] - bFirstPx[offset + 0]) +
-                            Math.Abs(aFirstPx[offset + 1] - bFirstPx[offset + 1]) +
-                            Math.Abs(aFirstPx[offset + 2] - bFirstPx[offset + 2]);
-
-                        if (colorDifference > efficientTreshold)
-                        {
-                            changedPixelsCount++;
-                            changedPixels.Add(new Point(x, y));
-                        }
-                    }
-                });
-
-
-            result.ChangedPixelsCount = changedPixelsCount;
-            result.ChangedPixels = changedPixels;
-
-            return result;
         }
 
         public void SetBounds(double leftPercent, double topPercent, double rightPercent, double bottomPercent)

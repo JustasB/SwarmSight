@@ -34,11 +34,6 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +43,16 @@
     <Compile Include="ProboscisModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Segment.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Christina Burden\SwarmVision.Filters\SwarmVision.Filters.csproj">
+      <Project>{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}</Project>
+      <Name>SwarmVision.Filters</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SwarmVision.GPU\SwarmVision.Hardware.csproj">
+      <Project>{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}</Project>
+      <Name>SwarmVision.Hardware</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

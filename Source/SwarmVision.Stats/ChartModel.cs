@@ -23,11 +23,12 @@ namespace SwarmVision.Stats
                     PlotAreaBorderThickness = new OxyThickness(0),
                 };
 
-            _series = new LineSeries("Changed Pixels")
-                {
-                    Color = OxyColor.FromRgb(0, 0, 0),
-                    StrokeThickness = 0.5,
-                };
+            _series = new LineSeries()
+            {
+                Color = OxyColor.FromRgb(0, 0, 0),
+                StrokeThickness = 0.5,
+                Title = "Changed Pixels"
+            };
 
             _Xaxis = new LinearAxis()
                 {

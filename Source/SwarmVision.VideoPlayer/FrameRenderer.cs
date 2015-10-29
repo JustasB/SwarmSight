@@ -84,7 +84,8 @@ namespace Classes
                         if (comparedFrame == null)
                             continue;
 
-                        _shader.Shade
+                        if(comparedFrame.Value.ComparerResults != null)
+                            _shader.Shade
                             (
                                 comparedFrame.Value.Frame,
                                 comparedFrame.Value.ComparerResults.ChangedPixels,

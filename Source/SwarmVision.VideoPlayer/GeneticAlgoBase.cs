@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using SwarmVision.Filters;
 
 namespace SwarmVision.VideoPlayer
 {
@@ -16,7 +17,7 @@ namespace SwarmVision.VideoPlayer
         protected int MinGenerationSize = 10;
         protected int NumberOfGenerations = 2;
         protected double PercentRandom = 50;
-        protected Frame Target;
+        protected FrameCollection Target;
         protected int PercentPruneLow = 70;
         protected int PercentPruneHigh = 70;
         protected double InitialFitness = -1;
@@ -24,23 +25,27 @@ namespace SwarmVision.VideoPlayer
         protected abstract T CreateChild(T parent1, T parent2);
         protected abstract bool ValidChild(T child);
         protected abstract T SelectLocation();
-        protected abstract double ComputeFitness(T individual);
         protected abstract T CreateNewRandomMember();
+
+        public abstract void ComputeFitness();
 
         private int frame = 0;
 
-        public T Search(Frame target)
+        public T Search(FrameCollection target)
         {
-            GenerationSize = MinGenerationSize + Math.Max(0, 5 - frame)*20;
 
             Target = target;
+
+            PreProcessTarget();
+
+            GenerationSize = MinGenerationSize+0*Math.Max(0, 5 - frame) * 20;
 
             //Reset the fitness of each member on new frame
             for (var i = 0; i < Generation.Count; i++)
                 Generation[Generation.ElementAt(i).Key] = InitialFitness;
 
             //Create new generation
-            for (var g = 0; g < (NumberOfGenerations + (Math.Max(5 - frame,0))); g++)
+            for (var g = 0; g < (NumberOfGenerations + 0*(Math.Max(5 - frame,0))); g++)
             {
                 var timer = new Stopwatch(); timer.Start();
 
@@ -82,21 +87,7 @@ namespace SwarmVision.VideoPlayer
                         Generation.Add(child, InitialFitness);
                 }
 
-                var timer2 = new Stopwatch(); timer2.Start();
-                //Evaluate fitness (starting at bottom of list, where unevaluated units are)
-                for (var i = GenerationSize - 1; i >= 0; i--)
-                {
-                    var individual = Generation.ElementAt(i);
-
-                    //If reached an evaluated unit, stop looping
-                    if (individual.Value > InitialFitness)
-                        break;
-
-                    var fitness = ComputeFitness(individual.Key);
-
-                    Generation[individual.Key] = fitness;
-                }
-                Debug.WriteLine("ComputeFitness (ms): " + timer2.ElapsedMilliseconds);
+                ComputeFitness();
 
                 //Prune least fit X-Y% of population
                 var keep = (int) ((1-Random.Next(PercentPruneLow, PercentPruneHigh + 1)/100.0)*GenerationSize);
@@ -110,16 +101,26 @@ namespace SwarmVision.VideoPlayer
                 for (var i = keep; i < Generation.Count; i++)
                     Generation.ElementAt(i).Key.Dispose();
 
+                //Prune
                 Generation = Generation
                     .Take(keep)
                     .ToDictionary(i => i.Key, i => i.Value);
 
-                Debug.WriteLine("Gen: " + g + " took (ms): " + timer.ElapsedMilliseconds + ", best fitness: " + Generation.First().Value);
             }
 
             frame++;
 
             return SelectLocation();
+        }
+
+        public virtual void PreProcessTarget()
+        {
+            
+        }
+
+        public void SetTarget(FrameCollection target)
+        {
+            Target = target;
         }
 
         protected virtual void SelectParents(out T parent1, out T parent2)
@@ -177,13 +178,8 @@ namespace SwarmVision.VideoPlayer
         /// <returns></returns>
         protected double Cross(double a, double b, double? limitLow = null, double? limitHigh = null)
         {
-            //var spin = Random.NextDouble();
-
-            //if (spin < 0.4)
-            //    return a;
-
-            //if (spin > 0.4 && spin < 0.9)
-            //    return b;
+            if (limitLow.HasValue && limitHigh.HasValue && !(limitHigh > limitLow))
+                return limitLow.Value;
 
             var midpoint = Midpoint(a, b);
             var distance = Distance(a, b);

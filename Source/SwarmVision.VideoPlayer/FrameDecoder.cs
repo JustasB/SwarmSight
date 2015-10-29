@@ -4,16 +4,21 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Classes;
+using SwarmVision.Filters;
+using SwarmVision.Hardware;
+using SwarmVision.Models;
 
 namespace SwarmVision.VideoPlayer
 {
     public class FrameDecoder : Stream
     {
+        public VideoProcessorBase Processor;
         public event EventHandler<OnFrameReady> FrameReady;
-        public const int FrameBufferCapacity = 30; //Max frames to decode ahead
-        public const int MinimumWorkingFrames = 5; //Don't start processing until this many frames have been decoded
+        public int FrameBufferCapacity = 30; //Max frames to decode ahead
+        public int MinimumWorkingFrames = 5; //Don't start processing until this many frames have been decoded
         public LinkedList<Frame> FrameBuffer = new LinkedList<Frame>();
 
         public bool FramesInBufferMoreThanMinimum
@@ -30,19 +35,12 @@ namespace SwarmVision.VideoPlayer
         private PixelFormat pxFormat;
         private Stopwatch watch = new Stopwatch();
 
-        private Frame headTemplate;
-
         public FrameDecoder(int width, int height, PixelFormat pxFormat)
         {
             this.width = width;
             this.height = height;
             this.pxFormat = pxFormat;
             stride = GetStride(width, pxFormat);
-
-
-            headTemplate = Frame.FromBitmap(@"Y:\Documents\Dropbox\Research\Christina Burden\headTemplateCleaned.bmp");
-            //templateEdged = headTemplate.EdgeFilter();
-            //headTemplate.Dispose();
         }
 
         private static int GetStride(int width, PixelFormat pxFormat)
@@ -58,73 +56,66 @@ namespace SwarmVision.VideoPlayer
             return result;
         }
 
+        private int frameIndex = 0;
         public override void Write(byte[] buffer, int offset, int count)
         {
+            var bmpBufferLength = height * stride;
+
             //Each frame gets its own image buffer
             if (bmpBuffer == null)
             {
                 watch = Stopwatch.StartNew();
-                bmpBuffer = new byte[height*stride];
+
+                if (GPU.UseGPU)
+                    bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
+                else
+                    bmpBuffer = new byte[bmpBufferLength];
             }
             while (count > 0)
             {
-                var roomInBuffer = bmpBuffer.Length - bmpBufferIndex;
+                var roomInBuffer = bmpBufferLength - bmpBufferIndex;
 
                 if (count < roomInBuffer)
                     roomInBuffer = count;
 
-                Buffer.BlockCopy(buffer, offset, bmpBuffer, bmpBufferIndex, roomInBuffer);
+                if (GPU.UseGPU)
+                    GPU.Current.CopyToDevice(buffer, offset, bmpBuffer, bmpBufferIndex, roomInBuffer);
+                else
+                    Buffer.BlockCopy(buffer, offset, bmpBuffer, bmpBufferIndex, roomInBuffer);
 
                 bmpBufferIndex += roomInBuffer;
                 _length += roomInBuffer;
                 offset += roomInBuffer;
                 count -= roomInBuffer;
 
+
                 //Buffer is full, image is ready
-                if (bmpBufferIndex != bmpBuffer.Length)
+                if (bmpBufferIndex != bmpBufferLength)
                     continue;
+
+                //Retain the bitmap data
+                var frame = new Frame(width, height, stride, pxFormat, bmpBuffer, GPU.UseGPU) {Watch = watch};
+                
+                //Release the image buffer (after it has been stored above)
+                bmpBuffer = null;
+
+                count = 0;
+
 
                 //If buffer's full, wait till it drops to mostly empty
                 if (FrameBuffer.Count >= FrameBufferCapacity)
                     while (FrameBuffer.Count > MinimumWorkingFrames)
                         Thread.Sleep(5);
 
-                //Retain the bitmap data
-                var frame = new Frame(width, height, stride, pxFormat, bmpBuffer);
-
-                frame.Watch = watch;
-
-                //Release the image buffer (after it has been stored above)
-                bmpBuffer = null;
-                count = 0;
-
                 //Once there is room, add frames
                 try
                 {
-                    //Show target edged
-                    //var targetEdged = frame.EdgeFilter();
-                    //frame.Dispose();
-                    //frame = targetEdged;
-
-                    //Show raw target -- comment ev else
-                    //---
-                    
-                    //Show template location
-                    var targetEdged = frame.EdgeFilter();
-                    frame.Dispose();
-
-                    var headLocation = targetEdged.LocationOfHead();
-                    //var LRAlocation = targetEdged.LocationOfLRA(headLocation, leftRootAntenaTemplate);
-
-                    //targetEdged.DrawLine(LRAlocation.Start.X, LRAlocation.Start.Y, LRAlocation.End.X, LRAlocation.End.Y);
-
-                    frame = targetEdged;
-
-                    //Rotate template
-                    //var rotated = headTemplate.Rotate(20.0f);
-                    //rotated.Dispose();
+                    if(Processor != null)
+                        frame = Processor.OnAfterDecoding(frame);
 
                     FrameBuffer.AddLast(frame);
+
+                    frameIndex++;
 
                 }
                 catch(ThreadAbortException)

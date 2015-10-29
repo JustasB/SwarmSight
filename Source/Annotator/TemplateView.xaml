@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="SwarmVision.TemplateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="392.012" d:DesignWidth="294.172">
+
+
+    <Grid>
+
+        <Label x:Name="lblTask" Content="Task: Find the [Head Part Here]" VerticalAlignment="Top" FontWeight="Bold" HorizontalContentAlignment="Center" FontSize="14"/>
+        <Image x:Name="partImage" Margin="0,29" Source="Assets/HeadFront.jpg"/>
+        <Label Content="(Or Press Q)" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Bottom" Height="30" Width="112" HorizontalContentAlignment="Center"/>
+        <Label Content="(Or Press E)" HorizontalAlignment="Right" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalAlignment="Bottom" Height="30" Width="116"/>
+        <Label Content="Left Click To Mark" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Bottom" Height="30" Margin="0,0,0,13"/>
+        <Label Content="Right Click To Skip" HorizontalAlignment="Right" FontWeight="Bold" HorizontalContentAlignment="Right" VerticalAlignment="Bottom" Height="30" Margin="0,0,0,13"/>
+
+    </Grid>
+
+</UserControl>

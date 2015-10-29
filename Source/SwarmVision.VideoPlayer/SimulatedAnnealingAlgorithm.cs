@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using SwarmVision.Filters;
 using SwarmVision.Models;
+using SwarmVision.Hardware;
 
 namespace SwarmVision.VideoPlayer
 {
@@ -155,7 +157,7 @@ namespace SwarmVision.VideoPlayer
                 candidate.View = CreateHeadView(candidate);
             }
 
-            var result = Target.Compare((Frame)candidate.View, (int)candidate.Origin.X, (int)candidate.Origin.Y);
+            var result = Target.AverageColorDifference((Frame)candidate.View, (int)candidate.Origin.X, (int)candidate.Origin.Y);
 
             //Adjust for scale
             result /= candidate.Scale;
@@ -165,7 +167,7 @@ namespace SwarmVision.VideoPlayer
 
         protected Frame CreateHeadView(HeadModel head)
         {
-            using (var raw = Frame.FromBitmap(new HeadView(head).Draw()))
+            using (var raw = new HeadView(head).Draw(GPU.UseGPU))
             using (var edged = raw.EdgeFilter())
             {
                 return edged.RotateScale(head.Angle, head.Scale);

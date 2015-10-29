@@ -12,8 +12,8 @@ namespace SwarmVision.Models
         public double ScaleMax = 1.5;
 
         public double AngleIndex;
-        public double AngleMin = -90;
-        public double AngleMax = 90;
+        public double AngleMin = -15;
+        public double AngleMax = 20;
 
         public Point Origin;
 
@@ -67,7 +67,7 @@ namespace SwarmVision.Models
             Mandible = new Segment
             {
                 Start = {X = 3},
-                Length = 5,
+                Length = 0,
                 Thickness = 1,
                 AngleMax = 90, //Fully open
                 AngleMin = 0, //Fully closed
@@ -92,42 +92,34 @@ namespace SwarmVision.Models
             Proboscis.Tongue.AngleMin = -5;
             Proboscis.Tongue.AngleMax = 5;
 
-            
-            RightAntena.Root.AngleIndex = 90/180.0;
-            RightAntena.Root.AngleMin = 0;
-            RightAntena.Root.AngleMax = 180;
-            RightAntena.Root.Length = 0;
-            RightAntena.Root.LengthMin = 0;
-            RightAntena.Root.LengthMax = 0;//30;
-            RightAntena.Root.Thickness = 2;
 
-            RightAntena.Tip.AngleIndex = -90/180.0;
-            RightAntena.Tip.AngleMin = -135;
-            RightAntena.Tip.AngleMax = 0;
-            RightAntena.Tip.Length = 0;
-            RightAntena.Tip.LengthMin = 0;
-            RightAntena.Tip.LengthMax = 0;//30;
-            RightAntena.Tip.Thickness = 2;
+            RightAntena.Root.Start.X = LeftAntena.Root.Start.X = 4;
+            RightAntena.Root.StartXMin = LeftAntena.Root.StartXMin = 2;
+            RightAntena.Root.StartXMax = LeftAntena.Root.StartXMax = 6;
 
+            RightAntena.Root.Start.Y = LeftAntena.Root.Start.Y = -4;
+            RightAntena.Root.StartYMin = LeftAntena.Root.StartYMin = -6;
+            RightAntena.Root.StartYMax = LeftAntena.Root.StartYMax = -2;
 
-            //Left angles are reversed
-            LeftAntena.Root.AngleIndex = 90 / 180.0;
-            LeftAntena.Root.AngleMin = 0;
-            LeftAntena.Root.AngleMax = 180;
-            LeftAntena.Root.Length = 0;
-            LeftAntena.Root.LengthMin = 0;
-            LeftAntena.Root.LengthMax = 0;//30;
-            LeftAntena.Root.Thickness = 2;
+            RightAntena.Root.AngleIndex = LeftAntena.Root.AngleIndex = 90 / 180.0;
+            RightAntena.Root.AngleMin = LeftAntena.Root.AngleMin = 2;
+            RightAntena.Root.AngleMax = LeftAntena.Root.AngleMax = 136;
+            RightAntena.Root.Length = LeftAntena.Root.Length = 0;
+            RightAntena.Root.LengthMin = LeftAntena.Root.LengthMin = 5;
+            RightAntena.Root.LengthMax = LeftAntena.Root.LengthMax = 17;
+            RightAntena.Root.Thickness = LeftAntena.Root.Thickness = 3;
+            RightAntena.Root.ThicknessMin = LeftAntena.Root.ThicknessMin = 1;
+            RightAntena.Root.ThicknessMax = LeftAntena.Root.ThicknessMax = 5;
 
-            LeftAntena.Tip.AngleIndex = -90 / 180.0;
-            LeftAntena.Tip.AngleMin = -135;
-            LeftAntena.Tip.AngleMax = 0;
-            LeftAntena.Tip.Length = 0;
-            LeftAntena.Tip.LengthMin = 0;
-            LeftAntena.Tip.LengthMax = 0;//30;
-            LeftAntena.Tip.Thickness = 2;
-
-
+            RightAntena.Tip.AngleIndex = LeftAntena.Tip.AngleIndex = -90 / 180.0;
+            RightAntena.Tip.AngleMin = LeftAntena.Tip.AngleMin = -70;
+            RightAntena.Tip.AngleMax = LeftAntena.Tip.AngleMax = 3;
+            RightAntena.Tip.Length = LeftAntena.Tip.Length = 0;
+            RightAntena.Tip.LengthMin = LeftAntena.Tip.LengthMin = 11;
+            RightAntena.Tip.LengthMax = LeftAntena.Tip.LengthMax = 35;
+            RightAntena.Tip.Thickness = LeftAntena.Tip.Thickness = 3;
+            RightAntena.Tip.ThicknessMin = LeftAntena.Tip.ThicknessMin = 1;
+            RightAntena.Tip.ThicknessMax = LeftAntena.Tip.ThicknessMax = 5;
 
         }
 

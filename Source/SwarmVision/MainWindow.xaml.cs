@@ -14,7 +14,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using SwarmVision.UserControls;
-using Frame = SwarmVision.VideoPlayer.Frame;
+using Frame = SwarmVision.Filters.Frame;
 using Point = System.Windows.Point;
 
 namespace SwarmVision
@@ -37,6 +37,7 @@ namespace SwarmVision
         private VideoDecoder _decoder;
         private FrameComparer _comparer;
         private FrameRenderer _renderer;
+        private readonly VideoProcessorBase _processor = new AntennaAndPERDetector();
 
         public MainWindow()
         {
@@ -53,12 +54,15 @@ namespace SwarmVision
 
             Application.Current.Exit += (sender, args) => Stop();
 
+#if !DEBUG
             AppDomain.CurrentDomain.UnhandledException +=
                 (sender, args) => { MessageBox.Show((args.ExceptionObject as Exception).Message); };
-
+#endif
             //TEST
             txtFileName.Text =
-                @"Y:\Documents\Visual Studio 2012\Projects\WpfApplication1\WpfApplication1\bin\Debug\out.mp4";
+                @"Y:\Documents\Dropbox\Research\Christina Burden\out.mp4";
+
+            _comparer.MostRecentFrameIndex = 299;
 
             OnPlayClicked(null, null);
         }
@@ -148,6 +152,7 @@ namespace SwarmVision
             _renderer = new FrameRenderer();
             _comparer = new FrameComparer(_decoder, _renderer);
 
+            _decoder.Processor = _comparer.Processor = _processor;
             _comparer.FrameCompared += OnFrameCompared;
             _renderer.FrameReady += OnFrameReadyToRender;
             _comparer.Stopped += OnStopped;
@@ -189,6 +194,8 @@ namespace SwarmVision
                     _decoder.Dispose();
                     _decoder = null;
                     _decoder = new VideoDecoder();
+                    _decoder.PlayStartTimeInSec = 10;
+                    _decoder.Processor = _processor;
                     _decoder.Open(txtFileName.Text);
                     _comparer.Decoder = _decoder;
                 }
@@ -235,7 +242,7 @@ namespace SwarmVision
 
         private void OnFrameCompared(object sender, FrameComparisonArgs e)
         {
-            if (Application.Current == null)
+            if (e.Results == null || Application.Current == null)
                 return;
 
             Application.Current.Dispatcher.Invoke(() =>
@@ -261,37 +268,40 @@ namespace SwarmVision
             Reset();
         }
 
+        public static LinkedList<double> fpsHist = new LinkedList<double>();
         private void ShowFrame(Frame frame)
         {
             if (Application.Current == null)
                 return;
 
             Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                if (Application.Current == null)
+                    return;
+
+                using (var memory = new MemoryStream())
                 {
-                    if (Application.Current == null)
-                        return;
+                    frame.Bitmap.Save(memory, ImageFormat.Bmp);
+                    memory.Position = 0;
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.BeginInit();
+                    bitmapImage.StreamSource = memory;
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.EndInit();
 
-                    using (var memory = new MemoryStream())
-                    {
-                        frame.Bitmap.Save(memory, ImageFormat.Bmp);
-                        memory.Position = 0;
-                        var bitmapImage = new BitmapImage();
-                        bitmapImage.BeginInit();
-                        bitmapImage.StreamSource = memory;
-                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmapImage.EndInit();
+                    videoCanvas.Source = bitmapImage;
+                }
 
-                        videoCanvas.Source = bitmapImage;
-                    }
+                _sliderValueChangedByCode = true;
+                sliderTime.Value = frame.FramePercentage*1000;
 
-                    _sliderValueChangedByCode = true;
-                    sliderTime.Value = frame.FramePercentage*1000;
+                //Compute FPS
+                fpsHist.AddLast(1000.0 / frame.Watch.ElapsedMilliseconds / 10.0);
+                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Sum());
 
-                    //Compute FPS
-                    lblFPS.Content = string.Format("FPS: {0:n1}",
-                                                   (_comparer.MostRecentFrameIndex - _fpsStartFrame)/
-                                                   (_fpsStopwatch.ElapsedMilliseconds/1000.0));
-                }));
+                if (fpsHist.Count >= 10)
+                    fpsHist.RemoveFirst();
+            }));
         }
 
         private void ToggleCompare()
@@ -511,6 +521,30 @@ namespace SwarmVision
                 txtTop.Text = 1.ToString("P2");
                 txtBottom.Text = 1.ToString("P2");
             }
+        }
+
+        private void ddlParams_Loaded(object sender, RoutedEventArgs e)
+        {
+            var configClass = typeof (AntennaAndPERDetector.Config);
+            var fields = configClass.GetFields().Select(f => f.Name).ToList();
+
+            ddlParams.ItemsSource = fields;
+            ddlParams.SelectedIndex = 0;
+        }
+
+        private void ddlParams_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            txtValue.Text = typeof(AntennaAndPERDetector.Config).GetField(ddlParams.SelectedItem as string).GetValue(null).ToString();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var field = typeof (AntennaAndPERDetector.Config).GetField(ddlParams.SelectedItem as string);
+            var newValue = field.FieldType.GetMethod("Parse", new[] {typeof(string)}).Invoke(null, new object[] {txtValue.Text});
+            field.SetValue(null, newValue);
+
+            Stop();
+            Play();
         }
     }
 }
