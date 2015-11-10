@@ -26,8 +26,8 @@ namespace SwarmVision.VideoPlayer
             public static int AntennaGenerations = 5;
             public static int AntennaGenerationSize = 25;
 
-            public static int HeadGenerations = 5;
-            public static int HeadGenerationSize = 250;
+            public static int HeadGenerations = 2;
+            public static int HeadGenerationSize = 2500;
 
             public static Color AntennaColor = Color.FromArgb(43, 41, 23);
             public static int ColorDistance = 80;

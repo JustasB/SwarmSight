@@ -296,8 +296,8 @@ namespace SwarmVision
                 sliderTime.Value = frame.FramePercentage*1000;
 
                 //Compute FPS
-                fpsHist.AddLast(1000.0 / frame.Watch.ElapsedMilliseconds / 10.0);
-                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Sum());
+                fpsHist.AddLast(1000.0 / frame.Watch.ElapsedMilliseconds);
+                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Average());
 
                 if (fpsHist.Count >= 10)
                     fpsHist.RemoveFirst();

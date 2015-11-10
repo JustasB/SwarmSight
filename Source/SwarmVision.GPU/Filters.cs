@@ -82,5 +82,33 @@ namespace SwarmVision.Hardware
             GPU.Current.CopyFromDevice(devTarget, target);
             GPU.Current.Free(devTarget);
         }
+
+        public static void RunEmptyKernel(bool allocateDeviceMem = false, bool copyToDevice = false, bool copyFromDevice = false)
+        {
+            var memSize = 1024 * 768 * 3;
+
+            byte[] devResult = null;
+            var gpu = GPU.Current;
+
+            if (allocateDeviceMem)
+                devResult = gpu.Allocate<byte>(memSize);
+
+            byte[] hostResult = null;
+
+            if (allocateDeviceMem && copyToDevice)
+            { 
+                hostResult = new byte[memSize];
+                gpu.CopyToDevice(hostResult, devResult);
+            }
+
+            gpu.Launch(Grid(1024, 768), Block, Kernels.EmptyKernel, 0);
+
+            if (copyToDevice && copyFromDevice)
+                gpu.CopyFromDevice(devResult, hostResult);
+
+            if(allocateDeviceMem)
+                gpu.Free(devResult);
+            hostResult = null;
+        }
     }
 }

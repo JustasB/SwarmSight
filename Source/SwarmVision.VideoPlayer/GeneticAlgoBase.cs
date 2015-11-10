@@ -13,14 +13,19 @@ namespace SwarmVision.VideoPlayer
         protected Random Random = new Random(1);
         protected Dictionary<T, double> Generation = new Dictionary<T, double>();
         protected int ParentCount = 0;
-        protected int GenerationSize = 10;
-        protected int MinGenerationSize = 10;
-        protected int NumberOfGenerations = 2;
+        public int GenerationSize = 10;
+        public int MinGenerationSize = 10;
+        public int NumberOfGenerations = 2;
+        public double MutationProbability = 0.1;
+        public double MutationRange = 0.2;
         protected double PercentRandom = 50;
         protected FrameCollection Target;
         protected int PercentPruneLow = 70;
         protected int PercentPruneHigh = 70;
         protected double InitialFitness = -1;
+
+        public Stopwatch SearchTime = new Stopwatch();
+        public Stopwatch ComputeFitnessTime = new Stopwatch();
 
         protected abstract T CreateChild(T parent1, T parent2);
         protected abstract bool ValidChild(T child);
@@ -28,11 +33,14 @@ namespace SwarmVision.VideoPlayer
         protected abstract T CreateNewRandomMember();
 
         public abstract void ComputeFitness();
+        public virtual void Mutate(T individual) { }
 
         private int frame = 0;
 
         public T Search(FrameCollection target)
         {
+            SearchTime.Restart();
+            ComputeFitnessTime.Restart();
 
             Target = target;
 
@@ -87,7 +95,19 @@ namespace SwarmVision.VideoPlayer
                         Generation.Add(child, InitialFitness);
                 }
 
+                for (var i = 0; i < Generation.Count(); i++)
+                {
+                    if (Random.NextDouble() < MutationProbability)
+                    {
+                        var element = Generation.ElementAt(i);
+                        Mutate(element.Key);
+                        Generation[element.Key] = InitialFitness;
+                    }
+                }
+
+                ComputeFitnessTime.Start();
                 ComputeFitness();
+                ComputeFitnessTime.Stop();
 
                 //Prune least fit X-Y% of population
                 var keep = (int) ((1-Random.Next(PercentPruneLow, PercentPruneHigh + 1)/100.0)*GenerationSize);
@@ -109,6 +129,8 @@ namespace SwarmVision.VideoPlayer
             }
 
             frame++;
+
+            SearchTime.Stop();
 
             return SelectLocation();
         }
@@ -186,12 +208,13 @@ namespace SwarmVision.VideoPlayer
 
             double result;
 
-            do
-            {
-                result = NextGaussian(midpoint, distance);
-            }
-            //Enforce bounds, if any
-            while ((limitLow.HasValue && result < limitLow) || (limitHigh.HasValue && result > limitHigh));
+            result = NextGaussian(midpoint, distance);
+
+            if (limitLow.HasValue)
+                result = Math.Max(limitLow.Value, result);
+
+            if (limitHigh.HasValue)
+                result = Math.Min(limitHigh.Value, result);
 
             return result;
         }

@@ -16,8 +16,8 @@ namespace SwarmVision.Hardware
         public float Product;
         public float Length;
         public float Thickness;
-        public byte ColorB;
-        public byte ColorG;
-        public byte ColorR;
+        public float ColorB;
+        public float ColorG;
+        public float ColorR;
     }
 }

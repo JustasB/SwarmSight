@@ -73,31 +73,55 @@ namespace SwarmVision.Hardware
             }
         }
 
+
+
+        /// <summary>
+        /// Rotates a sequence of images, each layed out side by side, with allocated blank space in the second half for the rotated results
+        /// </summary>
+        [Cudafy]
+        public static void RepeatedRotateScaleKernel(GThread thread,
+            byte[] target, float[,] transforms,
+            int unitStride, int unitWidth, int unitHeight,
+            int targetStride, int targetWidth, int targetHeight)
+        {
+            int x = thread.blockIdx.x * thread.blockDim.x + thread.threadIdx.x;
+            var item = x / unitWidth; //Item is based on how far right we are in the buffer
+            var xOffset = item * unitWidth;
+            var itemAngle = transforms[0, item];
+            var itemScale = transforms[1, item];
+
+            RotateScaleKernel(thread, target, target, targetStride, 
+                unitWidth, unitHeight, targetWidth, xOffset, targetWidth, 
+                itemAngle, itemScale);
+        }
+
         [Cudafy]
         public static void RotateScaleKernel(GThread thread, byte[] result, byte[] target, int stride,
-                                        int imageWidth, int imageHeight,
+                                        int imageWidth, int imageHeight, int widthLimit, float sourceXOffset, float resultXOffset,
                                         float angle, float scale)
         {
             // compute thread dimension
             float x = thread.blockIdx.x * thread.blockDim.x + thread.threadIdx.x;
             float y = thread.blockIdx.y * thread.blockDim.y + thread.threadIdx.y;
 
-            if (x >= imageWidth || y >= imageHeight)
+            if (x >= widthLimit || y >= imageHeight)
                 return;
 
-            //// compute target address
-            int idx = (int)(3 * x + y * stride);
-
-            float xA = (x - imageWidth / 2.0f);
+            //Compute source address, assuming center of image is the origin
+            float xA = (x - imageWidth / 2.0f) - sourceXOffset;
             float yA = (y - imageHeight / 2.0f);
 
             float xR = GMath.Floor(1.0f / scale * (xA * GMath.Cos(-angle) - yA * GMath.Sin(-angle)));
             float yR = GMath.Floor(1.0f / scale * (xA * GMath.Sin(-angle) + yA * GMath.Cos(-angle)));
 
-            float src_x = xR + imageWidth / 2.0f;
+            float src_x = xR + imageWidth / 2.0f + sourceXOffset;
             float src_y = yR + imageHeight / 2.0f;
 
-            if (src_x >= 0.0f && src_x < imageWidth && src_y >= 0.0f && src_y < imageHeight)
+            float minX = sourceXOffset;
+            float maxX = sourceXOffset + imageWidth;           
+
+            //Interpolate, as long as the source px is on screen
+            if (src_x >= minX && src_x < maxX && src_y >= 0.0f && src_y < imageHeight)
             {
                 // BI - LINEAR INTERPOLATION
                 float src_x0 = (int)(src_x);
@@ -105,15 +129,25 @@ namespace SwarmVision.Hardware
                 float src_y0 = (int)(src_y);
                 float src_y1 = (src_y0 + 1);
 
+                //Get remainders
                 float sx = (src_x - src_x0);
                 float sy = (src_y - src_y0);
 
+                //Make sure source pixels are within image
+                src_x0 = GMath.Min(GMath.Max(minX, src_x0), maxX);
+                src_x1 = GMath.Min(GMath.Max(minX, src_x1), maxX);
+                src_y0 = GMath.Min(GMath.Max(0f, src_y0), imageHeight);
+                src_y1 = GMath.Min(GMath.Max(0f, src_y1), imageHeight);
 
-                int idx_src00 = (int)GMath.Min(GMath.Max(0.0f, 3 * src_x0 + src_y0 * stride), stride * imageHeight - 3.0f);
-                int idx_src10 = (int)GMath.Min(GMath.Max(0.0f, 3 * src_x1 + src_y0 * stride), stride * imageHeight - 3.0f);
-                int idx_src01 = (int)GMath.Min(GMath.Max(0.0f, 3 * src_x0 + src_y1 * stride), stride * imageHeight - 3.0f);
-                int idx_src11 = (int)GMath.Min(GMath.Max(0.0f, 3 * src_x1 + src_y1 * stride), stride * imageHeight - 3.0f);
+                int idx_src00 = (int)(3 * src_x0 + src_y0 * stride);
+                int idx_src10 = (int)(3 * src_x1 + src_y0 * stride);
+                int idx_src01 = (int)(3 * src_x0 + src_y1 * stride);
+                int idx_src11 = (int)(3 * src_x1 + src_y1 * stride);
 
+                //Debug paint source pix green
+                //result[idx_src00 + 1] = 255; 
+
+                int idx = (int)(3 * (x + resultXOffset) + y * stride);
 
                 result[idx] = (byte)(
                     (1.0f - sx) * (1.0f - sy) * target[idx_src00] +
@@ -136,10 +170,10 @@ namespace SwarmVision.Hardware
                     (sx) * (sy) * target[idx_src11 + 2]
                 );
             }
-            else
-            {
-                result[idx] = result[idx + 1] = result[idx + 2] = 0;
-            }
+
+            //Paint dest px blue
+            //int idx = (int)(3 * (x + resultXOffset) + y * stride);
+            //target[idx] = 255;
         }
 
         /// <summary>
@@ -270,9 +304,16 @@ namespace SwarmVision.Hardware
             var targetIndex = 3 * (targetX) + (targetY) * targetStride;
             var topIndex = 3 * x + y * topStride;
 
-            target[targetIndex    ] = top[topIndex];
-            target[targetIndex + 1] = top[topIndex + 1];
-            target[targetIndex + 2] = top[topIndex + 2];
+            var B = top[topIndex];
+            var G = top[topIndex + 1];
+            var R = top[topIndex + 2];
+
+            if (B > 3 || G > 3 || R > 3)
+            {
+                target[targetIndex] = B;
+                target[targetIndex + 1] = G;
+                target[targetIndex + 2] = R;
+            }
         }
 
         /// <summary>
@@ -313,39 +354,270 @@ namespace SwarmVision.Hardware
             byte[] pattern, int patternStride, int patternWidth, int patternHeight,
             int sourceStartX, int sourceStartY, int[,] blockSums)
         {
+            //Store px sums in shared memory
+            var pixelSums = thread.AllocateShared<int>("pixelSums", (int)Filters.BlockSideLength, (int)Filters.BlockSideLength);
+            pixelSums[thread.threadIdx.x, thread.threadIdx.y] = 0;
+
             int x = thread.blockIdx.x * thread.blockDim.x + thread.threadIdx.x;
             int y = thread.blockIdx.y * thread.blockDim.y + thread.threadIdx.y;
 
-            if (x >= patternWidth || y >= patternHeight)
-                return;
-
-            var sourceIndex = 3 * (x + sourceStartX) + (y + sourceStartY) * sourceStride;
-            var patternIndex = 3 * x + y * patternStride;
-
-            //Store px sums in shared memory
-            var pixelSums = thread.AllocateShared<int>("pixelSums", (int)Filters.BlockSideLength, (int)Filters.BlockSideLength);
-            pixelSums[x, y] = 0;
-
-            //Ignore if close to black
-            if (pattern[patternIndex] > 3)
+            if (x < patternWidth && y < patternHeight)
             {
-                pixelSums[x,y] = (int) (
-                    GMath.Abs(pattern[patternIndex    ] - source[sourceIndex    ]) +
-                    GMath.Abs(pattern[patternIndex + 1] - source[sourceIndex + 1]) +
-                    GMath.Abs(pattern[patternIndex + 2] - source[sourceIndex + 2])
-                );
+                var sourceIndex = 3 * (x + sourceStartX) + (y + sourceStartY) * sourceStride;
+                var patternIndex = 3 * x + y * patternStride;
+
+                //Ignore if close to black
+                if (pattern[patternIndex] > 3)
+                {
+                    pixelSums[thread.threadIdx.x, thread.threadIdx.y] =
+                        Distance(pattern[patternIndex], source[sourceIndex]) +
+                        Distance(pattern[patternIndex + 1], source[sourceIndex + 1]) +
+                        Distance(pattern[patternIndex + 2], source[sourceIndex + 2]);
+                }
             }
 
             //Wait till all block threads have finished
             thread.SyncThreads();
 
-            //Use the first thread to add up the block sums. CPU will need to add up the grid sum.
-            if (x == 0 && y == 0)
+            //Use the first thread of each block to add up the block sums. CPU will need to add up the grid sum.
+            if (thread.threadIdx.x == 0 && thread.threadIdx.y == 0)
             {
-                for (var tx = 0; tx < thread.blockDim.x; tx++)
-                    for (var ty = 0; ty < thread.blockDim.y; ty++)
-                        thread.atomicAdd(ref blockSums[thread.blockIdx.x, thread.blockIdx.y], pixelSums[tx, ty]);
+                int blockSum = 0;
+
+                //Add up the pixel sums to a block sum
+                for (var ty = 0; ty < (int)Filters.BlockSideLength; ty++)
+                    for (var tx = 0; tx < (int)Filters.BlockSideLength; tx++)
+
+                        blockSum += pixelSums[tx, ty];
+
+                //Store the block's sum
+                blockSums[thread.blockIdx.x, thread.blockIdx.y] = blockSum;
             }
+
+            //var window = (int)Filters.BlockSideLength / 2;
+            
+            //while (window > 0)
+            //{
+            //    if (thread.threadIdx.x < window)
+            //        pixelSums[thread.threadIdx.x, thread.threadIdx.y] += pixelSums[thread.threadIdx.x+window, thread.threadIdx.y];
+
+            //    window /= 2;
+
+            //    thread.SyncThreads();
+            //}
+
+            //if (thread.threadIdx.x == 0 && thread.threadIdx.y == 0)
+            //{
+            //    int blockSum = 0;
+
+            //    for (var ty = 0; ty < (int)Filters.BlockSideLength; ty++)
+            //        blockSum += pixelSums[0, ty];
+
+            //    //Store the block's sum
+            //    blockSums[thread.blockIdx.x, thread.blockIdx.y] = blockSum;
+            //}
+        }
+
+        /// <summary>
+        /// Launch this relative to the pattern. And ensure blockSums is grid sized.
+        /// </summary>
+        [Cudafy]
+        public static void RepeatedAverageColorDifferenceKernel(GThread thread,
+            byte[] source, int sourceStride, int sourceWidth, int sourceHeight,
+            byte[] patterns, int patternsStride, int patternsWidth, int patternsHeight, int patternsOffsetX,
+            int patternStride, int patternWidth, int patternHeight,
+            int[,] patternLocations, int[,,] blockAvgs)
+        {
+
+            var threadX = thread.threadIdx.x;
+            var threadY = thread.threadIdx.y;
+
+            int x = thread.blockIdx.x * thread.blockDim.x + threadX;
+            int y = thread.blockIdx.y * thread.blockDim.y + threadY;
+
+            //Store px sums in shared memory
+            var pixelAvgDistance = thread.AllocateShared<float>("pixelSums", (int)Filters.BlockSideLength, (int)Filters.BlockSideLength);
+            pixelAvgDistance[threadX, threadY] = 0;
+            
+            var patternId = x / patternWidth;
+            var sourceStartX = patternLocations[patternId, 0];
+            var sourceStartY = patternLocations[patternId, 1];
+
+            if (x < patternsWidth && y < patternsHeight)
+            {
+                var patternIndex = 3 * (x + patternsOffsetX) + y * patternsStride;
+                var sourceIndex = 3 * ((x % patternWidth) + sourceStartX) + (y + sourceStartY) * sourceStride;
+
+                pixelAvgDistance[threadX, threadY] = ComputePixelError(patterns, patternIndex, source, sourceIndex);
+                
+                //Paint pattern blue with the overlap average
+                //patterns[patternIndex] = (byte)pixelAvgDistance[threadX, threadY];
+            }
+
+            
+
+            //Wait till all block threads have finished
+            thread.SyncThreads();
+
+            //Use the first thread of each block to add up the block sums. CPU will need to add up the grid sum.
+            if (threadX == 0 && threadY == 0)
+            {
+                float thisBlockAvg = 0;
+                float nextBlockAvg = 0;
+
+                //Add up the pixel sums to a block sum
+                for (var ty = 0; ty < (int)Filters.BlockSideLength; ty++)
+                {
+                    for (var tx = 0; tx < (int)Filters.BlockSideLength; tx++)
+                    {
+                        if ((x + tx) / patternWidth == x / patternWidth)
+                        {
+                            thisBlockAvg += pixelAvgDistance[tx, ty];
+                        }
+                        else
+                        {
+                            nextBlockAvg += pixelAvgDistance[tx, ty];
+                        }
+                    }
+                }
+
+                var blocksPerPattern = (int)GMath.Ceiling(patternWidth / thread.blockDim.x);
+
+                //Store the block's avgs
+                if (thisBlockAvg > 0)
+                    blockAvgs[patternId, thread.blockIdx.x % blocksPerPattern, thread.blockIdx.y] = (int)GMath.Round(thisBlockAvg);
+                
+
+                if (nextBlockAvg > 0)
+                {
+                    var isLastLastPattern = (patternsWidth / patternWidth) - 1 == patternId;
+
+                    //Last block of this pattern is the first block of next pattern
+                    if (!isLastLastPattern)
+                        blockAvgs[patternId + 1, 0, thread.blockIdx.y] = (int)GMath.Round(nextBlockAvg);
+                }
+            }
+        }
+
+        [Cudafy]
+        private static float ComputePixelError(byte[] patterns, int patternIndex, byte[] source, int sourceIndex)
+        {
+            return NonBlackAvgLinearDistance(patterns, patternIndex, source, sourceIndex);
+        }
+
+        [Cudafy]
+        private static float NonBlackAvgLinearDistance(byte[] patterns, int patternIndex, byte[] source, int sourceIndex)
+        {
+            if (patterns[patternIndex] > 3)
+            {
+                var distA = Distance(patterns[patternIndex], source[sourceIndex]);
+                var distB = Distance(patterns[patternIndex + 1], source[sourceIndex + 1]);
+                var distC = Distance(patterns[patternIndex + 2], source[sourceIndex + 2]);
+
+                return distA + distB + distC;
+            }
+
+            return 0;
+        }
+
+        [Cudafy]
+        private static float SquareDistance(byte[] patterns, int patternIndex, byte[] source, int sourceIndex)
+        {
+            var distA = SquareOf(Distance(patterns[patternIndex], source[sourceIndex]));
+            var distB = SquareOf(Distance(patterns[patternIndex + 1], source[sourceIndex + 1]));
+            var distC = SquareOf(Distance(patterns[patternIndex + 2], source[sourceIndex + 2]));
+
+            return (distA + distB + distC) / 3.0f;
+        }
+
+        [Cudafy]
+        private static float GrossColorMatch(byte[] patterns, int patternIndex, byte[] source, int sourceIndex)
+        {
+            if ((patterns[patternIndex] > 200 && source[sourceIndex] > 200) ||
+                (patterns[patternIndex] < 100 && source[sourceIndex] < 100))
+                return 0;
+
+            return 1;
+        }
+
+        [Cudafy]
+        private static float SquareOf(float value)
+        {
+            return value * value;
+        }
+
+        [Cudafy]
+        [CudafyInline(eCudafyInlineMode.Force)]
+        public static int Distance(byte a, byte b)
+        {
+            if (a > b)
+                return a - b;
+
+            return b - a;
+        }
+
+        [Cudafy]
+        public static void EmptyKernel(GThread thread, int param)
+        {
+            
+        }
+
+        /// <summary>
+        /// Repeatedly copies a one array into result sequentialy. Result must be multiple sized of source.
+        /// </summary>
+        [Cudafy]
+        public static void RepeatCopyKernel(GThread thread,
+            byte[] source, int stride, int sourceWidth, int sourceHeight,
+            byte[] result, int resultStride, int resultWidth, int resultHeight)
+        {
+            int x = thread.blockIdx.x * thread.blockDim.x + thread.threadIdx.x;
+            int y = thread.blockIdx.y * thread.blockDim.y + thread.threadIdx.y;
+
+            if (x >= sourceWidth || y >= sourceHeight)
+                return;
+
+            //Copy source into multiple blocks
+
+            var sourceIndex = 3 * x + y * stride;
+
+            var sourceValueA = source[sourceIndex  ];
+            var sourceValueB = source[sourceIndex+1];
+            var sourceValueC = source[sourceIndex+2];
+
+            var times = resultWidth / sourceWidth;
+
+            for(var f = 0; f < times; f++)
+            {
+                var resultIndex = (3 * x + f*stride) + resultStride * y;
+
+                result[resultIndex  ] = sourceValueA;
+                result[resultIndex+1] = sourceValueB;
+                result[resultIndex+2] = sourceValueC;
+            }
+        }
+
+        /// <summary>
+        /// Repeatedly copies a one array into result sequentialy. Result must be multiple sized of source.
+        /// </summary>
+        [Cudafy]
+        public static void RepeatCopyKernelParallel(GThread thread,
+            byte[] source, int stride, int sourceWidth, int sourceHeight,
+            byte[] result, int resultStride, int resultWidth, int resultHeight)
+        {
+            int x = thread.blockIdx.x * thread.blockDim.x + thread.threadIdx.x;
+            int y = thread.blockIdx.y * thread.blockDim.y + thread.threadIdx.y;
+
+            if (x >= resultWidth || y >= resultHeight)
+                return;
+
+            //Copy in to this from the appropriate place in source
+
+            var sourceIndex = 3 * (x % sourceWidth) + y * stride;
+            var resultIndex = 3 * x + y * resultStride;
+            
+            result[resultIndex    ] = source[sourceIndex  ];
+            result[resultIndex + 1] = source[sourceIndex+1];
+            result[resultIndex + 2] = source[sourceIndex+2];
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿
 
+using SwarmVision.Filters;
 using System;
 using System.Windows;
 
@@ -7,13 +8,13 @@ namespace SwarmVision.Models
 {
     public class HeadModel : IDisposable
     {
-        public double Scale = 1;
+        public double Scale = 0.9;
         public double ScaleMin = 1.0;
         public double ScaleMax = 1.5;
 
         public double AngleIndex;
-        public double AngleMin = -15;
-        public double AngleMax = 20;
+        public double AngleMin = -200;
+        public double AngleMax = 200;
 
         public Point Origin;
 
@@ -30,7 +31,7 @@ namespace SwarmVision.Models
 
         public ProboscisModel Proboscis;
 
-        public IDisposable View; 
+        public Frame View; 
 
         public double AngleRad
         {
@@ -42,10 +43,10 @@ namespace SwarmVision.Models
             return string.Format(Origin.ToString() + ", A: {0}, S: {1}", Angle, Scale);
         }
 
-        public override int GetHashCode()
-        {
-            return ToString().GetHashCode();
-        }
+        //public override int GetHashCode()
+        //{
+        //    return ToString().GetHashCode();
+        //}
 
         public void Dispose()
         {
@@ -121,6 +122,16 @@ namespace SwarmVision.Models
             RightAntena.Tip.ThicknessMin = LeftAntena.Tip.ThicknessMin = 1;
             RightAntena.Tip.ThicknessMax = LeftAntena.Tip.ThicknessMax = 5;
 
+        }
+
+        public Frame GenerateView(bool useGPU)
+        {
+            if (View != null)
+                View.Dispose();
+
+            View = new HeadView(this).Draw(useGPU);
+
+            return View;
         }
 
         public HeadModel Clone()

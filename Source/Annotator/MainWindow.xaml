@@ -3,9 +3,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:oxy="http://oxyplot.org/wpf"
     xmlns:local="clr-namespace:SwarmVision" x:Name="windowMain" x:Class="SwarmVision.MainWindow"
-    Title="SwarmVision - Video Motion Analysis Tool for Behavioral Scientists" Height="490" Width="715"
-    ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen">
-    <Grid Margin="0,0,-6,0" PreviewKeyUp="Grid_PreviewKeyUp">
+    Title="Templated Video Frame Annotator" Height="504" Width="728"
+    ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen" SizeToContent="WidthAndHeight" Cursor="Cross">
+    <Grid Margin="0,0,4,10" PreviewKeyUp="Grid_PreviewKeyUp">
         <Label Content="ì" HorizontalAlignment="Left" Margin="629,38,0,0" VerticalAlignment="Top"
                FontFamily="Wingdings" FontSize="36" />
         <Label Content="Browse for video file" HorizontalAlignment="Left" Margin="509,62,0,0" VerticalAlignment="Top"

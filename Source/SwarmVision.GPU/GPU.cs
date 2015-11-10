@@ -28,14 +28,13 @@ namespace SwarmVision.Hardware
                 if (_gpu == null)
                 {
                     CudafyModes.Target = eGPUType.OpenCL;
-                    CudafyModes.DeviceId = 1;
+                    CudafyModes.DeviceId = 0;
 
                     CudafyTranslator.Language = CudafyModes.Target == eGPUType.OpenCL
                                                     ? eLanguage.OpenCL
                                                     : eLanguage.Cuda;
 
-                    _gpu = CudafyHost.GetDevice(CudafyModes.Target);
-
+                    _gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
 
                     var km = CudafyModule.TryDeserialize("Kernels");
 

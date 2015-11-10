@@ -35,6 +35,8 @@ namespace SwarmVision
 
             InitializeComponent();
 
+            Closed += (sender, args) => Environment.Exit(0);
+
             this.KeyUp += Grid_PreviewKeyUp;
 
             //TEST VIDEO
@@ -60,8 +62,11 @@ namespace SwarmVision
             _decoder = new VideoDecoder();
             _decoder.Open(file);
 
-            sliderTime.Minimum = 0;
-            sliderTime.Maximum = _decoder.VideoInfo.TotalFrames-1;
+            Dispatcher.Invoke(() =>
+            {
+                sliderTime.Minimum = 0;
+                sliderTime.Maximum = _decoder.VideoInfo.TotalFrames - 1;
+            });
 
             _decoder.SeekTo(ResumeFrame);
             _decoder.Start();

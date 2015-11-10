@@ -14,16 +14,16 @@ namespace SwarmVision
         {
             { "Center of Mouth", "Assets/HeadFront.jpg" },
             { "Back of the Head", "Assets/HeadBack.jpg" },
-            //{ "Proboscis Tip", "Assets/Proboscis.jpg" },
+            { "Proboscis Tip", "Assets/Proboscis.jpg" },
             { "Left Antena Tip", "Assets/LeftTip.jpg" },
-            //{ "Left Antena Joint", "Assets/LeftJoint.jpg" },
-            { "Right Antena Tip", "Assets/RightTip.jpg" }
-            //{ "Right Antena Joint", "Assets/RightJoint.jpg" },
+            { "Left Antena Joint", "Assets/LeftJoint.jpg" },
+            { "Right Antena Tip", "Assets/RightTip.jpg" },
+            { "Right Antena Joint", "Assets/RightJoint.jpg" },
         };
 
         public static TemplateView Current;
 
-        public int BurstSize = 30;
+        public int BurstSize = 5;
         public int CurrentPartIndex = 0;
         public int CurrentBurstPosition = 0;
 

@@ -23,37 +23,49 @@ namespace SwarmVision.Models
             Head = head;
         }
 
+
         private static Frame headTemplate;
         private static Frame headAlone;
+
+        public static Frame PlainHeadGPU
+        {
+            get
+            {
+                int headHeight, headWidth, headTopY, midLineX = Width / 2;
+
+                //If head by itself has not been cached, create it once, and then cache it
+                if (headAlone == null)
+                {
+                    var bmp = new Bitmap(Width, Height, PixelFormat.Format24bppRgb);
+
+                    using (var gfx = Graphics.FromImage(bmp))
+                    {
+                        gfx.Clear(Color.Black);
+
+                        //Draw head
+                        if (headTemplate == null)
+                            headTemplate = new Frame(HeadTemplatePath, false).EdgeFilter().ContrastFilter(1f, 10f);
+
+                        headHeight = headTemplate.Height;
+                        headWidth = headTemplate.Width;
+                        headTopY = (Height - headHeight) / 2;
+
+                        //Draw it at the center
+                        gfx.DrawImage(headTemplate.Bitmap, (Width - headWidth) / 2.0f, headTopY);
+                    }
+
+                    headAlone = new Frame(bmp, true);
+                }
+
+                return headAlone;
+            }
+        }
+
         public Frame DrawGPU()
         {
             int headHeight, headWidth, headTopY, midLineX = Width / 2;
-
-            //If head by itself has not been cached, create it once, and then cache it
-            if (headAlone == null)
-            {
-                var bmp = new Bitmap(Width, Height, PixelFormat.Format24bppRgb);
-
-                using (var gfx = Graphics.FromImage(bmp))
-                {
-                    gfx.Clear(Color.Black);
-
-                    //Draw head
-                    if (headTemplate == null)
-                        headTemplate = new Frame(HeadTemplatePath,false).EdgeFilter().ContrastFilter(1f, 10f);
-
-                    headHeight = headTemplate.Height;
-                    headWidth = headTemplate.Width;
-                    headTopY = (Height - headHeight) / 2;
-
-                    //Draw it at the center
-                    gfx.DrawImage(headTemplate.Bitmap, (Width - headWidth)/2.0f, headTopY);
-                }
-
-                headAlone = new Frame(bmp, true);
-            }
-
-            var result = headAlone.Clone();
+            
+            var result = PlainHeadGPU.Clone();
             
             
             headHeight = headTemplate.Height;
