@@ -4,12 +4,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using Classes;
 using SwarmVision.Filters;
 using SwarmVision.Hardware;
-using SwarmVision.Models;
 
 namespace SwarmVision.VideoPlayer
 {
@@ -17,8 +15,8 @@ namespace SwarmVision.VideoPlayer
     {
         public VideoProcessorBase Processor;
         public event EventHandler<OnFrameReady> FrameReady;
-        public int FrameBufferCapacity = 30; //Max frames to decode ahead
-        public int MinimumWorkingFrames = 5; //Don't start processing until this many frames have been decoded
+        public int FrameBufferCapacity = 5; //Max frames to decode ahead
+        public int MinimumWorkingFrames = 1; //Don't start processing until this many frames have been decoded
         public LinkedList<Frame> FrameBuffer = new LinkedList<Frame>();
 
         public bool FramesInBufferMoreThanMinimum
@@ -28,7 +26,9 @@ namespace SwarmVision.VideoPlayer
 
         private long _length;
         private byte[] bmpBuffer;
-        private int bmpBufferIndex;
+        private int bufferOffset;
+        private int roomInBuffer = 0;
+        private int bytesLeftToCopy = 0;
         private int width;
         private int height;
         private int stride;
@@ -41,66 +41,66 @@ namespace SwarmVision.VideoPlayer
             this.height = height;
             this.pxFormat = pxFormat;
             stride = GetStride(width, pxFormat);
+
+
         }
 
         private static int GetStride(int width, PixelFormat pxFormat)
         {
-            var bitsPerPixel = ((int) pxFormat >> 8) & 0xFF;
+            //var bitsPerPixel = ((int) pxFormat >> 8) & 0xFF;
 
-            //Number of bits used to store the image data per line (only the valid data)
-            var validBitsPerLine = width*bitsPerPixel;
+            ////Number of bits used to store the image data per line (only the valid data)
+            //var validBitsPerLine = width*bitsPerPixel;
 
-            //4 bytes for every int32 (32 bits)
-            var result = ((validBitsPerLine + 31)/32)*4;
+            ////4 bytes for every int32 (32 bits)
+            //var result = ((validBitsPerLine + 31)/32)*4;
 
-            return result;
+            //Create a bitmap 1px tall with the width, and get it's stride
+            using(var frame = new Frame(new Bitmap(width, 1, pxFormat), false))
+                return frame.Stride;
         }
 
         private int frameIndex = 0;
         public override void Write(byte[] buffer, int offset, int count)
         {
-            var bmpBufferLength = height * stride;
+            bytesLeftToCopy = count;
 
-            //Each frame gets its own image buffer
-            if (bmpBuffer == null)
+            while (bytesLeftToCopy > 0)
             {
-                watch = Stopwatch.StartNew();
+                //Each frame gets its own image buffer
+                if (bmpBuffer == null)
+                {
+                    var bmpBufferLength = height*stride;
+                    watch = Stopwatch.StartNew();
+
+                    if (GPU.UseGPU)
+                        bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
+                    else
+                        bmpBuffer = new byte[bmpBufferLength];
+
+                    roomInBuffer = bmpBufferLength;
+                    bufferOffset = 0;
+                }
+
+                var bytesToCopy = bytesLeftToCopy <= roomInBuffer ? bytesLeftToCopy : roomInBuffer;
 
                 if (GPU.UseGPU)
-                    bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
+                    GPU.Current.CopyToDevice(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
                 else
-                    bmpBuffer = new byte[bmpBufferLength];
-            }
-            while (count > 0)
-            {
-                var roomInBuffer = bmpBufferLength - bmpBufferIndex;
+                    Buffer.BlockCopy(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
 
-                if (count < roomInBuffer)
-                    roomInBuffer = count;
+                roomInBuffer -= bytesToCopy;
+                bufferOffset += bytesToCopy;
+                bytesLeftToCopy -= bytesToCopy;
 
-                if (GPU.UseGPU)
-                    GPU.Current.CopyToDevice(buffer, offset, bmpBuffer, bmpBufferIndex, roomInBuffer);
-                else
-                    Buffer.BlockCopy(buffer, offset, bmpBuffer, bmpBufferIndex, roomInBuffer);
+                if (roomInBuffer > 0)
+                    return;
 
-                bmpBufferIndex += roomInBuffer;
-                _length += roomInBuffer;
-                offset += roomInBuffer;
-                count -= roomInBuffer;
-
-
-                //Buffer is full, image is ready
-                if (bmpBufferIndex != bmpBufferLength)
-                    continue;
-
-                //Retain the bitmap data
+                //Buffer is full, image is ready. Retain the bitmap data
                 var frame = new Frame(width, height, stride, pxFormat, bmpBuffer, GPU.UseGPU) {Watch = watch};
-                
+
                 //Release the image buffer (after it has been stored above)
                 bmpBuffer = null;
-
-                count = 0;
-
 
                 //If buffer's full, wait till it drops to mostly empty
                 if (FrameBuffer.Count >= FrameBufferCapacity)
@@ -110,24 +110,24 @@ namespace SwarmVision.VideoPlayer
                 //Once there is room, add frames
                 try
                 {
-                    if(Processor != null)
+                    if (Processor != null)
                         frame = Processor.OnAfterDecoding(frame);
 
                     FrameBuffer.AddLast(frame);
 
                     frameIndex++;
-
                 }
-                catch(ThreadAbortException)
+                catch (ThreadAbortException)
                 {
                 }
 
-                Debug.Print(new string('D', FrameBuffer.Count));
-
-                bmpBufferIndex = 0;
-
                 if (FrameReady != null)
                     FrameReady(this, new OnFrameReady() {Frame = frame});
+
+                if (bytesLeftToCopy > 0)
+                {
+                    offset = bytesToCopy;
+                }
             }
         }
 

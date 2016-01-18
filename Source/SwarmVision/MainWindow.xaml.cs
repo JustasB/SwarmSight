@@ -13,6 +13,7 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using SwarmVision.HeadPartsTracking;
 using SwarmVision.UserControls;
 using Frame = SwarmVision.Filters.Frame;
 using Point = System.Windows.Point;
@@ -58,11 +59,18 @@ namespace SwarmVision
             AppDomain.CurrentDomain.UnhandledException +=
                 (sender, args) => { MessageBox.Show((args.ExceptionObject as Exception).Message); };
 #endif
-            //TEST
+            //TESTs
             txtFileName.Text =
-                @"Y:\Documents\Dropbox\Research\Christina Burden\out.mp4";
+                @"Y:\Downloads\BeeVids\down.mp4";
+                //@"Y:\Downloads\BeeVids\2015.8.15 Bee 5 Rose White Back.MP4";//done
+                //@"Y:\Downloads\BeeVids\2015.8.15 Bee 1 Rose White Back.MP4";//done
+                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 9 Rose.MP4";//done
+                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 8 Rose.MP4";//DONE
+                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 4 Rose.MP4";//done
+                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 2 Rose.MP4";
 
-            _comparer.MostRecentFrameIndex = 299;
+
+            _comparer.MostRecentFrameIndex = 750;
 
             OnPlayClicked(null, null);
         }
@@ -208,8 +216,8 @@ namespace SwarmVision
                 _activity.RemoveAll(p => p.X > _comparer.MostRecentFrameIndex);
 
                 //Adjust for any quality changes, before starting again
-                _decoder.PlayerOutputWidth = (int) (_decoder.VideoInfo.Width*_quality);
-                _decoder.PlayerOutputHeight = (int) (_decoder.VideoInfo.Height*_quality);
+                _decoder.PlayerOutputWidth = 204;//(int) (_decoder.VideoInfo.Width*_quality);
+                _decoder.PlayerOutputHeight = 152;//(int) (_decoder.VideoInfo.Height*_quality);
 
                 //Setup fps counter
                 _fpsStartFrame = _comparer.MostRecentFrameIndex;
@@ -222,10 +230,15 @@ namespace SwarmVision
             }
             else //Pause
             {
-                btnPlayPause.Content = PlaySymbol;
-                _comparer.Pause();
-                sliderQuality.IsEnabled = true;
+                Pause();
             }
+        }
+
+        private void Pause()
+        {
+            btnPlayPause.Content = PlaySymbol;
+            _comparer.Pause();
+            sliderQuality.IsEnabled = true;
         }
 
         private void Stop()
@@ -268,9 +281,13 @@ namespace SwarmVision
             Reset();
         }
 
-        public static LinkedList<double> fpsHist = new LinkedList<double>();
+        public static List<DateTime> fpsHist = new List<DateTime>();
+        private static bool isDrawing = false;
         private void ShowFrame(Frame frame)
         {
+            if (isDrawing)
+                return;
+
             if (Application.Current == null)
                 return;
 
@@ -278,6 +295,8 @@ namespace SwarmVision
             {
                 if (Application.Current == null)
                     return;
+
+                isDrawing = true;
 
                 using (var memory = new MemoryStream())
                 {
@@ -296,11 +315,12 @@ namespace SwarmVision
                 sliderTime.Value = frame.FramePercentage*1000;
 
                 //Compute FPS
-                fpsHist.AddLast(1000.0 / frame.Watch.ElapsedMilliseconds);
-                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Average());
+                var now = DateTime.Now;
+                fpsHist.Add(now);
+                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Count(t => (now - t).TotalMilliseconds <= 1000));
+                fpsHist.RemoveAll(t => (now - t).TotalMilliseconds > 1000);
 
-                if (fpsHist.Count >= 10)
-                    fpsHist.RemoveFirst();
+                isDrawing = false;
             }));
         }
 
@@ -417,6 +437,8 @@ namespace SwarmVision
                 _sliderValueChangedByCode = false;
                 return;
             }
+
+            Pause();
 
             SeekTo(e.NewValue/1000.0);
         }

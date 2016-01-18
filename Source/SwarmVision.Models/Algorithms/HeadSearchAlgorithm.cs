@@ -6,14 +6,15 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
 using AForge.Neuro;
+using Accord.MachineLearning.VectorMachines;
 using SwarmVision.Filters;
-using SwarmVision.Models;
+using SwarmVision.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
 using SwarmVision.Hardware;
 using Cudafy;
 using System.Threading.Tasks;
 
-namespace SwarmVision.VideoPlayer
+namespace SwarmVision.HeadPartsTracking.Algorithms
 {
     public class HeadSearchAlgorithm : GeneticAlgoBase<HeadModel>
     {
@@ -22,7 +23,7 @@ namespace SwarmVision.VideoPlayer
         public HeadSearchAlgorithm()
         {
             //neuralNet = Network.Load(@"c:\temp\PER.net");
-            MinGenerationSize = AntennaAndPERDetector.Config.HeadGenerationSize;
+            GenerationSize = AntennaAndPERDetector.Config.HeadGenerationSize;
             NumberOfGenerations = AntennaAndPERDetector.Config.HeadGenerations;
         }
 
@@ -36,32 +37,35 @@ namespace SwarmVision.VideoPlayer
                     x: (int)Cross(parent1.Origin.X, parent2.Origin.X, 0),
                     y: (int)Cross(parent1.Origin.Y, parent2.Origin.Y, 0)
                 ),
-                AngleIndex = Cross(parent1.AngleIndex, parent2.AngleIndex, 0, 1)
+                Angle = Cross(parent1.Angle, parent2.Angle)
             };
 
-            result.Scale = Cross(parent1.Scale, parent2.Scale, parent1.ScaleMin, parent1.ScaleMax);
+            result.ScaleX = Cross(parent1.ScaleX, parent2.ScaleX);
+            result.ScaleY = Cross(parent1.ScaleY, parent2.ScaleY);
 
             return result;
         }
 
-        public override void Mutate(HeadModel individual)
+        public override HeadModel Mutated(HeadModel individual)
         {
-            individual.Origin = new Point
+            var result = new HeadModel();
+
+            result.Origin = new Point
             (
-                individual.Origin.X * NextMutationFactor(), 
-                individual.Origin.Y * NextMutationFactor()
+                MutateValue(individual.Origin.X, 0, Target.ShapeData.Width - HeadView.Width),
+                MutateValue(individual.Origin.Y, 0, Target.ShapeData.Height - HeadView.Height)
             );
 
-            individual.Scale *= NextMutationFactor();
-        }
+            result.Angle = MutateValue(individual.Angle);
+            result.ScaleX = MutateValue(individual.ScaleX);
+            result.ScaleY = MutateValue(individual.ScaleY);
 
-        public double NextMutationFactor()
-        {
-            return 1 + (Random.NextDouble() * 2 - 1) * MutationRange;
+            return result;
         }
 
         public void Reset()
         {
+            Generation.ToList().ForEach(pair => pair.Key.Dispose());
             Generation = new Dictionary<HeadModel, double>();
         }
 
@@ -82,7 +86,7 @@ namespace SwarmVision.VideoPlayer
             //var aveY = (int)Generation.Average(i => i.Key.Origin.Y);
             ////var aveWidth = (int)Generation.Average(i => ((Frame)(i.Key.View)).Width);
             ////var aveHeight = (int)Generation.Average(i => ((Frame)(i.Key.View)).Height);
-            //var aveAngleIndex = Generation.Average(i => i.Key.AngleIndex);
+            //var aveAngleIndex = Generation.Average(i => i.Key.Angle.Index);
 
             //var result = new HeadModel { Origin = new Point(aveX, aveY), AngleIndex = aveAngleIndex };
 
@@ -127,6 +131,9 @@ namespace SwarmVision.VideoPlayer
             //    Target.DrawRectangle(0, 0, (int)(100 * output + 10), 10);
             //}
 
+            //Debug.WriteLine("Fitness: " + Generation[top]);
+            
+            BestRecentFitness = Generation[top];
 
             return top;
         }
@@ -138,35 +145,23 @@ namespace SwarmVision.VideoPlayer
                 .Select(pair => pair.Key)
                 .ToList();
 
-            var fitnesResults = ComputeFitnessGPU(Target.ShapeData, uncomputed);
+            double[] fitnesResults;
+            
+            if(GPU.UseGPU)
+                fitnesResults = ComputeFitnessGPU(Target.ShapeData, uncomputed);
+
+            else
+            {
+                fitnesResults = uncomputed
+                    .AsParallel()
+                    .Select(i => ComputeFitness(i))
+                    .ToArray();
+            }
 
             for (var i = 0; i < uncomputed.Count; i++)
+            {
                 Generation[uncomputed[i]] = fitnesResults[i];
-
-            //var sw = Stopwatch.StartNew();
-            //foreach (var individual in uncomputed)
-            //{
-            //    if (individual.View == null)
-            //    {
-            //        //individual.View = new HeadView(individual).Draw(GPU.UseGPU);
-            //    }
-            //}
-            //Debug.WriteLine("HeadView.Draw() " + sw.ElapsedMilliseconds);
-
-            //sw = Stopwatch.StartNew();
-            //for (var i = 0; i < uncomputed.Length; i++)
-            //{
-            //    var individual = uncomputed[i];
-
-            //    var result = Random.NextDouble();// Target.ShapeData.AverageColorDifference((Frame)individual.View, (int)individual.Origin.X, (int)individual.Origin.Y);
-
-
-
-            //    //Adjust for scale
-            //    //result /= individual.Scale;
-
-            //    Generation[individual] = result;
-            //}
+            }
         }
         
         public static double[] ComputeFitnessGPU(Frame target, List<HeadModel> list)
@@ -212,8 +207,9 @@ namespace SwarmVision.VideoPlayer
             {
                 var item = list[i];
 
-                transforms[0,i] = (float)item.AngleRad;
-                transforms[1,i] = (float)item.Scale;
+                transforms[0,i] = (float)item.Angle.InRadians();
+                transforms[1,i] = (float)item.ScaleX; //<-------
+                throw new NotImplementedException();
             }
 
             var dev_transforms = gpu.CopyToDevice(transforms);
@@ -264,7 +260,8 @@ namespace SwarmVision.VideoPlayer
                 //Subtract twice-added initial value
                 blockPxAvgs[i, 0, 0] -= initAvg;
 
-                results[i] = (blockPxAvgs[i, 0, 0] / (plainHead.Width * plainHead.Height * 3.0f)) / list[i].Scale;
+                results[i] = (blockPxAvgs[i, 0, 0] / (plainHead.Width * plainHead.Height)) / list[i].ScaleX; //<----
+                throw new NotImplementedException();
             }
 
             //var t = new Frame(plainHead.Width * count * 2, plainHead.Height, sizeOfWorkBuffer / plainHead.Height, plainHead.PixelFormat, dev_heads, true);
@@ -278,19 +275,37 @@ namespace SwarmVision.VideoPlayer
             return results;
         }
 
+        KernelSupportVectorMachine svm = KernelSupportVectorMachine.Load(@"c:\temp\head.svm");
         public double ComputeFitness(HeadModel individual)
         {
-            if (individual.View == null)
+            //if (individual.View == null)
+            //    individual.View = individual.GenerateView(false);
+
+            using (var underHead = Target.ShapeData.SubClipped((int)individual.Origin.X, (int)individual.Origin.Y, HeadView.Width, HeadView.Height))
+            using (var deRotSc = underHead.RotateScale(-individual.Angle, 1 / individual.ScaleX, 1 / individual.ScaleY))
+            using (var head = deRotSc.SubClipped(
+                HeadView.HeadOffsetX,
+                HeadView.HeadOffsetY, 
+                HeadView.HeadWidth, 
+                HeadView.HeadHeight
+            ))
+            using(var scaledDown = head.ScaleHQ(10,10))
             {
-                individual.View = individual.GenerateView(GPU.UseGPU);
+                var svmOut = svm.Compute(scaledDown.ToAccordInput());
+
+                return svmOut+6;
             }
 
-            var result = Target.ShapeData.AverageColorDifference((Frame)individual.View, (int)individual.Origin.X, (int)individual.Origin.Y);
 
-            //Adjust for scale
-            result /= individual.Scale;
+            //var result = Target.ShapeData.AverageColorDifference(
+            //    individual.View, 
+            //    (int)individual.Origin.X, 
+            //    (int)individual.Origin.Y);
 
-            return result;
+            ////Adjust for scale
+            //result /= (individual.ScaleX*individual.ScaleY);// +(individual.ScaleY * individual.ScaleY);
+
+            //return result;
         }
 
         protected override HeadModel CreateNewRandomMember()
@@ -303,10 +318,15 @@ namespace SwarmVision.VideoPlayer
                     Random.Next(0, Target.ShapeData.Width - HeadView.Width),
                     Random.Next(0, Target.ShapeData.Height - HeadView.Height)
                 ),
-                AngleIndex = Random.NextDouble(),
             };
 
-            result.Scale = Random.NextDouble()*(result.ScaleMax - result.ScaleMin) + result.ScaleMin;
+            result.Angle.Index = Random.NextDouble();
+            result.ScaleX.Value = Random.NextDouble()*(result.ScaleX.Max - result.ScaleX.Min) + result.ScaleX.Min;
+            result.ScaleY.Value = Random.NextDouble() * (result.ScaleY.Max - result.ScaleY.Min) + result.ScaleY.Min;
+
+            //result.Proboscis.Root.Length = new MinMaxDouble(0,0,0);
+            //result.LeftAntena.Tip.Length = new MinMaxDouble(0, 0, 0);
+            //result.RightAntena.Tip.Length = new MinMaxDouble(0, 0, 0);
 
             return result;
         }

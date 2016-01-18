@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SwarmVision.HeadPartsTracking")]
+[assembly: AssemblyTitle("Testing")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SwarmVision.HeadPartsTracking")]
+[assembly: AssemblyProduct("Testing")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("3937abfd-01b4-4285-b5fc-b4f1e9ab2be9")]
+[assembly: Guid("180e188e-7228-4954-a97f-358bcaef7128")]
 
 // Version information for an assembly consists of the following four values:
 //

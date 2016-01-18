@@ -66,42 +66,49 @@ namespace Classes
         {
             while (true)
             {
-                if (Queue.Count > 0)
+                try
                 {
-                    //If more than one frame in queue, skip the earlier ones
-                    while (Queue.Count > 1)
+                    if (Queue.Count > 0)
                     {
-                        var skipFrame = Queue.First;
-                        skipFrame.Value.Frame.Dispose();
-                        Queue.Remove(skipFrame);
+                        //If more than one frame in queue, skip the earlier ones
+                        //while (Queue.Count > 1)
+                        //{
+                        //    var skipFrame = Queue.First;
+                        //    skipFrame.Value.Frame.Dispose();
+                        //    Queue.Remove(skipFrame);
+                        //}
+
+                        var comparedFrame = Queue.First;
+
+                        //Shade if motion is visible
+                        if (ShowMotion)
+                        {
+                            if (comparedFrame == null)
+                                continue;
+
+                            if(comparedFrame.Value.ComparerResults != null)
+                                _shader.Shade
+                                    (
+                                        comparedFrame.Value.Frame,
+                                        comparedFrame.Value.ComparerResults.ChangedPixels,
+                                        ShadeRadius
+                                    );
+                        }
+
+                        if (FrameReady != null)
+                            FrameReady(this, new OnFrameReady() {Frame = comparedFrame.Value.Frame});
+
+                        comparedFrame.Value.Frame.Dispose();
+                        Queue.Remove(comparedFrame);
                     }
-
-                    var comparedFrame = Queue.First;
-
-                    //Shade if motion is visible
-                    if (ShowMotion)
+                    else
                     {
-                        if (comparedFrame == null)
-                            continue;
-
-                        if(comparedFrame.Value.ComparerResults != null)
-                            _shader.Shade
-                            (
-                                comparedFrame.Value.Frame,
-                                comparedFrame.Value.ComparerResults.ChangedPixels,
-                                ShadeRadius
-                            );
+                        Thread.Sleep(5);
                     }
-
-                    if (FrameReady != null)
-                        FrameReady(this, new OnFrameReady() {Frame = comparedFrame.Value.Frame});
-
-                    Queue.Remove(comparedFrame);
-                    comparedFrame.Value.Frame.Dispose();
                 }
-                else
+                catch (NullReferenceException)
                 {
-                    Thread.Sleep(5);
+                    Console.WriteLine("Renderer null reference exception");
                 }
             }
         }

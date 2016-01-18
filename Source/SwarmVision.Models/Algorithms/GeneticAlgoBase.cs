@@ -5,72 +5,90 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using SwarmVision.Filters;
+using SwarmVision.HeadPartsTracking.Models;
 
-namespace SwarmVision.VideoPlayer
+namespace SwarmVision.HeadPartsTracking.Algorithms
 {
-    public abstract class GeneticAlgoBase<T> where T: IDisposable
+    public abstract class GeneticAlgoBase<T> where T: IDisposable, new()
     {
         protected Random Random = new Random(1);
         protected Dictionary<T, double> Generation = new Dictionary<T, double>();
         protected int ParentCount = 0;
         public int GenerationSize = 10;
-        public int MinGenerationSize = 10;
         public int NumberOfGenerations = 2;
         public double MutationProbability = 0.1;
-        public double MutationRange = 0.2;
+        public double MutationRange = 0.01;
         protected double PercentRandom = 50;
         protected FrameCollection Target;
-        protected int PercentPruneLow = 70;
-        protected int PercentPruneHigh = 70;
+        protected double FractionToPrune = 0.70;
         protected double InitialFitness = -1;
+        public bool SortDescending = true;
+        public bool ValidateRandom = true;
+        public double BestRecentFitness;
+        public int CurrentGeneration;
 
         public Stopwatch SearchTime = new Stopwatch();
         public Stopwatch ComputeFitnessTime = new Stopwatch();
+        public Stopwatch PreProcessTime = new Stopwatch();
+        public Stopwatch RandomMemberTime = new Stopwatch();
+        public Stopwatch ValidChildTime = new Stopwatch();
 
         protected abstract T CreateChild(T parent1, T parent2);
+        protected bool ValidChildWrapper(T child)
+        {
+            ValidChildTime.Start();
+
+            var result = ValidChild(child);
+
+            ValidChildTime.Stop();
+
+            return result;
+        }
         protected abstract bool ValidChild(T child);
         protected abstract T SelectLocation();
         protected abstract T CreateNewRandomMember();
 
         public abstract void ComputeFitness();
-        public virtual void Mutate(T individual) { }
+        public virtual T Mutated(T individual) { return new T(); }
 
         private int frame = 0;
 
         public T Search(FrameCollection target)
         {
             SearchTime.Restart();
-            ComputeFitnessTime.Restart();
+            ComputeFitnessTime.Reset();
+            RandomMemberTime.Reset();
+            ValidChildTime.Reset();
 
             Target = target;
 
+            PreProcessTime.Restart();
             PreProcessTarget();
-
-            GenerationSize = MinGenerationSize+0*Math.Max(0, 5 - frame) * 20;
+            PreProcessTime.Stop();
 
             //Reset the fitness of each member on new frame
             for (var i = 0; i < Generation.Count; i++)
                 Generation[Generation.ElementAt(i).Key] = InitialFitness;
 
             //Create new generation
-            for (var g = 0; g < (NumberOfGenerations + 0*(Math.Max(5 - frame,0))); g++)
+            for (CurrentGeneration = 0; CurrentGeneration < NumberOfGenerations; CurrentGeneration++)
             {
-                var timer = new Stopwatch(); timer.Start();
-
                 //Add random members as potential parents or initially
                 var randomCount = Generation.Count == 0 ? 
                     GenerationSize : 
                     (PercentRandom / 100.0) * GenerationSize;
 
+                RandomMemberTime.Start();
                 for (var i = 0; i < randomCount && Generation.Count < GenerationSize; i++)
                 {
                     var newItem = CreateNewRandomMember();
 
-                    if (ValidChild(newItem) && !Generation.ContainsKey(newItem))
+                    if ((!ValidateRandom || ValidChildWrapper(newItem)) && !Generation.ContainsKey(newItem))
                         Generation.Add(newItem, InitialFitness);
                     else
                         i--; //Try again
                 }
+                RandomMemberTime.Stop();
 
                 ParentCount = Generation.Count;
 
@@ -91,33 +109,38 @@ namespace SwarmVision.VideoPlayer
 
                     //Don't add invalid locations or already exists
                     if (!Generation.ContainsKey(child) && 
-                        ValidChild(child))
+                        ValidChildWrapper(child))
                         Generation.Add(child, InitialFitness);
                 }
 
+                //Mutate a fraction of individuals
                 for (var i = 0; i < Generation.Count(); i++)
                 {
                     if (Random.NextDouble() < MutationProbability)
                     {
-                        var element = Generation.ElementAt(i);
-                        Mutate(element.Key);
-                        Generation[element.Key] = InitialFitness;
+                        Generation.Add(Mutated(Generation.ElementAt(i).Key), InitialFitness);
                     }
                 }
 
+                //Evaluate their fitness
                 ComputeFitnessTime.Start();
                 ComputeFitness();
                 ComputeFitnessTime.Stop();
 
-                //Prune least fit X-Y% of population
-                var keep = (int) ((1-Random.Next(PercentPruneLow, PercentPruneHigh + 1)/100.0)*GenerationSize);
+                //Determine how many to keep after pruning
+                var keep = (int)((1 - FractionToPrune) * GenerationSize);
 
                 //Sort by fitness
-                Generation = Generation
-                    .OrderBy(i => i.Value)
-                    .ToDictionary(i => i.Key, i => i.Value);
+                if (SortDescending)
+                    Generation = Generation
+                        .OrderByDescending(i => i.Value)
+                        .ToDictionary(i => i.Key, i => i.Value);
+                else
+                    Generation = Generation
+                        .OrderBy(i => i.Value)
+                        .ToDictionary(i => i.Key, i => i.Value);
 
-                //Dispose about to be pruned members
+                //Dispose of about to be pruned members
                 for (var i = keep; i < Generation.Count; i++)
                     Generation.ElementAt(i).Key.Dispose();
 
@@ -135,9 +158,27 @@ namespace SwarmVision.VideoPlayer
             return SelectLocation();
         }
 
-        public virtual void PreProcessTarget()
+        public virtual void PreProcessTarget() {}
+
+        public Dictionary<string, double[]> SearchTimings()
         {
-            
+            var total = (double) SearchTime.ElapsedMilliseconds;
+
+            var result = new Dictionary<string, double[]>
+            {
+                { "Total", new[] { total, 1.0 } },
+                { "Random", new[] { RandomMemberTime.ElapsedMilliseconds, RandomMemberTime.ElapsedMilliseconds/total } },
+                { "Fitness", new[] { ComputeFitnessTime.ElapsedMilliseconds, ComputeFitnessTime.ElapsedMilliseconds/total } },
+                { "ValidChild", new[] { ValidChildTime.ElapsedMilliseconds, ValidChildTime.ElapsedMilliseconds/total } },
+                { "PreProcess", new[] { PreProcessTime.ElapsedMilliseconds, PreProcessTime.ElapsedMilliseconds/total } },
+            };
+
+            foreach (var i in result)
+            {
+                Debug.WriteLine(i.Key + ": " + result[i.Key][0] + " ms, " + Math.Round(result[i.Key][1]*100, 0) + " %");
+            }
+
+            return result;
         }
 
         public void SetTarget(FrameCollection target)
@@ -198,17 +239,15 @@ namespace SwarmVision.VideoPlayer
         /// <param name="limitLow"></param>
         /// <param name="limitHigh"></param>
         /// <returns></returns>
-        protected double Cross(double a, double b, double? limitLow = null, double? limitHigh = null)
+        public double Cross(double a, double b, double? limitLow = null, double? limitHigh = null)
         {
-            if (limitLow.HasValue && limitHigh.HasValue && !(limitHigh > limitLow))
+            if (limitLow.HasValue && limitHigh.HasValue && limitLow > limitHigh)
                 return limitLow.Value;
 
             var midpoint = Midpoint(a, b);
-            var distance = Distance(a, b);
+            var distance = Math.Max(1, Distance(a, b));
 
-            double result;
-
-            result = NextGaussian(midpoint, distance);
+            var result = NextGaussian(midpoint, distance / 2);
 
             if (limitLow.HasValue)
                 result = Math.Max(limitLow.Value, result);
@@ -217,6 +256,38 @@ namespace SwarmVision.VideoPlayer
                 result = Math.Min(limitHigh.Value, result);
 
             return result;
+        }
+
+        public double MutateValue(double value, double low, double high)
+        {
+            var factor = 1 + (Random.NextDouble() * 2 - 1) * MutationRange;
+
+            var newValue = value * factor;
+
+            if (newValue < low || newValue > high)
+                return value;
+
+            return newValue;
+        }
+
+        protected AngleInDegrees Cross(AngleInDegrees a, AngleInDegrees b)
+        {
+            return new AngleInDegrees(Cross(a.Value, b.Value, a.Min, a.Max), a.Min, a.Max);
+        }
+
+        protected MinMaxDouble Cross(MinMaxDouble a, MinMaxDouble b)
+        {
+            return new MinMaxDouble(Cross(a, b, a.Min, a.Max), a.Min, a.Max);
+        }
+        
+        protected AngleInDegrees MutateValue(AngleInDegrees a)
+        {
+            return new AngleInDegrees(MutateValue(a.Value, a.Min, a.Max), a.Min, a.Max);
+        }
+
+        protected MinMaxDouble MutateValue(MinMaxDouble a)
+        {
+            return new MinMaxDouble(MutateValue(a.Value, a.Min, a.Max), a.Min, a.Max);
         }
     }
 }

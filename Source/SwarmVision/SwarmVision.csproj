@@ -203,6 +203,10 @@
       <Project>{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}</Project>
       <Name>SwarmVision.Filters</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SwarmVision.Models\SwarmVision.HeadPartsTracking.csproj">
+      <Project>{4092e9c4-b3fe-4c1a-9180-b07ba3210d02}</Project>
+      <Name>SwarmVision.HeadPartsTracking</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SwarmVision.Stats\SwarmVision.Stats.csproj">
       <Project>{d5640fc6-0344-43af-a30b-59f2c30d1a18}</Project>
       <Name>SwarmVision.Stats</Name>

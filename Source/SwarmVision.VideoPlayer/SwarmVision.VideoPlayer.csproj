@@ -36,12 +36,8 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AForge.Neuro, Version=2.2.5.0, Culture=neutral, PublicKeyToken=2094f4ea39731d4f, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\AForge.NET\Framework\Release\AForge.Neuro.dll</HintPath>
-    </Reference>
     <Reference Include="Cudafy.NET">
-      <HintPath>..\SwarmVision.GPU\bin\Debug\Cudafy.NET.dll</HintPath>
+      <HintPath>D:\Documents\Dropbox\Research\Chris Jernigan\SwarmVision\Source\SwarmVision.GPU\Cudafy.NET.dll</HintPath>
     </Reference>
     <Reference Include="NReco.VideoConverter">
       <HintPath>..\..\lib\NReco.VideoConverter.dll</HintPath>
@@ -53,18 +49,11 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AntennaAndPERDetector.cs" />
-    <Compile Include="AntennaSearchAlgorithm.cs" />
     <Compile Include="BitmapManipulator.cs" />
     <Compile Include="ComparedFrame.cs" />
-    <Compile Include="LeftAntennaSearchAlgorithm.cs" />
-    <Compile Include="RightAntennaSearchAlgorithm.cs" />
     <Compile Include="FrameComparer.cs" />
     <Compile Include="FrameComparerResults.cs" />
     <Compile Include="FrameRenderer.cs" />
-    <Compile Include="GeneticAlgoBase.cs" />
-    <Compile Include="HeadSearchAlgorithm.cs" />
-    <Compile Include="SimulatedAnnealingAlgorithm.cs" />
     <Compile Include="VideoDecoder.cs" />
     <Compile Include="EventClasses.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -85,10 +74,6 @@
     <ProjectReference Include="..\SwarmVision.GPU\SwarmVision.Hardware.csproj">
       <Project>{b880e4cb-aad4-48fd-bfef-63108c9c41cc}</Project>
       <Name>SwarmVision.Hardware</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SwarmVision.Models\SwarmVision.Models.csproj">
-      <Project>{4092e9c4-b3fe-4c1a-9180-b07ba3210d02}</Project>
-      <Name>SwarmVision.Models</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

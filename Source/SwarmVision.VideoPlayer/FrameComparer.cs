@@ -107,6 +107,7 @@ namespace SwarmVision.VideoPlayer
             {
                 if (Decoder.IsBufferReady &&
                     Decoder.FramesInBuffer &&
+                    Decoder.FrameBuffer.First != null &&
                     Decoder.FrameBuffer.First.Value.IsDecoded)
                 {
                     var currentFrame = Decoder.FrameBuffer.First.Value;
@@ -119,22 +120,17 @@ namespace SwarmVision.VideoPlayer
                     //Notify of comparison results
                     if (FrameCompared != null)
                         FrameCompared(this, new FrameComparisonArgs() {Results = compareResult});
+                    
+                    currentFrame.Watch.Stop();
 
-                    //Set a limit on how many frames behind to render
-                    if (Renderer.Queue.Count < 10)
+                    //Add frame to rendering queue
+                    Renderer.Queue.AddLast(new ComparedFrame()
                     {
-                        currentFrame.Watch.Stop();
+                        Frame = currentFrame,
+                        ComparerResults = compareResult,
+                    });
 
-                        //Add a cloned frame to rendering queue
-                        Renderer.Queue.AddLast(new ComparedFrame()
-                        {
-                            Frame = currentFrame.Clone(),
-                            ComparerResults = compareResult,
-                        });
-
-                        Debug.Print(new string('R', Renderer.Queue.Count));
-                    }
-                        
+                    Debug.Print(new string('R', Renderer.Queue.Count));
 
                     //Retain location
                     MostRecentFrameIndex = currentFrame.FrameIndex;

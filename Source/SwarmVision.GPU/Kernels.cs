@@ -63,7 +63,7 @@ namespace SwarmVision.Hardware
                 //    distanceToLine = numerator / segment.Length;
                 //}
 
-                //if (distanceToLine > segment.Thickness) continue;
+                //if (distanceToLine > segment.Thickness.Value) continue;
 
                 //target[idx] = segment.ColorB;
                 //target[idx + 1] = segment.ColorG;
@@ -510,11 +510,11 @@ namespace SwarmVision.Hardware
         {
             if (patterns[patternIndex] > 3)
             {
-                var distA = Distance(patterns[patternIndex], source[sourceIndex]);
+                var distA = Distance(patterns[patternIndex    ], source[sourceIndex    ]);
                 var distB = Distance(patterns[patternIndex + 1], source[sourceIndex + 1]);
                 var distC = Distance(patterns[patternIndex + 2], source[sourceIndex + 2]);
 
-                return distA + distB + distC;
+                return (distA + distB + distC) / 3f;
             }
 
             return 0;

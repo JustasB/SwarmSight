@@ -2,30 +2,30 @@
 using System.Collections.Generic;
 using System.Linq;
 using SwarmVision.Filters;
-using SwarmVision.Models;
+using SwarmVision.HeadPartsTracking.Models;
 using SwarmVision.Hardware;
 
-namespace SwarmVision.VideoPlayer
+namespace SwarmVision.HeadPartsTracking.Algorithms
 {
     public abstract class AntennaSearchAlgorithm : GeneticAlgoBase<HeadModel>
     {
-        protected double HeadScale = 1.0;
-        protected double HeadRotationAngle = 0.0;
+        protected double HeadScale;
+        protected double HeadRotationAngle;
 
         protected AntennaSearchAlgorithm()
         {
-            MinGenerationSize = AntennaAndPERDetector.Config.AntennaGenerationSize;
+            GenerationSize = AntennaAndPERDetector.Config.AntennaGenerationSize;
             NumberOfGenerations = AntennaAndPERDetector.Config.AntennaGenerations;
         }
 
         public override void PreProcessTarget()
         {
             //Subtract head from the target
-            var plainHead = new HeadView(new HeadModel() {Scale = HeadScale, AngleIndex = HeadRotationAngle}).Draw(GPU.UseGPU);
+            //var plainHead = new HeadView(new HeadModel { Angle = { Value = HeadRotationAngle }, Scale = { Value = HeadScale } }).Draw(GPU.UseGPU);
 
-            Target.ColorData = Target.ColorData.Subtract(plainHead, 0, 0);
-            Target.MotionData = Target.MotionData.Subtract(plainHead, 0, 0);
-            Target.ShapeData = Target.ShapeData.Subtract(plainHead, 0, 0);
+            //Target.ColorData = Target.ColorData.Subtract(plainHead, 0, 0);
+            //Target.MotionData = Target.MotionData.Subtract(plainHead, 0, 0);
+            //Target.ShapeData = Target.ShapeData.Subtract(plainHead, 0, 0);
 
 
         }
@@ -53,7 +53,7 @@ namespace SwarmVision.VideoPlayer
             //var aveY = (int)Generation.Average(i => i.Key.Origin.Y);
             ////var aveWidth = (int)Generation.Average(i => ((Frame)(i.Key.View)).Width);
             ////var aveHeight = (int)Generation.Average(i => ((Frame)(i.Key.View)).Height);
-            //var aveAngleIndex = Generation.Average(i => i.Key.AngleIndex);
+            //var aveAngleIndex = Generation.Average(i => i.Key.Angle.Index);
 
             //var result = new HeadModel { Origin = new Point(aveX, aveY), AngleIndex = aveAngleIndex };
 
@@ -98,22 +98,7 @@ namespace SwarmVision.VideoPlayer
             //return new HeadModel() { RightAntena = AverageAntena(allAntennae) };
             return Generation.First().Key;
         }
-
-        private AntenaModel AverageAntena(List<AntenaModel> all)
-        {            
-            var avgRootX = (int)all.Average(m => m.RootCoordinates().X);
-            var avgRootY = (int)all.Average(m => m.RootCoordinates().Y);
-            
-            var result = AntenaModel.FromCoords(
-                new System.Drawing.Point(avgRootX, avgRootY), 
-                new System.Drawing.Point()
-            );
-
-            result.Root.Thickness = (int)Math.Round(all.Average(m => m.Root.Thickness));
-            result.Tip.Thickness = (int)Math.Round(all.Average(m => m.Tip.Thickness));
-
-            return result;
-        }
+        
 
         public override void ComputeFitness()
         {

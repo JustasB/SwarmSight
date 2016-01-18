@@ -88,10 +88,10 @@ namespace SwarmVision.VideoPlayer
 
             //Set conversion settings
             _settings = new ConvertSettings
-                {
-                    VideoFrameSize = PlayerOutputWidth + "x" + PlayerOutputHeight,
-                    CustomOutputArgs = " -pix_fmt bgr24 "
-                };
+            {
+                VideoFrameSize = PlayerOutputWidth + "x" + PlayerOutputHeight,
+                CustomOutputArgs = " -pix_fmt bgr24 "
+            };
 
             //Set start time
             if (PlayStartTimeInSec > 0)

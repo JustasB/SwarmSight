@@ -11,7 +11,7 @@ namespace SwarmVision.Hardware
     public class GPU
     {
         private static GPGPU _gpu;
-        private static bool _useGPU = true;
+        private static bool _useGPU = false;
 
         /// <summary>
         /// TODO: MAKE THIS BASED ON HARDWARE DIAGNOSTICS
