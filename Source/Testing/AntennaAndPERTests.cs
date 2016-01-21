@@ -35,7 +35,7 @@ namespace Testing
             var headFinder = new HeadSearchAlgorithm();
             var frame = new Frame("../../testFrameWithHeadEdged.bmp", false);
             headFinder.SetTarget(new FrameCollection { ShapeData = frame });
-            var rotatedHead = new HeadModel() {Angle = {Value = 15}, Scale = {Value = 1.03}};
+            var rotatedHead = new HeadModel() {Angle = {Value = 15}, ScaleX = {Value = 1.03}};
             var headView = rotatedHead.GenerateView(false);
             var fitnessMap = new Frame(new Bitmap(headView.Width,headView.Height,PixelFormat.Format24bppRgb), false);
 
@@ -63,7 +63,7 @@ namespace Testing
 
 
             Assert.AreEqual(headLocation.Angle.Value, 13, 5);
-            Assert.AreEqual(headLocation.Scale.Value, 1, 0.1);
+            Assert.AreEqual(headLocation.ScaleX.Value, 1, 0.1);
             Assert.AreEqual(headLocation.Origin.X, 21);
             Assert.AreEqual(headLocation.Origin.X, 24);
         }

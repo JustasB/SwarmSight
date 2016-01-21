@@ -619,5 +619,74 @@ namespace SwarmVision.Hardware
             result[resultIndex + 1] = source[sourceIndex+1];
             result[resultIndex + 2] = source[sourceIndex+2];
         }
+
+        [Cudafy]
+        public static void MinDistanceToSegmentsKernel(GThread thread,
+            float[] distances, float[,] individuals, int indivCount, float[,] points, int pointCount)
+        {
+            var i = thread.blockIdx.x * thread.blockDim.x + thread.threadIdx.x;
+
+            if (i >= indivCount)
+                return;
+
+            var minSum = 0.0f;
+
+            var X1 = individuals[i, 0];
+            var X2 = individuals[i, 1];
+            var X3 = individuals[i, 2];
+            var X4 = individuals[i, 3];
+            var X5 = individuals[i, 4];
+            var X6 = individuals[i, 5];
+
+            var Y1 = individuals[i, 0+6];
+            var Y2 = individuals[i, 1+6];
+            var Y3 = individuals[i, 2+6];
+            var Y4 = individuals[i, 3+6];
+            var Y5 = individuals[i, 4+6];
+            var Y6 = individuals[i, 5+6];
+            
+            for (var p = 0; p < pointCount; p++)
+            {
+                var X = points[p, 0];
+                var Y = points[p, 1];
+
+                var D1 = DistToSegmentSquared(X, Y, X1, Y1, X2, Y2);
+                var D2 = DistToSegmentSquared(X, Y, X2, Y2, X3, Y3);
+                var D3 = DistToSegmentSquared(X, Y, X4, Y4, X5, Y5);
+                var D4 = DistToSegmentSquared(X, Y, X5, Y5, X6, Y6);
+
+                var distSquared = GMath.Min(GMath.Min(D1, D2), GMath.Min(D3, D4));
+
+                minSum += GMath.Sqrt(distSquared);
+            }
+
+            var L1 = GMath.Sqrt(SquareOf(X1- X2) + SquareOf(Y1-Y2));
+            var L2 = GMath.Sqrt(SquareOf(X2- X3) + SquareOf(Y2-Y3));
+            var L3 = GMath.Sqrt(SquareOf(X4- X5) + SquareOf(X4-X5));
+            var L4 = GMath.Sqrt(SquareOf(X5- X6) + SquareOf(X5-X6));
+
+            distances[i] = minSum + L1 + L2 + L3 + L4;
+        }
+
+        [Cudafy]
+        public static float DistToSegmentSquared(float x, float y, float x1, float y1, float x2, float y2)
+        {
+            var A = x - x1;
+            var B = y - y1;
+            var C = x2 - x1;
+            var D = y2 - y1;
+
+            var lenSq = C * C + D * D;
+
+            var param = lenSq > 0 ? (A * C + B * D) / lenSq : -1;
+
+            var xx = param >= 0 && param <= 1 ? x1 + param * C : (param < 0 ? x1 : x2);
+            var yy = param >= 0 && param <= 1 ? y1 + param * D : (param < 0 ? y1 : y2);
+
+            var dx = x - xx;
+            var dy = y - yy;
+
+            return (dx * dx + dy * dy); //Math.Sqrt
+        }
     }
 }

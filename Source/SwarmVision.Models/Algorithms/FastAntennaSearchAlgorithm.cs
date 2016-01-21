@@ -5,7 +5,9 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Cudafy;
 using SwarmVision.Filters;
+using SwarmVision.Hardware;
 using SwarmVision.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
 
@@ -376,6 +378,7 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
         public AntenaPoints PreviousSolution = null;
         public List<Point> TargetPoints;
+        public float[,] TargetPointsGPU;
         private static List<AntenaPoints> Priors = null;
         public static Dictionary<PointLabels, List<Point>> ConvexHulls = null;
 
@@ -396,27 +399,67 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
             SortDescending = false;
             ValidateRandom = false;
-            NumberOfGenerations = 100;
-            GenerationSize = 100;
+            NumberOfGenerations = 10;
+            GenerationSize = 250;
             MutationProbability = 0.1;
 
-            TargetPoints = Target
+
+            var motion = Target
                 .ShapeData
-                .PointsOverThreshold(100)
-                .AsParallel()
+                .ChangeExtentPoints(Target.MotionData, 30);
+
+            var gapFilled = motion
+                .OrderBy(pt => pt.X * 1000000 + pt.Y)
+                .ToList()
+                .FillGaps();
+
+            var andDarkNow = gapFilled
+                //.AsParallel()
+                .Where(p => Target.ShapeData.GetColor(p).Distance(Color.Black) <= 90);
+
+            var priorSpaced = andDarkNow
                 .Select(p => new Point(p.X, p.Y).ToPriorSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength))
-                .Where(p =>
+                ;
+
+            var withinPolygons = priorSpaced.Where(p =>
                     InConvexHulls(p) &&
                     !p.IsInPolygon(ConvexHulls[PointLabels.Head]) &&
                     !p.IsInPolygon(ConvexHulls[PointLabels.Mandibles])
                     )
                 .ToList();
 
+            if (withinPolygons.Count > 50)
+                TargetPoints = withinPolygons.Where(p => Random.NextDouble() < 50.0/withinPolygons.Count).ToList();
+            else
+                TargetPoints = withinPolygons;
+
+            Debug.WriteLine("Target Points: " + TargetPoints.Count);
+
             MinX = (int)ConvexHulls[PointLabels.RightTip].Min(p => p.X);
             MaxX = (int)ConvexHulls[PointLabels.LeftTip].Max(p => p.X);
 
             MinY = (int)ConvexHulls[PointLabels.RightTip].Min(p => p.Y);
             MaxY = (int)ConvexHulls[PointLabels.RightTip].Max(p => p.Y);
+
+            
+            if (GPU.UseGPU)
+            {
+                //Store target points copy on GPU
+                var points = new float[TargetPoints.Count, 2];
+                for (var i = 0; i < TargetPoints.Count; i++)
+                {
+                    points[i, 0] = (float)TargetPoints[i].X;
+                    points[i, 1] = (float)TargetPoints[i].Y;
+                }
+                
+                if(TargetPointsGPU != null)
+                    GPU.Current.Free(TargetPointsGPU);
+
+                if(TargetPoints.Count == 0)
+                    points = new float[1,2]; //One dummy point at the origin
+
+                TargetPointsGPU = GPU.Current.CopyToDevice(points);
+            }
         }
 
         public static void ReadPriors()
@@ -560,6 +603,16 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
         protected override AntenaPoints SelectLocation()
         {
+            if (GPU.UseGPU)
+            {
+                //Free the target points since they're only useful once per frame
+                if (TargetPointsGPU != null)
+                {
+                    GPU.Current.Free(TargetPointsGPU);
+                    TargetPointsGPU = null;
+                }
+            }
+
             var bestSolution = Generation.First().Key.ToFrameSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength);
 
             if (PreviousSolution != null)
@@ -639,20 +692,33 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             return p.ToFrameSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength);
         }
 
-        private static double[] fitnesScores;
+        private static float[] fitnesScores;
         public override void ComputeFitness()
         {
             if (fitnesScores == null || fitnesScores.Length < Generation.Count)
-                fitnesScores = new double[Generation.Count];
+                fitnesScores = new float[Generation.Count];
 
             var uncomputed = Generation
                 .Where(pair => pair.Value == InitialFitness)
                 .Select(pair => pair.Key)
-                .ToList();
+                .ToArray();
 
+            if (GPU.UseGPU) 
+                ComputeFitnessGPU(uncomputed); 
+            else 
+                ComputeFitnessCPU(uncomputed);
 
+            Parallel.For(0, uncomputed.Length, i =>
+            {
+                //for (int i = 0; i < Generation.Count; i++) {
+                Generation[uncomputed[i]] = fitnesScores[i];
+                //}
+            });
+        }
 
-            Parallel.For(0, uncomputed.Count, new ParallelOptions() { MaxDegreeOfParallelism = 999 }, i =>
+        public void ComputeFitnessCPU(AntenaPoints[] uncomputed)
+        {
+            Parallel.For(0, uncomputed.Length, new ParallelOptions() { /*MaxDegreeOfParallelism = 1*/ }, i =>
             ////for (var i = 0; i < Generation.Count; i++)
             {
                 var individual = uncomputed[i];
@@ -668,23 +734,72 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                 for (var p = 0; p < TargetPoints.Count; p++)
                 {
                     var distSquared = Math.Min(Math.Min(D1[p], D2[p]), Math.Min(D3[p], D4[p]));
-                    
+
                     sumOfMinDistances += Math.Sqrt(distSquared);
                 }
 
-                if(CurrentGeneration < Math.Round(NumberOfGenerations * LengthMinimizationBegin))
-                    fitnesScores[i] = sumOfMinDistances;
-                else
-                    fitnesScores[i] = sumOfMinDistances + individual.L1 + individual.L2 + individual.L3 + individual.L4;
+                fitnesScores[i] = (float)(sumOfMinDistances + individual.L1 + individual.L2 + individual.L3 + individual.L4);
             });
             //}
+        }
 
-            Parallel.For(0, uncomputed.Count, i =>
+        public void ComputeFitnessGPU(AntenaPoints[] uncomputed)
+        {
+            //For each individual (25-2000)
+            //Compute distance from segments defined by it (4 segs) and all of the target points (20-500)
+            //Total parallel computations indivs*4*points
+            //Stratgies: 1 thread/individual -> controllable by user, utilizes the avail thread pool
+            //1 thread per ivividual*point -> more complicated
+            //1 thread per point -> points will vary by frame, may not be good use of pool
+            //Lets go with 1/individual
+
+            var gpu = GPU.Current;
+
+            const int blockSize = 256;
+            var gridSize = (int)Math.Ceiling(uncomputed.Length/(1.0*blockSize));
+            var individuals = new float[uncomputed.Length, 12];
+
+            //Convert the segments into arrays
+            for (var i = 0; i < uncomputed.Length; i++)
             {
-                //for (int i = 0; i < Generation.Count; i++) {
-                Generation[uncomputed[i]] = fitnesScores[i];
-                //}
-            });
+                individuals[i, 0] = (float)uncomputed[i].P1.X;
+                individuals[i, 1] = (float)uncomputed[i].P2.X;
+                individuals[i, 2] = (float)uncomputed[i].P3.X;
+                individuals[i, 3] = (float)uncomputed[i].P4.X;
+                individuals[i, 4] = (float)uncomputed[i].P5.X;
+                individuals[i, 5] = (float)uncomputed[i].P6.X;
+
+                individuals[i, 6] =  (float)uncomputed[i].P1.Y;
+                individuals[i, 7] =  (float)uncomputed[i].P2.Y;
+                individuals[i, 8] =  (float)uncomputed[i].P3.Y;
+                individuals[i, 9] =  (float)uncomputed[i].P4.Y;
+                individuals[i, 10] = (float)uncomputed[i].P5.Y;
+                individuals[i, 11] = (float)uncomputed[i].P6.Y;
+            }
+
+            var minDistancesDev = gpu.Allocate<float>(uncomputed.Length);
+            var individualsDev = gpu.CopyToDevice(individuals);
+
+            //Compute min distances from points to each segment
+            gpu.Launch
+            (
+                gridSize, blockSize, Kernels.MinDistanceToSegmentsKernel,
+                minDistancesDev, individualsDev, uncomputed.Length, TargetPointsGPU, TargetPoints.Count
+            );
+
+            //DEBUG CODE - DON'T DELETE
+            //var points = new float[TargetPoints.Count, 2];
+            //if (TargetPoints.Count > 0)
+            //    gpu.CopyFromDevice(TargetPointsGPU, points);
+
+            //Kernels.MinDistanceToSegmentsKernel(new GThread(0, 0, new GBlock(new GGrid(1), 256, 0, 0)),
+            //    fitnesScores, individuals, uncomputed.Length, points, TargetPoints.Count);
+
+            //Retrieve distances from GPU
+            gpu.CopyFromDevice(minDistancesDev, fitnesScores);
+
+            gpu.Free(minDistancesDev);
+            gpu.Free(individualsDev);
         }
     }
 }

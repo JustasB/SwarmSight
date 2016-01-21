@@ -12,7 +12,9 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using SwarmVision.Filters;
 using SwarmVision.HeadPartsTracking;
 using SwarmVision.UserControls;
 using Frame = SwarmVision.Filters.Frame;
@@ -283,6 +285,8 @@ namespace SwarmVision
 
         public static List<DateTime> fpsHist = new List<DateTime>();
         private static bool isDrawing = false;
+        private static WriteableBitmap canvasBuffer;
+        private static DateTime prevFrameTime = DateTime.Now;
         private void ShowFrame(Frame frame)
         {
             if (isDrawing)
@@ -298,17 +302,16 @@ namespace SwarmVision
 
                 isDrawing = true;
 
-                using (var memory = new MemoryStream())
+                if (canvasBuffer == null)
                 {
-                    frame.Bitmap.Save(memory, ImageFormat.Bmp);
-                    memory.Position = 0;
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.BeginInit();
-                    bitmapImage.StreamSource = memory;
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmapImage.EndInit();
+                    canvasBuffer = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
+                    videoCanvas.Source = canvasBuffer;
+                }
 
-                    videoCanvas.Source = bitmapImage;
+                if ((DateTime.Now - prevFrameTime).TotalMilliseconds > 1000/5.0)
+                {
+                    frame.CopyToWriteableBitmap(canvasBuffer);
+                    prevFrameTime = DateTime.Now;
                 }
 
                 _sliderValueChangedByCode = true;

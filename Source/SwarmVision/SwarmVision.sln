@@ -14,6 +14,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{428C6DA1-C63C-45A4-8E7B-96301CAB0782}"
 	ProjectSection(SolutionItems) = preProject
 		Performance1.psess = Performance1.psess
+		Performance2.psess = Performance2.psess
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.Hardware", "..\SwarmVision.GPU\SwarmVision.Hardware.csproj", "{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}"

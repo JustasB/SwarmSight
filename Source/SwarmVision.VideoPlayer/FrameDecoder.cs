@@ -15,7 +15,7 @@ namespace SwarmVision.VideoPlayer
     {
         public VideoProcessorBase Processor;
         public event EventHandler<OnFrameReady> FrameReady;
-        public int FrameBufferCapacity = 5; //Max frames to decode ahead
+        public int FrameBufferCapacity = 50; //Max frames to decode ahead
         public int MinimumWorkingFrames = 1; //Don't start processing until this many frames have been decoded
         public LinkedList<Frame> FrameBuffer = new LinkedList<Frame>();
 
@@ -73,7 +73,7 @@ namespace SwarmVision.VideoPlayer
                     var bmpBufferLength = height*stride;
                     watch = Stopwatch.StartNew();
 
-                    if (GPU.UseGPU)
+                    if (false)//GPU.UseGPU)
                         bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
                     else
                         bmpBuffer = new byte[bmpBufferLength];
@@ -84,7 +84,7 @@ namespace SwarmVision.VideoPlayer
 
                 var bytesToCopy = bytesLeftToCopy <= roomInBuffer ? bytesLeftToCopy : roomInBuffer;
 
-                if (GPU.UseGPU)
+                if (false)//GPU.UseGPU)
                     GPU.Current.CopyToDevice(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
                 else
                     Buffer.BlockCopy(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
@@ -97,7 +97,7 @@ namespace SwarmVision.VideoPlayer
                     return;
 
                 //Buffer is full, image is ready. Retain the bitmap data
-                var frame = new Frame(width, height, stride, pxFormat, bmpBuffer, GPU.UseGPU) {Watch = watch};
+                var frame = new Frame(width, height, stride, pxFormat, bmpBuffer, false /*GPU.UseGPU*/) {Watch = watch};
 
                 //Release the image buffer (after it has been stored above)
                 bmpBuffer = null;

@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Cudafy.NET">
-      <HintPath>D:\Documents\Dropbox\Research\Chris Jernigan\SwarmVision\Source\SwarmVision.GPU\Cudafy.NET.dll</HintPath>
+      <HintPath>..\..\..\..\Christina Burden\SwarmVision.Filters\bin\Debug\Cudafy.NET.dll</HintPath>
     </Reference>
     <Reference Include="NReco.VideoConverter">
       <HintPath>..\..\lib\NReco.VideoConverter.dll</HintPath>

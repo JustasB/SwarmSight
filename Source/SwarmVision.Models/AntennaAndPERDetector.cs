@@ -92,9 +92,9 @@ namespace SwarmVision.HeadPartsTracking
         private int pastFramesNeeded = 1;
         private AntenaParams prevAntenaModel;
         HeadSearchAlgorithm headFinder = new HeadSearchAlgorithm();
-        KernelSupportVectorMachine svm = KernelSupportVectorMachine.Load(@"c:\temp\head.svm");
         FastAntennaSearchAlgorithm aa = new FastAntennaSearchAlgorithm();
         private HeadModel bestHead = null;
+        private int frameIndex = 0;
         public override object OnProcessing(Frame rawFrame)
         {
             var result = new FrameComparerResults();
@@ -123,7 +123,7 @@ namespace SwarmVision.HeadPartsTracking
 
             var antenaPoints = FastFindAnetana(rawFrame, bestHead.Origin.ToDrawingPoint(), bestHead.Angle,
                                                 bestHead.ScaleX, bestHead.ScaleY);
-
+            
             if (antenaPoints != null)
             {
                 using (var g = Graphics.FromImage(rawFrame.Bitmap))
@@ -151,6 +151,8 @@ namespace SwarmVision.HeadPartsTracking
                 }
             }
             
+            rawFrame.Bitmap.Save(@"c:\temp\frames\" + frameIndex + ".bmp", ImageFormat.Bmp);
+            frameIndex++;
 
             return result;
         }
@@ -168,78 +170,30 @@ namespace SwarmVision.HeadPartsTracking
         public AntenaPoints FastFindAnetana(Frame rawFrame, Point origin, double angle, double scaleX, double scaleY)
         {
             var rawClone = rawFrame.Clone();
-            var center = new System.Windows.Point(HeadView.Width / 2.0, HeadView.Height / 2.0);
 
             if (pastFrames.Count >= pastFramesNeeded)
             {
                 using (var clipped = rawFrame.SubClipped(origin.X, origin.Y, HeadView.Width, HeadView.Height))
                 using (var clippedPrev = pastFrames.Last.Value.SubClipped(origin.X, origin.Y, HeadView.Width, HeadView.Height))
-                using (var motion = clipped.ChangeExtent(clippedPrev)) //Motion signal 
-                using (var motionT = motion.Threshold(30))
-                using (var motionTF = motionT.FillGaps())
-                using (var nowAntena = clipped.ReMap(pc => (1-pc.Distance(Color.Black)/255.0).ToColor()))
-                using (var nowAntennaT = nowAntena.Threshold(255 - 90))
-                using (var nowTips = clipped.ReMap(pc => { var d = (int)(255 - pc.Distance(Config.AntennaColors[1])); return d.ToColor(); })) //and Now tip color
-                using (var nowTipsT = nowTips.Threshold(255 - 3))
-                using (var antPlusTips = nowAntennaT.Or(nowTipsT))
-                using (var combo = motionTF.And(antPlusTips))
+                //using (var motion = clipped.ChangeExtent(clippedPrev)) //Motion signal 
+                //using (var motionT = motion.Threshold(30))
+                //using (var motionTF = motionT.FillGaps())
+                //using (var nowAntena = clipped.ReMap(pc => (1 - pc.Distance(Color.Black) / 255.0).ToColor()))
+                //using (var nowAntennaT = nowAntena.Threshold(255 - 90))
+                //using (var nowTips = clipped.ReMap(pc => { var d = (int)(255 - pc.Distance(Config.AntennaColors[1])); return d.ToColor(); })) //and Now tip color
+                //using (var nowTipsT = nowTips.Threshold(255 - 3))
+                //using (var antPlusTips = nowAntennaT.Or(nowTipsT))
+                //using (var combo = motionTF.And(antPlusTips))
                 {
-                    //Array.Copy(combo.PixelBytes, rawFrame.PixelBytes, rawFrame.PixelBytesLength);
-                    //var whitePxs = combo.PointsOverThreshold(128);
-                    
                     aa.HeadAngle = angle;
                     aa.ScaleX = scaleX;
                     aa.ScaleY = scaleY;
                     
-                    var antenaPoints = aa.Search(new FrameCollection() {ShapeData = combo});
+                    var antenaPoints = aa.Search(new FrameCollection() {ShapeData = clipped, MotionData = clippedPrev});
 
-                    combo.ColorPixels(aa.TargetPoints.Select(p => aa.ToFrameSpace(p).ToDrawingPoint()).ToList(), Color.Blue);
-                    
+                    aa.SearchTimings();
 
-                    //Draw prior space
-                    using (var g = Graphics.FromImage(combo.Bitmap))
-                    {
-                        //Prior origin and axes
-                        g.DrawLine(new Pen(Color.Red, 1),
-                                   aa.ToFrameSpace(new System.Windows.Point(-200, 0)).ToDrawingPoint(),
-                                   aa.ToFrameSpace(new System.Windows.Point(200, 0)).ToDrawingPoint());
-
-                        g.DrawLine(new Pen(Color.Red, 1),
-                                   aa.ToFrameSpace(new System.Windows.Point(-200, -50)).ToDrawingPoint(),
-                                   aa.ToFrameSpace(new System.Windows.Point(200, -50)).ToDrawingPoint());
-
-                        g.DrawLine(new Pen(Color.Red, 1),
-                                   aa.ToFrameSpace(new System.Windows.Point(-200, 50)).ToDrawingPoint(),
-                                   aa.ToFrameSpace(new System.Windows.Point(200, 50)).ToDrawingPoint());
-
-                        g.DrawLine(new Pen(Color.Red, 1),
-                                   aa.ToFrameSpace(new System.Windows.Point(0, -200)).ToDrawingPoint(),
-                                   aa.ToFrameSpace(new System.Windows.Point(0, 200)).ToDrawingPoint());
-
-                        g.DrawLine(new Pen(Color.Red, 1),
-                                   aa.ToFrameSpace(new System.Windows.Point(50, -200)).ToDrawingPoint(),
-                                   aa.ToFrameSpace(new System.Windows.Point(50, 200)).ToDrawingPoint());
-
-                        g.DrawLine(new Pen(Color.Red, 1),
-                                   aa.ToFrameSpace(new System.Windows.Point(-50, -200)).ToDrawingPoint(),
-                                   aa.ToFrameSpace(new System.Windows.Point(-50, 200)).ToDrawingPoint());
-
-                        //All the hulls
-                        foreach (var hull in FastAntennaSearchAlgorithm.ConvexHulls.Keys)
-                        {
-                            var hullPts = FastAntennaSearchAlgorithm
-                                            .ConvexHulls[hull]
-                                            .Select(v => aa.ToFrameSpace(v).ToDrawingPoint())
-                                            .ToArray();
-
-                            if(hullPts.Length > 2)
-                                g.DrawPolygon(new Pen(Color.Blue, 1), hullPts);
-
-                        }
-                        
-                    }
-
-                    //rawFrame.DrawFrame(combo, origin.X, origin.Y, alpha: 0.4, threshold: 0);
+                    //DecorateAntena(rawFrame, origin, combo);
 
                     return antenaPoints;
                 }
@@ -257,7 +211,56 @@ namespace SwarmVision.HeadPartsTracking
             return null;
         }
 
-        
+        private void DecorateAntena(Frame rawFrame, Point origin, Frame combo)
+        {
+            combo.ColorPixels(aa.TargetPoints.Select(p => aa.ToFrameSpace(p).ToDrawingPoint()).ToList(), Color.Blue);
+
+
+            //Draw prior space
+            using (var g = Graphics.FromImage(combo.Bitmap))
+            {
+                //Prior origin and axes
+                g.DrawLine(new Pen(Color.Red, 1),
+                    aa.ToFrameSpace(new System.Windows.Point(-200, 0)).ToDrawingPoint(),
+                    aa.ToFrameSpace(new System.Windows.Point(200, 0)).ToDrawingPoint());
+
+                g.DrawLine(new Pen(Color.Red, 1),
+                    aa.ToFrameSpace(new System.Windows.Point(-200, -50)).ToDrawingPoint(),
+                    aa.ToFrameSpace(new System.Windows.Point(200, -50)).ToDrawingPoint());
+
+                g.DrawLine(new Pen(Color.Red, 1),
+                    aa.ToFrameSpace(new System.Windows.Point(-200, 50)).ToDrawingPoint(),
+                    aa.ToFrameSpace(new System.Windows.Point(200, 50)).ToDrawingPoint());
+
+                g.DrawLine(new Pen(Color.Red, 1),
+                    aa.ToFrameSpace(new System.Windows.Point(0, -200)).ToDrawingPoint(),
+                    aa.ToFrameSpace(new System.Windows.Point(0, 200)).ToDrawingPoint());
+
+                g.DrawLine(new Pen(Color.Red, 1),
+                    aa.ToFrameSpace(new System.Windows.Point(50, -200)).ToDrawingPoint(),
+                    aa.ToFrameSpace(new System.Windows.Point(50, 200)).ToDrawingPoint());
+
+                g.DrawLine(new Pen(Color.Red, 1),
+                    aa.ToFrameSpace(new System.Windows.Point(-50, -200)).ToDrawingPoint(),
+                    aa.ToFrameSpace(new System.Windows.Point(-50, 200)).ToDrawingPoint());
+
+                //All the hulls
+                foreach (var hull in FastAntennaSearchAlgorithm.ConvexHulls.Keys)
+                {
+                    var hullPts = FastAntennaSearchAlgorithm
+                        .ConvexHulls[hull]
+                        .Select(v => aa.ToFrameSpace(v).ToDrawingPoint())
+                        .ToArray();
+
+                    if (hullPts.Length > 2)
+                        g.DrawPolygon(new Pen(Color.Blue, 1), hullPts);
+                }
+            }
+
+            rawFrame.DrawFrame(combo, origin.X, origin.Y, alpha: 0.4, threshold: 0);
+        }
+
+
         public object FindAnetana(Frame rawFrame)
         {
             var result = new FrameComparerResults();

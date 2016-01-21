@@ -275,12 +275,9 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             return results;
         }
 
-        KernelSupportVectorMachine svm = KernelSupportVectorMachine.Load(@"c:\temp\head.svm");
+        KernelSupportVectorMachine svm = KernelSupportVectorMachine.Load(@"Y:\Downloads\BeeVids\head.svm");
         public double ComputeFitness(HeadModel individual)
         {
-            //if (individual.View == null)
-            //    individual.View = individual.GenerateView(false);
-
             using (var underHead = Target.ShapeData.SubClipped((int)individual.Origin.X, (int)individual.Origin.Y, HeadView.Width, HeadView.Height))
             using (var deRotSc = underHead.RotateScale(-individual.Angle, 1 / individual.ScaleX, 1 / individual.ScaleY))
             using (var head = deRotSc.SubClipped(
@@ -295,17 +292,6 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
                 return svmOut+6;
             }
-
-
-            //var result = Target.ShapeData.AverageColorDifference(
-            //    individual.View, 
-            //    (int)individual.Origin.X, 
-            //    (int)individual.Origin.Y);
-
-            ////Adjust for scale
-            //result /= (individual.ScaleX*individual.ScaleY);// +(individual.ScaleY * individual.ScaleY);
-
-            //return result;
         }
 
         protected override HeadModel CreateNewRandomMember()

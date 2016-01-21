@@ -86,7 +86,7 @@ namespace Classes
                             if (comparedFrame == null)
                                 continue;
 
-                            if(comparedFrame.Value.ComparerResults != null)
+                            if (comparedFrame.Value.ComparerResults != null)
                                 _shader.Shade
                                     (
                                         comparedFrame.Value.Frame,
@@ -105,6 +105,10 @@ namespace Classes
                     {
                         Thread.Sleep(5);
                     }
+                }
+                catch (InvalidOperationException)
+                {
+                    Console.WriteLine("Renderer Invalid Operation Exception");
                 }
                 catch (NullReferenceException)
                 {
