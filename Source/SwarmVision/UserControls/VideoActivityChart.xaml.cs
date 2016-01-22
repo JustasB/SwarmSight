@@ -15,6 +15,11 @@ namespace SwarmVision.UserControls
     /// </summary>
     public partial class VideoActivityChart : UserControl
     {
+        private List<Point> _activity;
+        private ChartModel _chart;
+        public EventHandler<EventArgs> UseCurrentClicked;
+        public EventHandler<EventArgs> SelectionChanged;
+
         public List<Point> Activity
         {
             get
@@ -27,12 +32,12 @@ namespace SwarmVision.UserControls
 
         public int LowerBound
         {
-            get { return (int) (Math.Round(SelectionBeginPercent*_activity.Count, 0)); }
+            get { return (int)(Math.Round(SelectionBeginPercent * _activity.Count, 0)); }
         }
 
         public int UpperBound
         {
-            get { return (int) (Math.Round(SelectionEndPercent*_activity.Count, 0)); }
+            get { return (int)(Math.Round(SelectionEndPercent * _activity.Count, 0)); }
         }
 
         public double SelectionBeginPercent
@@ -43,7 +48,7 @@ namespace SwarmVision.UserControls
                 var chartBeginX = chartPlaceholder.Margin.Left;
                 var chartWidth = chartPlaceholder.Width;
 
-                return (selectionX - chartBeginX)/chartWidth;
+                return (selectionX - chartBeginX) / chartWidth;
             }
         }
 
@@ -55,16 +60,9 @@ namespace SwarmVision.UserControls
                 var chartBeginX = chartPlaceholder.Margin.Left;
                 var chartWidth = chartPlaceholder.Width;
 
-                return (selectionX - chartBeginX)/chartWidth;
+                return (selectionX - chartBeginX) / chartWidth;
             }
         }
-
-        private List<Point> _activity;
-
-        private ChartModel _chart;
-
-        public EventHandler<EventArgs> UseCurrentClicked;
-        public EventHandler<EventArgs> SelectionChanged;
 
         public VideoActivityChart()
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -18,10 +19,10 @@ namespace SwarmVision.Stats
         public ChartModel()
         {
             MyModel = new PlotModel()
-                {
-                    IsLegendVisible = false,
-                    PlotAreaBorderThickness = new OxyThickness(0),
-                };
+            {
+                IsLegendVisible = false,
+                PlotAreaBorderThickness = new OxyThickness(0),
+            };
 
             _series = new LineSeries()
             {
@@ -31,24 +32,37 @@ namespace SwarmVision.Stats
             };
 
             _Xaxis = new LinearAxis()
-                {
-                    IsAxisVisible = false,
-                    Position = AxisPosition.Bottom,
-                    MaximumPadding = 0,
-                    MinimumPadding = 0,
-                };
+            {
+                IsAxisVisible = false,
+                Position = AxisPosition.Bottom,
+                MaximumPadding = 0,
+                MinimumPadding = 0,
+            };
 
             var logAxis = new LogarithmicAxis()
-                {
-                    IsAxisVisible = false,
-                    Minimum = 1,
-                    UseSuperExponentialFormat = true,
-                    MaximumPadding = 0.1,
-                    MinimumPadding = 0,
-                };
+            {
+                IsAxisVisible = false,
+                Minimum = 1,
+                UseSuperExponentialFormat = true,
+                MaximumPadding = 0.1,
+                MinimumPadding = 0,
+            };
 
             MyModel.Axes.Add(_Xaxis);
             MyModel.Axes.Add(logAxis);
+
+            MyModel.Updated += (sender, args) =>
+            {
+                lock (_pointBuffer)
+                {
+                    foreach (var pt in _pointBuffer)
+                    {
+                        _series.Points.Add(pt);
+                    }
+
+                    _pointBuffer.Clear();
+                }
+            };
 
             this.MyModel.Series.Add(_series);
         }
@@ -68,9 +82,13 @@ namespace SwarmVision.Stats
 
         private static object lockpad = new object();
 
+        private readonly List<DataPoint> _pointBuffer = new List<DataPoint>();
         public void AddPoint(int x, int y)
         {
-            _series.Points.Add(new DataPoint(x, y));
+            lock (_pointBuffer)
+            {
+                _pointBuffer.Add(new DataPoint(x, y));
+            }
 
             if (queueMonitor != null)
                 return;
@@ -81,15 +99,15 @@ namespace SwarmVision.Stats
                     return;
 
                 queueMonitor = new Thread(() =>
+                {
+                    while (KeepRefreshing)
                     {
-                        while (KeepRefreshing)
-                        {
-                            Thread.Sleep(150);
+                        Thread.Sleep(150);
 
-                            MyModel.InvalidatePlot(true);
-                        }
-                    })
-                    {IsBackground = true};
+                        MyModel.InvalidatePlot(true);
+                    }
+                })
+                { IsBackground = true };
 
                 queueMonitor.Start();
             }

@@ -123,7 +123,7 @@ namespace SwarmVision.HeadPartsTracking
 
             var antenaPoints = FastFindAnetana(rawFrame, bestHead.Origin.ToDrawingPoint(), bestHead.Angle,
                                                 bestHead.ScaleX, bestHead.ScaleY);
-            
+            //var antenaPoints = (AntenaPoints)null;
             if (antenaPoints != null)
             {
                 using (var g = Graphics.FromImage(rawFrame.Bitmap))
@@ -151,8 +151,9 @@ namespace SwarmVision.HeadPartsTracking
                 }
             }
             
-            rawFrame.Bitmap.Save(@"c:\temp\frames\" + frameIndex + ".bmp", ImageFormat.Bmp);
-            frameIndex++;
+            //Save frames
+            //rawFrame.Bitmap.Save(@"c:\temp\frames\" + frameIndex + ".bmp", ImageFormat.Bmp);
+            //frameIndex++;
 
             return result;
         }
@@ -162,7 +163,7 @@ namespace SwarmVision.HeadPartsTracking
             if (_prevFrame != null)
             {
                 _prevFrame.Dispose();
-                _prevFrame = null;
+                //_prevFrame = null;
             }
         }
 
@@ -170,6 +171,7 @@ namespace SwarmVision.HeadPartsTracking
         public AntenaPoints FastFindAnetana(Frame rawFrame, Point origin, double angle, double scaleX, double scaleY)
         {
             var rawClone = rawFrame.Clone();
+            var antenaPoints = (AntenaPoints)null;
 
             if (pastFrames.Count >= pastFramesNeeded)
             {
@@ -189,13 +191,11 @@ namespace SwarmVision.HeadPartsTracking
                     aa.ScaleX = scaleX;
                     aa.ScaleY = scaleY;
                     
-                    var antenaPoints = aa.Search(new FrameCollection() {ShapeData = clipped, MotionData = clippedPrev});
-
-                    aa.SearchTimings();
+                    antenaPoints = aa.Search(new FrameCollection() {ShapeData = clipped, MotionData = clippedPrev});
+                    
+                    //aa.SearchTimings(); //DebugWrite slows perf
 
                     //DecorateAntena(rawFrame, origin, combo);
-
-                    return antenaPoints;
                 }
             }
 
@@ -203,12 +203,13 @@ namespace SwarmVision.HeadPartsTracking
 
             if (pastFrames.Count > pastFramesNeeded)
             {
-                var garb = pastFrames.First();
-                garb.Dispose();
+                var garb = pastFrames.First;
+                garb.Value.Dispose();
                 pastFrames.Remove(garb);
+                garb.Value = null;
             }
 
-            return null;
+            return antenaPoints;
         }
 
         private void DecorateAntena(Frame rawFrame, Point origin, Frame combo)

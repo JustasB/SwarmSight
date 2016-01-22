@@ -12,7 +12,7 @@ namespace Classes
     public class FrameRenderer
     {
         public EventHandler<OnFrameReady> FrameReady;
-        public LinkedList<ComparedFrame> Queue;
+        public FrameBuffer<ComparedFrame> Queue;
         public int ShadeRadius = 1;
         public bool ShowMotion = true;
 
@@ -22,7 +22,7 @@ namespace Classes
         public FrameRenderer()
         {
             _shader = new PixelShader();
-            Queue = new LinkedList<ComparedFrame>();
+            Queue = new FrameBuffer<ComparedFrame>();
         }
 
         public void Start()

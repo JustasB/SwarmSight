@@ -15,9 +15,9 @@ namespace SwarmVision.VideoPlayer
     {
         public VideoProcessorBase Processor;
         public event EventHandler<OnFrameReady> FrameReady;
-        public int FrameBufferCapacity = 50; //Max frames to decode ahead
+        public int FrameBufferCapacity = 10; //Max frames to decode ahead
         public int MinimumWorkingFrames = 1; //Don't start processing until this many frames have been decoded
-        public LinkedList<Frame> FrameBuffer = new LinkedList<Frame>();
+        public FrameBuffer<Frame> FrameBuffer = new FrameBuffer<Frame>();
 
         public bool FramesInBufferMoreThanMinimum
         {
@@ -47,17 +47,17 @@ namespace SwarmVision.VideoPlayer
 
         private static int GetStride(int width, PixelFormat pxFormat)
         {
-            //var bitsPerPixel = ((int) pxFormat >> 8) & 0xFF;
+            var bitsPerPixel = ((int)pxFormat >> 8) & 0xFF;
 
-            ////Number of bits used to store the image data per line (only the valid data)
-            //var validBitsPerLine = width*bitsPerPixel;
+            //Number of bits used to store the image data per line (only the valid data)
+            var validBitsPerLine = width * bitsPerPixel;
 
-            ////4 bytes for every int32 (32 bits)
-            //var result = ((validBitsPerLine + 31)/32)*4;
+            //4 bytes for every int32 (32 bits)
+            return ((validBitsPerLine + 31) / 32) * 4;
 
             //Create a bitmap 1px tall with the width, and get it's stride
-            using(var frame = new Frame(new Bitmap(width, 1, pxFormat), false))
-                return frame.Stride;
+            //using(var frame = new Frame(new Bitmap(width, 1, pxFormat), false))
+            //    return frame.Stride;
         }
 
         private int frameIndex = 0;

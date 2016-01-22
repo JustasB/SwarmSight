@@ -414,8 +414,13 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                 .FillGaps();
 
             var andDarkNow = gapFilled
-                //.AsParallel()
-                .Where(p => Target.ShapeData.GetColor(p).Distance(Color.Black) <= 90);
+                .AsParallel()
+                .Where(p =>
+                {
+                    var pxC = Target.ShapeData.GetColor(p);
+
+                    return pxC.Distance(Color.Black) <= 90 || Math.Abs(pxC.GetHue() - 333) <= 10;
+                });
 
             var priorSpaced = andDarkNow
                 .Select(p => new Point(p.X, p.Y).ToPriorSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength))
@@ -433,7 +438,7 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             else
                 TargetPoints = withinPolygons;
 
-            Debug.WriteLine("Target Points: " + TargetPoints.Count);
+            //Debug.WriteLine("Target Points: " + TargetPoints.Count);
 
             MinX = (int)ConvexHulls[PointLabels.RightTip].Min(p => p.X);
             MaxX = (int)ConvexHulls[PointLabels.LeftTip].Max(p => p.X);
@@ -477,11 +482,11 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                     //Parse csv columns
                     var result = new AntenaPoints()
                     {
-                        P4 = new Point(4, 0),
+                        P4 = new Point(10.8, 10.8),
                         P5 = new Point(column[7], column[8]),
                         P6 = new Point(column[5], column[6]),
 
-                        P1 = new Point(-4, 0),
+                        P1 = new Point(-11.2, 9.5),
                         P2 = new Point(column[3], column[4]),
                         P3 = new Point(column[1], column[2]),
                     }
@@ -592,10 +597,10 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                     && child.P5.IsInPolygon(ConvexHulls[PointLabels.LeftJoint])
                     && child.P6.IsInPolygon(ConvexHulls[PointLabels.LeftTip])
 
-                    && Math.Abs(child.P1.X) <= 10
-                    && Math.Abs(child.P4.X) <= 10
-                    && Math.Abs(child.P1.Y) <= 10
-                    && Math.Abs(child.P4.Y) <= 10
+                    && Math.Abs(child.P1.X) <= 15
+                    && Math.Abs(child.P4.X) <= 15
+                    && Math.Abs(child.P1.Y) <= 15
+                    && Math.Abs(child.P4.Y) <= 15
                     ;
 
             return valid;

@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="BitmapManipulator.cs" />
     <Compile Include="ComparedFrame.cs" />
+    <Compile Include="FrameBuffer.cs" />
     <Compile Include="FrameComparer.cs" />
     <Compile Include="FrameComparerResults.cs" />
     <Compile Include="FrameRenderer.cs" />

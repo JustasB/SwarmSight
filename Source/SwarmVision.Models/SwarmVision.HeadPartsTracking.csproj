@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\FastAntennaSearchAlgorithm.cs" />
+    <Compile Include="Algorithms\ThreadSafeRandom.cs" />
     <Compile Include="Models\AngleInDegrees.cs" />
     <Compile Include="Models\IndexBasedMinMaxDouble.cs" />
     <Compile Include="Models\IndexDouble.cs" />

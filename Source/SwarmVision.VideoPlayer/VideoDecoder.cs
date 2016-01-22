@@ -45,7 +45,7 @@ namespace SwarmVision.VideoPlayer
             }
         }
 
-        public LinkedList<Frame> FrameBuffer
+        public FrameBuffer<Frame> FrameBuffer
         {
             get { return FrameDecoder.FrameBuffer; }
         }

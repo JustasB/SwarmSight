@@ -283,7 +283,7 @@ namespace SwarmVision
             Reset();
         }
 
-        public static List<DateTime> fpsHist = new List<DateTime>();
+        public static LinkedList<DateTime> fpsHist = new LinkedList<DateTime>();
         private static bool isDrawing = false;
         private static WriteableBitmap canvasBuffer;
         private static DateTime prevFrameTime = DateTime.Now;
@@ -308,7 +308,7 @@ namespace SwarmVision
                     videoCanvas.Source = canvasBuffer;
                 }
 
-                if ((DateTime.Now - prevFrameTime).TotalMilliseconds > 1000/5.0)
+                if ((DateTime.Now - prevFrameTime).TotalMilliseconds >= 1000/30.0)
                 {
                     frame.CopyToWriteableBitmap(canvasBuffer);
                     prevFrameTime = DateTime.Now;
@@ -319,9 +319,13 @@ namespace SwarmVision
 
                 //Compute FPS
                 var now = DateTime.Now;
-                fpsHist.Add(now);
-                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Count(t => (now - t).TotalMilliseconds <= 1000));
-                fpsHist.RemoveAll(t => (now - t).TotalMilliseconds > 1000);
+                fpsHist.AddLast(now);
+                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Count / 1.0);
+
+                while ((now - fpsHist.First()).TotalMilliseconds > 1000)
+                {
+                    fpsHist.RemoveFirst();
+                }
 
                 isDrawing = false;
             }));

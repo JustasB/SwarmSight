@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using SwarmVision.Filters;
 using SwarmVision.HeadPartsTracking.Models;
 
@@ -11,7 +13,7 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 {
     public abstract class GeneticAlgoBase<T> where T: IDisposable, new()
     {
-        protected Random Random = new Random(1);
+        protected ThreadSafeRandom Random = new ThreadSafeRandom(1);
         protected Dictionary<T, double> Generation = new Dictionary<T, double>();
         protected int ParentCount = 0;
         public int GenerationSize = 10;
@@ -67,7 +69,7 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             PreProcessTime.Stop();
 
             //Reset the fitness of each member on new frame
-            for (var i = 0; i < Generation.Count; i++)
+            for(var i = 0; i < Generation.Count; i++)
                 Generation[Generation.ElementAt(i).Key] = InitialFitness;
 
             //Create new generation
@@ -93,34 +95,51 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                 ParentCount = Generation.Count;
 
                 //Fill the rest with children
-                while (Generation.Count < GenerationSize)
+                var children = new T[GenerationSize - Generation.Count];
+
+                Parallel.For(0, children.Length, c =>
                 {
-                    //Pick two random survivors (parents)
-                    T randomSurvivor1;
-                    T randomSurvivor2;
+                    var childValid = false;
+                    var child = default(T);
 
-                    SelectParents(out randomSurvivor1, out randomSurvivor2);
+                    do
+                    {
+                        //Pick two random survivors (parents)
+                        T randomSurvivor2;
+                        T randomSurvivor1;
 
-                    //Don't cross with self
-                    if (randomSurvivor1.Equals(randomSurvivor2))
-                        continue;
+                        SelectParents(out randomSurvivor1, out randomSurvivor2);
 
-                    var child = CreateChild(randomSurvivor1, randomSurvivor2);
+                        //Don't cross with self
+                        if (randomSurvivor1.Equals(randomSurvivor2))
+                            continue;
 
-                    //Don't add invalid locations or already exists
-                    if (!Generation.ContainsKey(child) && 
-                        ValidChildWrapper(child))
-                        Generation.Add(child, InitialFitness);
-                }
+                        child = CreateChild(randomSurvivor1, randomSurvivor2);
+
+                        //Don't add invalid locations or already exists
+                        if (!Generation.ContainsKey(child) &&
+                            ValidChildWrapper(child))
+                            childValid = true;
+                    }
+                    while (!childValid);
+
+                    children[c] = child;
+                });
+
+                foreach (var child in children)
+                    Generation.Add(child, InitialFitness);
 
                 //Mutate a fraction of individuals
-                for (var i = 0; i < Generation.Count(); i++)
+                Parallel.For(0, Generation.Count, i => 
                 {
                     if (Random.NextDouble() < MutationProbability)
                     {
-                        Generation.Add(Mutated(Generation.ElementAt(i).Key), InitialFitness);
+                        lock (Generation)
+                        {
+                            Generation.Add(Mutated(Generation.ElementAt(i).Key), InitialFitness);
+                        }
                     }
-                }
+                });
 
                 //Evaluate their fitness
                 ComputeFitnessTime.Start();
@@ -141,8 +160,9 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                         .ToDictionary(i => i.Key, i => i.Value);
 
                 //Dispose of about to be pruned members
-                for (var i = keep; i < Generation.Count; i++)
+                Parallel.For(0, Generation.Count, i => {
                     Generation.ElementAt(i).Key.Dispose();
+                });
 
                 //Prune
                 Generation = Generation

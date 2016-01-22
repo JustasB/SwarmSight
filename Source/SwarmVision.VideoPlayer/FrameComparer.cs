@@ -123,18 +123,16 @@ namespace SwarmVision.VideoPlayer
                     
                     currentFrame.Watch.Stop();
 
+                    //Retain location
+                    MostRecentFrameIndex = currentFrame.FrameIndex;
+                    Decoder.FrameBuffer.Remove(currentFrame);
+
                     //Add frame to rendering queue
                     Renderer.Queue.AddLast(new ComparedFrame()
                     {
                         Frame = currentFrame,
                         ComparerResults = compareResult,
                     });
-
-                    Debug.Print(new string('R', Renderer.Queue.Count));
-
-                    //Retain location
-                    MostRecentFrameIndex = currentFrame.FrameIndex;
-                    Decoder.FrameBuffer.Remove(currentFrame);
                 }
                 else if (Decoder.AtEndOfVideo)
                 {
