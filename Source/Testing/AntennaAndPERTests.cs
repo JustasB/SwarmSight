@@ -3,9 +3,9 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SwarmVision.Filters;
-using SwarmVision.HeadPartsTracking.Algorithms;
-using SwarmVision.HeadPartsTracking.Models;
+using SwarmSight.Filters;
+using SwarmSight.HeadPartsTracking.Algorithms;
+using SwarmSight.HeadPartsTracking.Models;
 
 namespace Testing
 {

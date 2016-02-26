@@ -5,13 +5,13 @@ VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Annotator", "Annotator.csproj", "{74412F3E-6822-40D4-99C0-965946F688D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.HeadPartsTracking", "..\SwarmVision.Models\SwarmVision.HeadPartsTracking.csproj", "{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.HeadPartsTracking", "..\SwarmSight.Models\SwarmSight.HeadPartsTracking.csproj", "{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.VideoPlayer", "..\SwarmVision.VideoPlayer\SwarmVision.VideoPlayer.csproj", "{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.VideoPlayer", "..\SwarmSight.VideoPlayer\SwarmSight.VideoPlayer.csproj", "{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.Hardware", "..\SwarmVision.GPU\SwarmVision.Hardware.csproj", "{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.Hardware", "..\SwarmSight.GPU\SwarmSight.Hardware.csproj", "{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.Filters", "..\..\..\..\Christina Burden\SwarmVision.Filters\SwarmVision.Filters.csproj", "{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.Filters", "..\SwarmSight.Filters\SwarmSight.Filters.csproj", "{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
