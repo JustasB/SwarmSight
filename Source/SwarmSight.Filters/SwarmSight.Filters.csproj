@@ -34,7 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Cudafy.NET">
-      <HintPath>D:\Documents\Dropbox\Research\Chris Jernigan\SwarmSight\Source\SwarmSight.GPU\Cudafy.NET.dll</HintPath>
+      <HintPath>..\SwarmSight.GPU\Cudafy.NET.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="System" />

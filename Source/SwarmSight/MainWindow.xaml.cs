@@ -193,25 +193,9 @@ namespace SwarmSight
                                                  tTest.MeanDifference.ToString("N2");
 
             if (tTest.TTest.FirstSeriesMean != 0)
-                comparisonTable.lblAvgPercent.Content = tTest.PercentMeanDifference.ToString("RFB");
+                comparisonTable.lblAvgPercent.Content = tTest.PercentMeanDifference.ToString("P2");
             else
                 comparisonTable.lblAvgPercent.Content = "-";
-
-            var pValue = tTest.TTest.ProbabilityTTwoTail;
-
-            comparisonTable.lblPval.Content = pValue.ToString("N6");
-
-            if (pValue < 0.001)
-                comparisonTable.lblPvalStar.Content = "***";
-
-            else if (pValue < 0.01)
-                comparisonTable.lblPvalStar.Content = "**";
-
-            else if (pValue < 0.05)
-                comparisonTable.lblPvalStar.Content = "*";
-
-            else
-                comparisonTable.lblPvalStar.Content = "";
 
             //Update Chart
             comparisonChart.UpdateChart
@@ -263,6 +247,12 @@ namespace SwarmSight
             //Play
             if (btnPlayPause.Content.ToString() == PlaySymbol)
             {
+                if (!File.Exists(txtFileName.Text))
+                {
+                    MessageBox.Show("Please select a video file.");
+                    return;
+                }
+
                 //Reset decoder
                 if (_decoder != null)
                 {
@@ -274,6 +264,9 @@ namespace SwarmSight
                     _decoder.Open(txtFileName.Text);
                     _comparer.Decoder = _decoder;
                 }
+
+                //Clear canvas buffer
+                canvasBuffer = null;
 
                 //Can't change quality if playing
                 sliderQuality.IsEnabled = false;
@@ -317,7 +310,12 @@ namespace SwarmSight
 
         private void SeekTo(double percentLocation)
         {
+            if (_decoder == null || _decoder.VideoInfo == null)
+                return;
+
             _comparer.SeekTo(percentLocation);
+
+            lblTime.Content = TimeSpan.FromMilliseconds(_decoder.VideoInfo.Duration.TotalMilliseconds*percentLocation).ToString();
         }
 
         private void OnFrameCompared(object sender, FrameComparisonArgs e)
@@ -337,7 +335,6 @@ namespace SwarmSight
 
                     _activity.Add(new Point(e.Results.FrameIndex, e.Results.ChangedPixelsCount));
                     lblChangedPixels.Content = string.Format("Changed Pixels: {0:n0}", e.Results.ChangedPixelsCount);
-                    lblTime.Content = e.Results.FrameTime.ToString();
                 });
         }
 
@@ -382,6 +379,7 @@ namespace SwarmSight
 
                 isDrawing = true;
 
+                //Create WriteableBitmap the first time
                 if (canvasBuffer == null)
                 {
                     canvasBuffer = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
@@ -396,6 +394,7 @@ namespace SwarmSight
 
                 _sliderValueChangedByCode = true;
                 sliderTime.Value = frame.FramePercentage*1000;
+                lblTime.Content = frame.FrameTime.ToString();
 
                 //Compute FPS
                 var now = DateTime.Now;
@@ -480,11 +479,11 @@ namespace SwarmSight
 
         private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (_comparer != null)
-                _comparer.Threshold = (int) e.NewValue;
+            if (_processor != null)
+                ((MotionDetector)_processor).Threshold = (int)e.NewValue;
 
             if (lblThreshold != null)
-                lblThreshold.Content = _comparer.Threshold;
+                lblThreshold.Content = ((MotionDetector)_processor).Threshold;
         }
 
         private void OnPlayClicked(object sender, RoutedEventArgs e)
@@ -507,7 +506,7 @@ namespace SwarmSight
         {
             //Pause if slider is clicked
             if (!_comparer.IsPaused)
-                Play(); //Pause
+                Pause();
         }
 
         private void sliderTime_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -525,6 +524,7 @@ namespace SwarmSight
                 return;
             }
 
+            if (btnPlayPause.Content.ToString() == PlaySymbol)
             Pause();
 
             SeekTo(e.NewValue/1000.0);
@@ -537,6 +537,9 @@ namespace SwarmSight
 
         private void sliderQuality_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            //Force redraw of the buffer
+            canvasBuffer = null;
+
             _quality = e.NewValue/100.0;
 
             if (lblQuality != null)
@@ -613,22 +616,22 @@ namespace SwarmSight
         {
             if (roi.Visibility == Visibility.Visible)
             {
-                _comparer.SetBounds(roi.LeftPercent, roi.TopPercent, roi.RightPercent, roi.BottomPercent);
+                ((MotionDetector)_processor).SetBounds(roi.LeftPercent, roi.TopPercent, roi.RightPercent, roi.BottomPercent);
 
-                txtLeft.Text = roi.LeftPercent.ToString("RFB");
-                txtRight.Text = roi.RightPercent.ToString("RFB");
-                txtTop.Text = roi.TopPercent.ToString("RFB");
-                txtBottom.Text = roi.BottomPercent.ToString("RFB");
+                txtLeft.Text = roi.LeftPercent.ToString("P2");
+                txtRight.Text = roi.RightPercent.ToString("P2");
+                txtTop.Text = roi.TopPercent.ToString("P2");
+                txtBottom.Text = roi.BottomPercent.ToString("P2");
             }
 
             else
             {
-                _comparer.SetBounds(0, 0, 1, 1);
+                ((MotionDetector)_processor).SetBounds(0, 0, 1, 1);
 
-                txtLeft.Text = 0.ToString("RFB");
-                txtRight.Text = 0.ToString("RFB");
-                txtTop.Text = 1.ToString("RFB");
-                txtBottom.Text = 1.ToString("RFB");
+                txtLeft.Text = 0.ToString("P2");
+                txtRight.Text = 0.ToString("P2");
+                txtTop.Text = 1.ToString("P2");
+                txtBottom.Text = 1.ToString("P2");
             }
         }
 

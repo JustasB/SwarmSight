@@ -70,7 +70,7 @@
                 TickFrequency="25"
                 ToolTip="Adjust the scale used for rendering frames. Smaller scale is faster, larger scale is more accurate." />
         <Label Content="Accuracy" HorizontalAlignment="Left" Margin="643,220,0,0" VerticalAlignment="Top" />
-        <Label x:Name="lblQuality" Content="25%" HorizontalAlignment="Left" Margin="593,220,0,0"
+        <Label x:Name="lblQuality" Content="100%" HorizontalAlignment="Left" Margin="593,220,0,0"
                VerticalAlignment="Top" Width="50" HorizontalContentAlignment="Center"
                ToolTip="The scale used for rendering video frames. Smaller scale improves performance." />
         <Label Content="Activity Settings" HorizontalAlignment="Left" Margin="547,8,0,0" VerticalAlignment="Top"

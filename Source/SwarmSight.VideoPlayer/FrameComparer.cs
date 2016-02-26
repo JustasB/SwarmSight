@@ -11,9 +11,7 @@ namespace SwarmSight.VideoPlayer
     public class FrameComparer
     {
         public VideoProcessorBase Processor;
-        public static List<long> PerformanceHistory = new List<long>(1000);
 
-        public int Threshold = 50;
         public int MostRecentFrameIndex = -1; //Always resumes one frame ahead
 
         public VideoDecoder Decoder;
@@ -23,11 +21,6 @@ namespace SwarmSight.VideoPlayer
 
         public bool IsPaused;
         private Thread _bufferMonitor;
-
-        private double LeftBountPCT;
-        private double RightBountPCT;
-        private double TopBountPCT;
-        private double BottomBountPCT;
 
         public FrameComparer(VideoDecoder decoder, FrameRenderer renderer)
         {
@@ -151,14 +144,6 @@ namespace SwarmSight.VideoPlayer
                     Thread.Sleep(5);
                 }
             }
-        }
-
-        public void SetBounds(double leftPercent, double topPercent, double rightPercent, double bottomPercent)
-        {
-            LeftBountPCT = leftPercent;
-            RightBountPCT = rightPercent;
-            TopBountPCT = topPercent;
-            BottomBountPCT = bottomPercent;
         }
     }
 }

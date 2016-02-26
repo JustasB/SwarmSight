@@ -1176,6 +1176,11 @@ namespace SwarmSight.Filters
             return result;
         }
 
+        public static bool SameSizeAs(this Frame a, Frame b)
+        {
+            return a.Width == b.Width && a.Height == b.Height;
+        }
+
         public static Frame Changed(this Frame bitmapA, Frame bitmapB, int threshold = 20)
         {
             var result = new Frame(new Bitmap(bitmapB.Width, bitmapB.Height, bitmapB.PixelFormat), false);
@@ -1265,9 +1270,9 @@ namespace SwarmSight.Filters
             return result;
         }
 
-        public static List<Point> ChangeExtentPoints(this Frame bitmapA, Frame bitmapB, int threshold)
+        public static List<Point> ChangeExtentPoints(this Frame bitmapA, Frame bitmapB, int threshold, Rect? regionOfInterest = null)
         {
-            var result = new List<Point>();
+            var result = new List<Point>(1000);
 
             //Performance optimizations
             var aFirstPx = bitmapA.FirstPixelPointer;
@@ -1275,17 +1280,27 @@ namespace SwarmSight.Filters
             var height = bitmapA.Height;
             var width = bitmapA.Width;
             var stride = bitmapA.Stride;
-            const int xMin = 0;
+
+
+            var xMin = 0;
             var xMax = width;
-            const int yMin = 0;
+            var yMin = 0;
             var yMax = height;
+
+            if(regionOfInterest != null)
+            {
+                xMin = (int)Math.Round(regionOfInterest.Value.Left);
+                xMax = (int)Math.Round(regionOfInterest.Value.Right);
+                yMin = (int)Math.Round(regionOfInterest.Value.Top);
+                yMax = (int)Math.Round(regionOfInterest.Value.Bottom);
+            }
 
             var rowTotals = new List<Point>[yMax-yMin];
 
             //Do each row in parallel
             Parallel.For(yMin, yMax, new ParallelOptions() {/*MaxDegreeOfParallelism = 1*/}, (int y) =>
             {
-                rowTotals[y] = new List<Point>();
+                rowTotals[y-yMin] = new List<Point>();
                 var rowStart = stride * y; //Stride is width*3 bytes
 
                 for (var x = xMin; x < xMax; x++)
@@ -1304,7 +1319,7 @@ namespace SwarmSight.Filters
 
                     if (colorDifference >= threshold)
                     {
-                        rowTotals[y].Add(new Point(x,y));
+                        rowTotals[y-yMin].Add(new Point(x,y));
                     }
                 }
             });

@@ -12,7 +12,6 @@
             <RowDefinition Height="20*" />
             <RowDefinition Height="20*" />
             <RowDefinition Height="20*" />
-            <RowDefinition Height="20*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="92*" FrameworkElement.FlowDirection="RightToLeft" />
@@ -31,8 +30,6 @@
                VerticalContentAlignment="Center" Grid.Row="4" />
         <Label Content="% Difference" Padding="0,0,5,0" HorizontalContentAlignment="Right"
                VerticalContentAlignment="Center" Grid.Row="5" />
-        <Label Content="T-test p" Padding="0,0,5,0" HorizontalContentAlignment="Right"
-               VerticalContentAlignment="Center" Grid.Row="6" />
         <Label Content="Video B" Grid.Column="2" Padding="0" HorizontalContentAlignment="Center"
                VerticalContentAlignment="Center" />
         <Label x:Name="lblStDevA" Content="-" Grid.Column="1" Padding="0" HorizontalContentAlignment="Center"
@@ -58,12 +55,6 @@
         <Label x:Name="lblAvgPercent" Content="-" Grid.Column="2" Padding="0" HorizontalContentAlignment="Center"
                VerticalContentAlignment="Center" Grid.Row="5"
                ToolTip="The percent difference of the changed pixel averages of the two videos" />
-        <Label x:Name="lblPval" Content="-" Grid.Column="2" Padding="0" HorizontalContentAlignment="Center"
-               VerticalContentAlignment="Center" Grid.Row="6"
-               ToolTip="The Student's T-Test probability value that the two changed pixel averages are different" />
-        <Label x:Name="lblPvalStar" Content="" Grid.Column="1" Padding="0" HorizontalContentAlignment="Center"
-               VerticalContentAlignment="Center" Grid.Row="6"
-               ToolTip="The degree of significance of the difference of the two averages" />
 
     </Grid>
 </UserControl>
