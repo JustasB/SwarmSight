@@ -4,7 +4,7 @@
     xmlns:oxy="http://oxyplot.org/wpf"
     xmlns:local="clr-namespace:SwarmVision"
     xmlns:userControls="clr-namespace:SwarmVision.UserControls" x:Name="windowMain" x:Class="SwarmVision.MainWindow"
-    Title="SwarmVision - Video Motion Analysis Tool for Behavioral Scientists" Height="490" Width="1245"
+    Title="SwarmVision - Video Motion Analysis Tool for Behavioral Scientists" Height="490" Width="713.773"
     Icon="SwarmVision.ico" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen">
     <Grid>
         <Label HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Height="302" Width="516" />
@@ -168,5 +168,6 @@
                Width="37" Padding="0" HorizontalContentAlignment="Center" />
         <Label Content="Bottom" HorizontalAlignment="Left" Margin="657,333,0,0" VerticalAlignment="Top" Height="17"
                Width="43" Padding="0" HorizontalContentAlignment="Center" />
+        <userControls:ReceptiveField x:Name="receptiveField" Margin="184,148,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="113"/>
     </Grid>
 </Window>

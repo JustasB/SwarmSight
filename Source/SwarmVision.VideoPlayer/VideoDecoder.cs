@@ -68,9 +68,10 @@ namespace SwarmVision.VideoPlayer
             VideoInfo = new VideoInfo(VideoPath);
         }
 
-        public void Start()
+        public void Start(bool open = true)
         {
-            Open(VideoPath);
+            if(open)
+                Open(VideoPath);
 
             _filereader = new FFMpegConverter();
 
@@ -182,11 +183,11 @@ namespace SwarmVision.VideoPlayer
         {
             if (FramesInBuffer)
             {
-                var result = FrameBuffer.First();
+                var result = FrameBuffer.First;
 
                 FrameBuffer.Remove(result);
 
-                return result;
+                return result.Value;
             }
 
             return null;

@@ -10,7 +10,16 @@
     <Grid>
 
         <Label x:Name="lblTask" Content="Task: Find the [Head Part Here]" VerticalAlignment="Top" FontWeight="Bold" HorizontalContentAlignment="Center" FontSize="14"/>
-        <Image x:Name="partImage" Margin="0,29" Source="Assets/HeadFront.jpg"/>
+        <Image x:Name="partImage" Margin="0,29" Source="Assets/HeadFront.jpg" RenderTransformOrigin="0.5,0.5">
+            <Image.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform x:Name="rotateTransform" Angle="0"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Image.RenderTransform>
+        </Image>
         <Label Content="(Or Press Q)" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Bottom" Height="30" Width="112" HorizontalContentAlignment="Center"/>
         <Label Content="(Or Press E)" HorizontalAlignment="Right" FontWeight="Bold" HorizontalContentAlignment="Center" VerticalAlignment="Bottom" Height="30" Width="116"/>
         <Label Content="Left Click To Mark" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Bottom" Height="30" Margin="0,0,0,13"/>

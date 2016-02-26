@@ -5,23 +5,26 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Accord.Math;
 using Cudafy;
 using SwarmVision.Filters;
 using SwarmVision.Hardware;
 using SwarmVision.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
+using System.Data;
+using Mono.CSharp;
 
 namespace SwarmVision.HeadPartsTracking.Algorithms
 {
     public class AntenaPoints : IDisposable
     {
-        public Point P1;
-        public Point P2;
-        public Point P3;
+        public Point RS;
+        public Point RFB;
+        public Point RFT;
 
-        public Point P4;
-        public Point P5;
-        public Point P6;
+        public Point LS;
+        public Point LFB;
+        public Point LFT;
 
 
         public void Dispose()
@@ -44,36 +47,36 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
         public AntenaPoints Multiply(double scalar, double? scalarY = null)
         {
-            P1.Multiply(scalar, scalarY);
-            P2.Multiply(scalar, scalarY);
-            P3.Multiply(scalar, scalarY);
-            P4.Multiply(scalar, scalarY);
-            P5.Multiply(scalar, scalarY);
-            P6.Multiply(scalar, scalarY);
+            RS.Multiply(scalar, scalarY);
+            RFB.Multiply(scalar, scalarY);
+            RFT.Multiply(scalar, scalarY);
+            LS.Multiply(scalar, scalarY);
+            LFB.Multiply(scalar, scalarY);
+            LFT.Multiply(scalar, scalarY);
 
             return this;
         }
 
         public AntenaPoints Offset(double x, double y)
         {
-            P1.Offset(x, y);
-            P2.Offset(x, y);
-            P3.Offset(x, y);
-            P4.Offset(x, y);
-            P5.Offset(x, y);
-            P6.Offset(x, y);
+            RS.Offset(x, y);
+            RFB.Offset(x, y);
+            RFT.Offset(x, y);
+            LS.Offset(x, y);
+            LFB.Offset(x, y);
+            LFT.Offset(x, y);
 
             return this;
         }
 
         public AntenaPoints InvertY()
         {
-            P1.InvertY();
-            P2.InvertY();
-            P3.InvertY();
-            P4.InvertY();
-            P5.InvertY();
-            P6.InvertY();
+            RS.InvertY();
+            RFB.InvertY();
+            RFT.InvertY();
+            LS.InvertY();
+            LFB.InvertY();
+            LFT.InvertY();
 
             return this;
         }
@@ -82,61 +85,61 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
         {
             var result = new AntenaPoints();
 
-            result.P1 = P1.Clone();
-            result.P2 = P2.Clone();
-            result.P3 = P3.Clone();
-            result.P4 = P4.Clone();
-            result.P5 = P5.Clone();
-            result.P6 = P6.Clone();
+            result.RS = RS.Clone();
+            result.RFB = RFB.Clone();
+            result.RFT = RFT.Clone();
+            result.LS = LS.Clone();
+            result.LFB = LFB.Clone();
+            result.LFT = LFT.Clone();
 
             return result;
         }
 
-        public double L1 { get { return Distance(P1, P2); } }
-        public double L2 { get { return Distance(P2, P3); } }
-        public double L3 { get { return Distance(P4, P5); } }
-        public double L4 { get { return Distance(P5, P6); } }
+        public double L1 { get { return Distance(RS, RFB); } }
+        public double L2 { get { return Distance(RFB, RFT); } }
+        public double L3 { get { return Distance(LS, LFB); } }
+        public double L4 { get { return Distance(LFB, LFT); } }
 
-        public double Angle1 { get { return SegmentAngle(P1, P2); } }
-        public double Angle2 { get { return (Angle1+360)%360 - (SegmentAngle(P2, P3)+360)%360; } }
-        public double Angle3 { get { return SegmentAngle(P1, P3); } }
+        public double Angle1 { get { return SegmentAngle(RS, RFB); } }
+        public double Angle2 { get { return (Angle1+360)%360 - (SegmentAngle(RFB, RFT)+360)%360; } }
+        public double Angle3 { get { return SegmentAngle(RS, RFT); } }
 
-        public double Angle4 { get { return SegmentAngle(P4, P5); } }
-        public double Angle5 { get { return Angle4 - SegmentAngle(P4, P6); } }
-        public double Angle6 { get { return SegmentAngle(P4, P6); } }
+        public double Angle4 { get { return SegmentAngle(LS, LFB); } }
+        public double Angle5 { get { return Angle4 - SegmentAngle(LS, LFT); } }
+        public double Angle6 { get { return SegmentAngle(LS, LFT); } }
 
         public AntenaPoints Rotate(double angle)
         {
-            P1.Rotate(angle);
-            P2.Rotate(angle);
-            P3.Rotate(angle);
-            P4.Rotate(angle);
-            P5.Rotate(angle);
-            P6.Rotate(angle);
+            RS.Rotate(angle);
+            RFB.Rotate(angle);
+            RFT.Rotate(angle);
+            LS.Rotate(angle);
+            LFB.Rotate(angle);
+            LFT.Rotate(angle);
 
             return this;
         }
 
-        public AntenaPoints ToFrameSpace(double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
+        public AntenaPoints ToFrameSpace(Point headDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
         {
-            P1 = P1.ToFrameSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P2 = P2.ToFrameSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P3 = P3.ToFrameSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P4 = P4.ToFrameSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P5 = P5.ToFrameSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P6 = P6.ToFrameSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = RS.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RFB = RFB.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RFT = RFT.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            LS = LS.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            LFB = LFB.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            LFT = LFT.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
 
             return this;
         }
 
-        public AntenaPoints ToPriorSpace(double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
+        public AntenaPoints ToPriorSpace(Point headDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
         {
-            P1 = P1.ToPriorSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P1 = P2.ToPriorSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P1 = P3.ToPriorSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P1 = P4.ToPriorSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P1 = P5.ToPriorSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
-            P1 = P6.ToPriorSpace(headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = RS.ToPriorSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = RFB.ToPriorSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = RFT.ToPriorSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = LS.ToPriorSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = LFB.ToPriorSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
+            RS = LFT.ToPriorSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength);
 
             return this;
         }
@@ -179,21 +182,21 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             );
         }
 
-        public static Point ToPriorSpace(this Point target, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
+        public static Point ToPriorSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
         {
-            target.Offset(-HeadView.Width / 2.0 + offsetX, -HeadView.Height / 2.0 + offsetY);
-            target = target.Multiply(100.0 / (scaleX * headLength), 100.0 / (scaleY * headLength));
+            target.Offset(-windowDims.X / 2.0 + offsetX, -windowDims.Y / 2.0 + offsetY);
+            target = target.Multiply(1.0 / (scaleX * scapeDistance), 1.0 / (scaleY * scapeDistance));
             target = target.Rotate(-(headAngle - priorAngle));
 
             return target;
 
         }
 
-        public static Point ToFrameSpace(this Point target, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
+        public static Point ToFrameSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
         {
+            target = target.Multiply(scaleX * scapeDistance, scaleY * scapeDistance);
             target = target.Rotate(headAngle - priorAngle);
-            target = target.Multiply(scaleX * headLength / 100.0, scaleY * headLength / 100.0);
-            target.Offset(HeadView.Width / 2.0 - offsetX, HeadView.Height / 2.0 - offsetY);
+            target.Offset(windowDims.X / 2.0 - offsetX, windowDims.Y / 2.0 - offsetY);
 
             return target;
         }
@@ -205,7 +208,18 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
             return target;
         }
+        public static List<Point> AndNeighbors(this Point p)
+        {
+            var result = new List<Point>(8);
 
+            for(var x = -1; x <= 1; x++)
+            for(var y = -1; y <= 1; y++)
+            {
+                result.Add(new Point(p.X + x, p.Y + y));
+            }
+
+            return result;
+        }
         public static System.Drawing.Point ToDrawingPoint(this Point target)
         {
             return new System.Drawing.Point(target.X.Rounded(), target.Y.Rounded());
@@ -302,20 +316,26 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             var D = y2 - y1;
             var lenSq = C * C + D * D;
             var result = new double[points.Count];
+            var _x1 = x1;
+            var _y1 = y1;
+            var _x2 = x2;
+            var _y2 = y2;
 
             //Parallel.For(0, points.Count, p =>
             for (int p = 0; p < points.Count; p++)
             {
-                var x = points[p].X;
-                var y = points[p].Y;
+                var pt = points[p];
 
-                var A = x - x1;
-                var B = y - y1;
+                var x = pt.X;
+                var y = pt.Y;
+
+                var A = x - _x1;
+                var B = y - _y1;
 
                 var param = lenSq > 0 ? (A * C + B * D) / lenSq : -1;
 
-                var xx = param >= 0 && param <= 1 ? x1 + param * C : (param < 0 ? x1 : x2);
-                var yy = param >= 0 && param <= 1 ? y1 + param * D : (param < 0 ? y1 : y2);
+                var xx = param >= 0 && param <= 1 ? _x1 + param * C : (param < 0 ? _x1 : _x2);
+                var yy = param >= 0 && param <= 1 ? _y1 + param * D : (param < 0 ? _y1 : _y2);
 
                 var dx = x - xx;
                 var dy = y - yy;
@@ -343,6 +363,11 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
             return Color.FromArgb(d, d, d);
         }
+
+        public static double Scale(this double target, double targetRangeL, double targetRangeH, double resultRangeL, double resultRangeH)
+        {
+            return (target - targetRangeL) / (targetRangeH - targetRangeL) * (resultRangeH - resultRangeL) + resultRangeL;
+        }
     }
 
     public enum HeadOrientation
@@ -354,13 +379,13 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
     }
     public enum PointLabels
     {
-        RightOrigin,
-        RightJoint,
-        RightTip,
+        RightScape,
+        RightFlagellumBase,
+        RightFlagellumTip,
 
-        LeftOrigin,
-        LeftJoint,
-        LeftTip,
+        LeftScape,
+        LeftFlagellumBase,
+        LeftFlagellumTip,
         Mandibles,
         Head
     }
@@ -376,18 +401,29 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
         public double ScaleX;
         public double ScaleY;
 
+        public int PointsToKeep = 100;
+        public int MinPointsForRegression = 20;
         public AntenaPoints PreviousSolution = null;
         public List<Point> TargetPoints;
+        public List<Point> TargetPointsPrev = null;
         public float[,] TargetPointsGPU;
         private static List<AntenaPoints> Priors = null;
         public static Dictionary<PointLabels, List<Point>> ConvexHulls = null;
 
         public double OffsetY = 0;
         public double OffsetX = 0;
-        public double PriorAngle = 180;
+        public double PriorAngle = 0;
         public static string PriorPath =       @"Y:\downloads\BeeVids\priorPoints.csv";
         public static string ConvexHullsPath = @"Y:\downloads\BeeVids\convexHulls.csv";
 
+        public int FrameIndex = 0;
+        public Frame DebugFrame;
+
+        private Frame model = null;
+        public int[] RightBins;
+        public int[] LeftBins;
+        public int RightHighest;
+        public int LeftHighest;
         public override void PreProcessTarget()
         {
             if (Priors == null)
@@ -399,52 +435,203 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
             SortDescending = false;
             ValidateRandom = false;
-            NumberOfGenerations = 10;
-            GenerationSize = 250;
+            NumberOfGenerations = 1;// 150;
+            GenerationSize = 10;// 50;
             MutationProbability = 0.1;
+            PercentRandom = 80;
+            MutationRange = 1.0;
+            
+            var decay = 0.15;//0.85;
 
+            if (model == null)
+            {
+                model = new Frame(Target.ShapeData.Width, Target.ShapeData.Height, Target.ShapeData.PixelFormat, false);
+            }
+            using (var prevMotionFrame = Target.MotionData.TwoFramePixelWiseOperation(Target.ColorData, (color, color1) =>
+            {
+                var prevDist = color1.Distance(AntennaAndPERDetector.Config.AntennaColors[0]);
+                var currDist = color.Distance(AntennaAndPERDetector.Config.AntennaColors[0]);
 
-            var motion = Target
-                .ShapeData
-                .ChangeExtentPoints(Target.MotionData, 30);
+                return
+                    ((prevDist - currDist) / 2.0 + 127)
+                    .Rounded()
+                    .ToColor();
+            }))
+            using (var nextMotionFrame = Target.MotionData.TwoFramePixelWiseOperation(Target.ShapeData, (color, color1) =>
+            {
+                var prevDist = color1.Distance(AntennaAndPERDetector.Config.AntennaColors[0]);
+                var currDist = color.Distance(AntennaAndPERDetector.Config.AntennaColors[0]);
 
-            var gapFilled = motion
-                .OrderBy(pt => pt.X * 1000000 + pt.Y)
-                .ToList()
-                .FillGaps();
+                return
+                    ((prevDist - currDist) / 2.0 + 127)
+                    .Rounded()
+                    .ToColor();
+            }))
+            using (var combMotionFrame = nextMotionFrame.TwoFramePixelWiseOperation(prevMotionFrame, (color, color1) =>
+            {
+                return ((color.R + color1.R) / 2.0).Rounded().ToColor();
+            }))
+            using (var reduced = model.ReMap(c => Color.FromArgb(
+                (int)(c.R * decay),
+                (int)(c.G * decay),
+                (int)(c.B * decay))))
+            {
 
-            var andDarkNow = gapFilled
-                .AsParallel()
-                .Where(p =>
+                model.Dispose();
+                model = reduced.TwoFramePixelWiseOperation(combMotionFrame, (color, color1) =>
                 {
-                    var pxC = Target.ShapeData.GetColor(p);
+                    var val = (Math.Min(Math.Max(color.R + 2 * (color1.R - 127), 0), 255));
 
-                    return pxC.Distance(Color.Black) <= 90 || Math.Abs(pxC.GetHue() - 333) <= 10;
+                    if (val <= 35)
+                        val = 0;
+
+                    return Color.FromArgb(val, val, val);
                 });
 
+
+
+                //compute the sum of motion in a set of quadrants
+                //sweep though pixels and add their values to a bin based on their location
+                var regionCount = 5; //per side, should be even
+                LeftBins = new int[regionCount];
+                RightBins = new int[regionCount];
+
+                model.ForEachPoint((p, c) =>
+                {
+                    if(c.R > 35)
+                    {
+                        var pt = ToPriorSpace(p.ToWindowsPoint());
+                        var degs = Math.Atan2(pt.Y, pt.X) * 180.0 / Math.PI;
+                        degs = degs < -90 ? degs + 360.0 : degs;
+
+                        if (Math.Abs(degs) <= 90.0)
+                        {
+                            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(-90, 90, 0, 1) * regionCount));
+                            RightBins[regionIndex] += c.R;
+                        }
+                        else
+                        {
+                            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(90, 270, 0, 1) * regionCount));
+                            LeftBins[regionIndex] += c.R;
+                        }
+                    }
+                });
+
+                if (RightBins.Max() > 150)
+                    RightHighest = RightBins.ToList().IndexOf(RightBins.Max());
+
+                if(LeftBins.Max() > 150)
+                    LeftHighest = regionCount - 1 - LeftBins.ToList().IndexOf(LeftBins.Max());
+
+
+                //Debug.WriteLine(leftHighest + "," + rightHighest);
+
+                var directionFrame = model.Clone();
+                directionFrame.ColorIfTrue(Color.Yellow, p =>
+                {
+                    if (Random.NextDouble() < 0.1)
+                    {
+                        var pt = ToPriorSpace(p.ToWindowsPoint());
+                        var degs = Math.Atan2(pt.Y, pt.X)*180.0/Math.PI;
+                        degs = degs < -90 ? degs + 360.0 : degs;
+
+                        if (Math.Abs(Math.Abs(degs)-90) < 0.5)
+                            return true;
+
+                        if (Math.Abs(degs) < 90.0)
+                        {
+                            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(-90, 90, 0, 1)*regionCount));
+
+                            return regionIndex == RightHighest;
+                        }
+                        else
+                        {
+                            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(90, 270, 0, 1)*regionCount));
+
+                            return regionIndex == regionCount - 1 - LeftHighest;
+                        }
+                    }
+
+                    return false;
+                });
+
+
+                if (DebugFrame != null)
+                    DebugFrame.Dispose();
+
+                DebugFrame = new Frame(Target.ShapeData.Width * 3, Target.ShapeData.Height, Target.ShapeData.PixelFormat, false);
+
+                DebugFrame.DrawFrame(Target.MotionData, 0, 0, 1, 0);
+                DebugFrame.DrawFrame(model, prevMotionFrame.Width, 0, 1, 0);
+                DebugFrame.DrawFrame(directionFrame, prevMotionFrame.Width * 2, 0, 1, 0); directionFrame.Dispose();
+            }
+
+            return;
+
+            var andDarkNow = model
+                .PointsOverThreshold(36);
+
             var priorSpaced = andDarkNow
-                .Select(p => new Point(p.X, p.Y).ToPriorSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength))
+                .AsParallel()
+                .Select(p => new Point(p.X, p.Y).ToPriorSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance))
                 ;
 
-            var withinPolygons = priorSpaced.Where(p =>
-                    InConvexHulls(p) &&
+            var leftSide = priorSpaced
+                .Where(p =>
+                    p.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip])
+                 || p.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase]))
+                 .OrderByDescending(p => model.GetColor(ToFrameSpace(p).ToDrawingPoint()).R)
+                 .ToList();
+
+            var rightSide = priorSpaced
+                .Where(p =>
+                    p.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip])
+                 || p.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumBase]))
+                 .OrderByDescending(p => model.GetColor(ToFrameSpace(p).ToDrawingPoint()).R)
+                 .ToList();
+
+            var top = leftSide
+                .AsParallel()
+                .Take((leftSide.Count * 0.5).Rounded())
+                .Union(
+                    rightSide
+                    .AsParallel()
+                    .Take((rightSide.Count * 0.5).Rounded())
+                )
+                .ToList();
+            
+            //Reduce the point count
+            var pointCount = top.Count;
+
+            if (pointCount > PointsToKeep)
+                top = top.Where(p => Random.NextDouble() < (double) PointsToKeep/pointCount).ToList();
+
+
+            var withinPolygons = top.Where(p =>
                     !p.IsInPolygon(ConvexHulls[PointLabels.Head]) &&
                     !p.IsInPolygon(ConvexHulls[PointLabels.Mandibles])
                     )
                 .ToList();
 
-            if (withinPolygons.Count > 50)
-                TargetPoints = withinPolygons.Where(p => Random.NextDouble() < 50.0/withinPolygons.Count).ToList();
-            else
-                TargetPoints = withinPolygons;
+            TargetPoints = withinPolygons;
+            //TargetPointsPrev = withinPolygons;
 
-            //Debug.WriteLine("Target Points: " + TargetPoints.Count);
+            //using (var test = Target.ShapeData.Clone())
+            //{
+            //    test.ColorPixels(TargetPoints.Select(p => ToFrameSpace(p).ToDrawingPoint()).ToList(), Color.Yellow);
+            //    test.Bitmap.Save(@"y:\downloads\beevids\downframes\" + FrameIndex + ".bmp", System.Drawing.Imaging.ImageFormat.Bmp);
+            //    FrameIndex++;
+            //}
 
-            MinX = (int)ConvexHulls[PointLabels.RightTip].Min(p => p.X);
-            MaxX = (int)ConvexHulls[PointLabels.LeftTip].Max(p => p.X);
+            //Debug.WriteLine("Target Points:" 
+            //    + " R: " + TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.RightTip]))
+            //    + " L: " + TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.LeftTip])));
 
-            MinY = (int)ConvexHulls[PointLabels.RightTip].Min(p => p.Y);
-            MaxY = (int)ConvexHulls[PointLabels.RightTip].Max(p => p.Y);
+            MinX = (int)ConvexHulls[PointLabels.RightFlagellumTip].Min(p => p.X);
+            MaxX = (int)ConvexHulls[PointLabels.LeftFlagellumTip].Max(p => p.X);
+
+            MinY = (int)ConvexHulls[PointLabels.RightFlagellumTip].Min(p => p.Y);
+            MaxY = (int)ConvexHulls[PointLabels.RightFlagellumTip].Max(p => p.Y);
 
             
             if (GPU.UseGPU)
@@ -466,9 +653,22 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                 TargetPointsGPU = GPU.Current.CopyToDevice(points);
             }
         }
+        public bool IsAntenaColored(Frame target, System.Drawing.Point p)
+        {
+            var pxC = target.GetColor(p);
+
+            return pxC.Distance(Color.Black) <= 90 || Math.Abs(pxC.GetHue() - 333) <= 10;
+        }
 
         public static void ReadPriors()
         {
+            var cols = File
+                .ReadLines(PriorPath)
+                .First()
+                .Split(',')
+                .Select((name,i) => new { name = name.Replace(@"""",""), i })
+                .ToDictionary(c => c.name);
+
             Priors = File
                 .ReadAllLines(PriorPath)
                 .Skip(1)
@@ -482,15 +682,14 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                     //Parse csv columns
                     var result = new AntenaPoints()
                     {
-                        P4 = new Point(10.8, 10.8),
-                        P5 = new Point(column[7], column[8]),
-                        P6 = new Point(column[5], column[6]),
+                        LS = new Point(column[cols["lsX"].i], column[cols["lsY"].i]),
+                        LFB = new Point(column[cols["lfbX"].i], column[cols["lfbY"].i]),
+                        LFT = new Point(column[cols["lftX"].i], column[cols["lftY"].i]),
 
-                        P1 = new Point(-11.2, 9.5),
-                        P2 = new Point(column[3], column[4]),
-                        P3 = new Point(column[1], column[2]),
-                    }
-                    ;
+                        RS = new Point(column[cols["rsX"].i], column[cols["rsY"].i]),
+                        RFB = new Point(column[cols["rfbX"].i], column[cols["rfbY"].i]),
+                        RFT = new Point(column[cols["rftX"].i], column[cols["rftY"].i]),
+                    };
 
                     return result;
                 })
@@ -499,15 +698,22 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
         public static void ReadHulls()
         {
+            var cols = File
+                .ReadLines(ConvexHullsPath)
+                .First()
+                .Split(',')
+                .Select((name, i) => new { name = name.Replace(@"""", ""), i })
+                .ToDictionary(c => c.name);
+
             ConvexHulls = new Dictionary<PointLabels, List<Point>>
             {
-                { PointLabels.RightOrigin, new List<Point>() },
-                { PointLabels.RightJoint, new List<Point>() },
-                { PointLabels.RightTip, new List<Point>() },
+                { PointLabels.RightScape, new List<Point>() },
+                { PointLabels.RightFlagellumBase, new List<Point>() },
+                { PointLabels.RightFlagellumTip, new List<Point>() },
 
-                { PointLabels.LeftOrigin, new List<Point>() },
-                { PointLabels.LeftJoint, new List<Point>() },
-                { PointLabels.LeftTip, new List<Point>() },
+                { PointLabels.LeftScape, new List<Point>() },
+                { PointLabels.LeftFlagellumBase, new List<Point>() },
+                { PointLabels.LeftFlagellumTip, new List<Point>() },
 
                 { PointLabels.Mandibles, new List<Point>() },
                 { PointLabels.Head, new List<Point>() },
@@ -525,66 +731,65 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                         .Select(col => { double parsed; return double.TryParse(col, out parsed) ? parsed : double.MinValue; })
                         .ToArray();
 
-                    if (column[0] != double.MinValue)
+                    if (column[cols["lftX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.LeftTip].Add(new Point(column[0], column[1]));
+                        ConvexHulls[PointLabels.LeftFlagellumTip].Add(new Point(column[cols["lftX"].i], column[cols["lftY"].i]));
                     }
 
-                    if (column[2] != double.MinValue)
+                    if (column[cols["rftX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.RightTip].Add(new Point(column[2], column[3]));
+                        ConvexHulls[PointLabels.RightFlagellumTip].Add(new Point(column[cols["rftX"].i], column[cols["rftY"].i]));
                     }
 
-                    if (column[4] != double.MinValue)
+                    if (column[cols["rfbX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.RightJoint].Add(new Point(column[4], column[5]));
+                        ConvexHulls[PointLabels.RightFlagellumBase].Add(new Point(column[cols["rfbX"].i], column[cols["rfbY"].i]));
                     }
 
-                    if (column[6] != double.MinValue)
+                    if (column[cols["lfbX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.LeftJoint].Add(new Point(column[6], column[7]));
+                        ConvexHulls[PointLabels.LeftFlagellumBase].Add(new Point(column[cols["lfbX"].i], column[cols["lfbY"].i]));
                     }
 
-                    if (column[8] != double.MinValue)
+                    if (column[cols["rsX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.Mandibles].Add(new Point(column[8], column[9]));
+                        ConvexHulls[PointLabels.RightScape].Add(new Point(column[cols["rsX"].i], column[cols["rsY"].i]));
                     }
 
-                    if (column[10] != double.MinValue)
+                    if (column[cols["lsX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.Head].Add(new Point(column[10], column[11]));
+                        ConvexHulls[PointLabels.LeftScape].Add(new Point(column[cols["lsX"].i], column[cols["lsY"].i]));
                     }
+
+                    if (column[cols["mandiblesX"].i] != double.MinValue)
+                    {
+                        ConvexHulls[PointLabels.Mandibles].Add(new Point(column[cols["mandiblesX"].i], column[cols["mandiblesY"].i]));
+                    }
+
+                    //if (column[cols["lftX"].i] != double.MinValue)
+                    //{
+                    //    ConvexHulls[PointLabels.Head].Add(new Point(column[10], column[11]));
+                    //}
                 });
         }
-
-        //convert frame points to prior space scale & angle and orientation
-        //Read the priors
-        //Read the chulls
-        //Pick from priors
-        //Priors -> keep as is
-        //chulls -> keep as is
-        //Frame points -> project each to prior space
-        //Once found, before selection, project back to frame space
-
-
 
         protected override AntenaPoints CreateChild(AntenaPoints parent1, AntenaPoints parent2)
         {
             var result = new AntenaPoints();
 
-            result.P1.X = Cross(parent1.P1.X, parent2.P1.X, MinX, MaxX);
-            result.P2.X = Cross(parent1.P2.X, parent2.P2.X, MinX, MaxX);
-            result.P3.X = Cross(parent1.P3.X, parent2.P3.X, MinX, MaxX);
-            result.P4.X = Cross(parent1.P4.X, parent2.P4.X, MinX, MaxX);
-            result.P5.X = Cross(parent1.P5.X, parent2.P5.X, MinX, MaxX);
-            result.P6.X = Cross(parent1.P6.X, parent2.P6.X, MinX, MaxX);
+            result.RS.X = Cross(parent1.RS.X, parent2.RS.X, MinX, MaxX);
+            result.RFB.X = Cross(parent1.RFB.X, parent2.RFB.X, MinX, MaxX);
+            result.RFT.X = Cross(parent1.RFT.X, parent2.RFT.X, MinX, MaxX);
+            result.LS.X = Cross(parent1.LS.X, parent2.LS.X, MinX, MaxX);
+            result.LFB.X = Cross(parent1.LFB.X, parent2.LFB.X, MinX, MaxX);
+            result.LFT.X = Cross(parent1.LFT.X, parent2.LFT.X, MinX, MaxX);
 
-            result.P1.Y = Cross(parent1.P1.Y, parent2.P1.Y, MinY, MaxY);
-            result.P2.Y = Cross(parent1.P2.Y, parent2.P2.Y, MinY, MaxY);
-            result.P3.Y = Cross(parent1.P3.Y, parent2.P3.Y, MinY, MaxY);
-            result.P4.Y = Cross(parent1.P4.Y, parent2.P4.Y, MinY, MaxY);
-            result.P5.Y = Cross(parent1.P5.Y, parent2.P5.Y, MinY, MaxY);
-            result.P6.Y = Cross(parent1.P6.Y, parent2.P6.Y, MinY, MaxY);
+            result.RS.Y = Cross(parent1.RS.Y, parent2.RS.Y, MinY, MaxY);
+            result.RFB.Y = Cross(parent1.RFB.Y, parent2.RFB.Y, MinY, MaxY);
+            result.RFT.Y = Cross(parent1.RFT.Y, parent2.RFT.Y, MinY, MaxY);
+            result.LS.Y = Cross(parent1.LS.Y, parent2.LS.Y, MinY, MaxY);
+            result.LFB.Y = Cross(parent1.LFB.Y, parent2.LFB.Y, MinY, MaxY);
+            result.LFT.Y = Cross(parent1.LFT.Y, parent2.LFT.Y, MinY, MaxY);
 
             return result;
         }
@@ -592,15 +797,15 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
         protected override bool ValidChild(AntenaPoints child)
         {
             var valid =
-                       child.P2.IsInPolygon(ConvexHulls[PointLabels.RightJoint])
-                    && child.P3.IsInPolygon(ConvexHulls[PointLabels.RightTip])
-                    && child.P5.IsInPolygon(ConvexHulls[PointLabels.LeftJoint])
-                    && child.P6.IsInPolygon(ConvexHulls[PointLabels.LeftTip])
+                       child.RFB.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumBase])
+                    && child.RFT.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip])
 
-                    && Math.Abs(child.P1.X) <= 15
-                    && Math.Abs(child.P4.X) <= 15
-                    && Math.Abs(child.P1.Y) <= 15
-                    && Math.Abs(child.P4.Y) <= 15
+                    && child.LFB.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase])
+                    && child.LFT.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip])
+
+                    && child.LS.IsInPolygon(ConvexHulls[PointLabels.LeftScape])
+                    && child.RS.IsInPolygon(ConvexHulls[PointLabels.RightScape])
+
                     ;
 
             return valid;
@@ -618,31 +823,96 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                 }
             }
 
-            var bestSolution = Generation.First().Key.ToFrameSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength);
+            var bestSolution = Generation.First().Key.ToFrameSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
 
             if (PreviousSolution != null)
             {
-                var leftPoints = TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.LeftTip]));
-                var rightPoints = TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.RightTip]));
+                var leftPoints = TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip]));
+                var rightPoints = TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip]));
 
-                if (rightPoints <= 5)
+                if (rightPoints <= MinPointsForRegression)
                 {
-                    bestSolution.P1 = PreviousSolution.P1;
-                    bestSolution.P2 = PreviousSolution.P2;
-                    bestSolution.P3 = PreviousSolution.P3;
+                    bestSolution.RS = PreviousSolution.RS;
+                    bestSolution.RFB = PreviousSolution.RFB;
+                    bestSolution.RFT = PreviousSolution.RFT;
                 }
 
-                if (leftPoints <= 5)
+                if (leftPoints <= MinPointsForRegression)
                 {
-                    bestSolution.P4 = PreviousSolution.P4;
-                    bestSolution.P5 = PreviousSolution.P5;
-                    bestSolution.P6 = PreviousSolution.P6;
+                    bestSolution.LS = PreviousSolution.LS;
+                    bestSolution.LFB = PreviousSolution.LFB;
+                    bestSolution.LFT = PreviousSolution.LFT;
                 }
 
 
             }
 
             PreviousSolution = bestSolution;
+
+            var motionModel = model.Clone();
+
+            ////take the best solution, and eval the tip location actoss the whole side of the head
+            ////so for each pixel, eval the fitness
+            //var fitnessMap = motionModel.MapByDistanceFunction(pt =>
+            //{
+            //    var newTry = bestSolution.Clone();
+
+            //    if (pt.X <= motionModel.Width / 2.0)
+            //        newTry.LFT = ToPriorSpace(pt.ToWindowsPoint());
+            //    else
+            //        newTry.RFT = ToPriorSpace(pt.ToWindowsPoint());
+
+            //    lock (fitnesScores)
+            //    {
+            //        ComputeFitnessCPU(new AntenaPoints[] { newTry });
+
+            //        return Math.Log(fitnesScores[0]) / 10.0;
+            //    }
+            //});
+
+            //Draw the model
+            using (var g = Graphics.FromImage(motionModel.Bitmap))
+            {
+                var yellow = new Pen(Color.Yellow, 1);
+                var red = new Pen(Color.Red, 1);
+                var black = new Pen(Color.Black, 1);
+
+                g.DrawLines(yellow, new[]
+                {
+                    bestSolution.RS.ToPointF(),
+                    bestSolution.RFB.ToPointF(),
+                    bestSolution.RFT.ToPointF()
+                });
+                g.DrawLines(yellow, new[]
+                {
+                    bestSolution.LS.ToPointF(),
+                    bestSolution.LFB.ToPointF(),
+                    bestSolution.LFT.ToPointF()
+                });
+
+                var headBoundary = ConvexHulls[PointLabels.Head].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
+                var mouthBoundary = ConvexHulls[PointLabels.Mandibles].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
+                var left = ConvexHulls[PointLabels.LeftFlagellumTip].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
+                var right = ConvexHulls[PointLabels.RightFlagellumTip].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
+                var rightJ = ConvexHulls[PointLabels.RightFlagellumBase].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
+                var leftJ = ConvexHulls[PointLabels.LeftFlagellumBase].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
+
+
+
+                //g.DrawPolygon(red, headBoundary);
+                g.DrawPolygon(red, mouthBoundary);
+                g.DrawPolygon(red, left);
+                g.DrawPolygon(red, right);
+                g.DrawPolygon(red, rightJ);
+                g.DrawPolygon(red, leftJ);
+            }
+            motionModel.ColorPixels(TargetPoints.Select(p => ToFrameSpace(p).ToDrawingPoint()).ToList(), Color.Blue);
+
+            
+            //DebugFrame.DrawFrame(fitnessMap, Target.ShapeData.Width, 0, 1, 0);
+            DebugFrame.DrawFrame(motionModel, Target.ShapeData.Width*2, 0, 1, 0);
+            motionModel.Dispose();
+            //fitnessMap.Dispose();
 
             return bestSolution;
         }
@@ -651,20 +921,20 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
         {
             var result = new AntenaPoints();
 
-            result.P1.X = MutateValue(individual.P1.X, MinX, MaxX);
-            result.P2.X = MutateValue(individual.P2.X, MinX, MaxX);
-            result.P3.X = MutateValue(individual.P3.X, MinX, MaxX);
-            result.P4.X = MutateValue(individual.P4.X, MinX, MaxX);
-            result.P5.X = MutateValue(individual.P5.X, MinX, MaxX);
-            result.P6.X = MutateValue(individual.P6.X, MinX, MaxX);
+            result.RS.X = MutateValue(individual.RS.X, MinX, MaxX);
+            result.RFB.X = MutateValue(individual.RFB.X, MinX, MaxX);
+            result.RFT.X = MutateValue(individual.RFT.X, MinX, MaxX);
+            result.LS.X = MutateValue(individual.LS.X, MinX, MaxX);
+            result.LFB.X = MutateValue(individual.LFB.X, MinX, MaxX);
+            result.LFT.X = MutateValue(individual.LFT.X, MinX, MaxX);
 
 
-            result.P1.Y = MutateValue(individual.P1.Y, MinY, MaxY);
-            result.P2.Y = MutateValue(individual.P2.Y, MinY, MaxY);
-            result.P3.Y = MutateValue(individual.P3.Y, MinY, MaxY);
-            result.P4.Y = MutateValue(individual.P4.Y, MinY, MaxY);
-            result.P5.Y = MutateValue(individual.P5.Y, MinY, MaxY);
-            result.P6.Y = MutateValue(individual.P6.Y, MinY, MaxY);
+            result.RS.Y = MutateValue(individual.RS.Y, MinY, MaxY);
+            result.RFB.Y = MutateValue(individual.RFB.Y, MinY, MaxY);
+            result.RFT.Y = MutateValue(individual.RFT.Y, MinY, MaxY);
+            result.LS.Y = MutateValue(individual.LS.Y, MinY, MaxY);
+            result.LFB.Y = MutateValue(individual.LFB.Y, MinY, MaxY);
+            result.LFT.Y = MutateValue(individual.LFT.Y, MinY, MaxY);
 
             return result;
         }
@@ -678,10 +948,10 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
         private static bool InConvexHulls(Point point)
         {
             var result =
-                point.IsInPolygon(ConvexHulls[PointLabels.RightTip]) ||
-                point.IsInPolygon(ConvexHulls[PointLabels.LeftTip]) ||
-                point.IsInPolygon(ConvexHulls[PointLabels.RightJoint]) ||
-                point.IsInPolygon(ConvexHulls[PointLabels.LeftJoint])
+                point.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip]) ||
+                point.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip]) ||
+                point.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumBase]) ||
+                point.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase])
                 ;
 
             return result;
@@ -689,12 +959,21 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
         public Point ToPriorSpace(Point p)
         {
-            return p.ToPriorSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength);
+            return p.ToPriorSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
         }
 
         public Point ToFrameSpace(Point p)
         {
-            return p.ToFrameSpace(HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.HeadLength);
+            return p.ToFrameSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
+        }
+        public Point ToPriorSpace(System.Drawing.Point p)
+        {
+            return p.ToWindowsPoint().ToPriorSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
+        }
+
+        public Point ToFrameSpace(System.Drawing.Point p)
+        {
+            return p.ToWindowsPoint().ToFrameSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
         }
 
         private static float[] fitnesScores;
@@ -729,11 +1008,11 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                 var individual = uncomputed[i];
                 var sumOfMinDistances = 0.0;
 
-                var D1 = TargetPoints.DistToSegmentSquared(individual.P1, individual.P2);
-                var D2 = TargetPoints.DistToSegmentSquared(individual.P2, individual.P3);
+                var D1 = TargetPoints.DistToSegmentSquared(individual.RS, individual.RFB);
+                var D2 = TargetPoints.DistToSegmentSquared(individual.RFB, individual.RFT);
 
-                var D3 = TargetPoints.DistToSegmentSquared(individual.P4, individual.P5);
-                var D4 = TargetPoints.DistToSegmentSquared(individual.P5, individual.P6);
+                var D3 = TargetPoints.DistToSegmentSquared(individual.LS, individual.LFB);
+                var D4 = TargetPoints.DistToSegmentSquared(individual.LFB, individual.LFT);
 
                 //sum of minimum distances from each point defined by the segments
                 for (var p = 0; p < TargetPoints.Count; p++)
@@ -767,19 +1046,19 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             //Convert the segments into arrays
             for (var i = 0; i < uncomputed.Length; i++)
             {
-                individuals[i, 0] = (float)uncomputed[i].P1.X;
-                individuals[i, 1] = (float)uncomputed[i].P2.X;
-                individuals[i, 2] = (float)uncomputed[i].P3.X;
-                individuals[i, 3] = (float)uncomputed[i].P4.X;
-                individuals[i, 4] = (float)uncomputed[i].P5.X;
-                individuals[i, 5] = (float)uncomputed[i].P6.X;
+                individuals[i, 0] = (float)uncomputed[i].RS.X;
+                individuals[i, 1] = (float)uncomputed[i].RFB.X;
+                individuals[i, 2] = (float)uncomputed[i].RFT.X;
+                individuals[i, 3] = (float)uncomputed[i].LS.X;
+                individuals[i, 4] = (float)uncomputed[i].LFB.X;
+                individuals[i, 5] = (float)uncomputed[i].LFT.X;
 
-                individuals[i, 6] =  (float)uncomputed[i].P1.Y;
-                individuals[i, 7] =  (float)uncomputed[i].P2.Y;
-                individuals[i, 8] =  (float)uncomputed[i].P3.Y;
-                individuals[i, 9] =  (float)uncomputed[i].P4.Y;
-                individuals[i, 10] = (float)uncomputed[i].P5.Y;
-                individuals[i, 11] = (float)uncomputed[i].P6.Y;
+                individuals[i, 6] =  (float)uncomputed[i].RS.Y;
+                individuals[i, 7] =  (float)uncomputed[i].RFB.Y;
+                individuals[i, 8] =  (float)uncomputed[i].RFT.Y;
+                individuals[i, 9] =  (float)uncomputed[i].LS.Y;
+                individuals[i, 10] = (float)uncomputed[i].LFB.Y;
+                individuals[i, 11] = (float)uncomputed[i].LFT.Y;
             }
 
             var minDistancesDev = gpu.Allocate<float>(uncomputed.Length);

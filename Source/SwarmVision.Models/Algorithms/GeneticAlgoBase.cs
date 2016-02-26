@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ICSharpCode.ILSpy;
 using SwarmVision.Filters;
 using SwarmVision.HeadPartsTracking.Models;
 
@@ -68,6 +69,8 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
             PreProcessTarget();
             PreProcessTime.Stop();
 
+            return default(T);
+
             //Reset the fitness of each member on new frame
             for(var i = 0; i < Generation.Count; i++)
                 Generation[Generation.ElementAt(i).Key] = InitialFitness;
@@ -87,20 +90,21 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
                     if ((!ValidateRandom || ValidChildWrapper(newItem)) && !Generation.ContainsKey(newItem))
                         Generation.Add(newItem, InitialFitness);
-                    else
-                        i--; //Try again
+                    //else
+                    //    i--; //Try again
                 }
                 RandomMemberTime.Stop();
 
                 ParentCount = Generation.Count;
 
                 //Fill the rest with children
-                var children = new T[GenerationSize - Generation.Count];
+                var children = new T[Math.Max(0, GenerationSize - Generation.Count)];
 
                 Parallel.For(0, children.Length, c =>
                 {
                     var childValid = false;
                     var child = default(T);
+                    var attempts = 0;
 
                     do
                     {
@@ -120,26 +124,36 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
                         if (!Generation.ContainsKey(child) &&
                             ValidChildWrapper(child))
                             childValid = true;
-                    }
-                    while (!childValid);
 
-                    children[c] = child;
+                        attempts++;
+                    }
+                    while (!childValid && attempts < 3);
+
+                    children[c] = childValid ? child : default(T);
                 });
 
                 foreach (var child in children)
-                    Generation.Add(child, InitialFitness);
-
+                    if(child != null)
+                        Generation.Add(child, InitialFitness);
+                
                 //Mutate a fraction of individuals
+                var mutants = new T[Generation.Count];
                 Parallel.For(0, Generation.Count, i => 
                 {
                     if (Random.NextDouble() < MutationProbability)
                     {
-                        lock (Generation)
-                        {
-                            Generation.Add(Mutated(Generation.ElementAt(i).Key), InitialFitness);
-                        }
+                        var mutant = Mutated(Generation.ElementAt(i).Key);
+
+                        if(ValidChildWrapper(mutant))
+                            mutants[i] = mutant;
                     }
                 });
+
+                Generation.AddRange(mutants
+                    .AsParallel()
+                    .Where(m => m != null)
+                    .Select(m => new KeyValuePair<T, double>(m, InitialFitness))
+                );
 
                 //Evaluate their fitness
                 ComputeFitnessTime.Start();

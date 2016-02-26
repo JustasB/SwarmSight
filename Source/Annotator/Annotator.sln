@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Annotator", "Annotator.csproj", "{74412F3E-6822-40D4-99C0-965946F688D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.HeadPartsTracking", "..\SwarmVision.Models\SwarmVision.HeadPartsTracking.csproj", "{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.VideoPlayer", "..\SwarmVision.VideoPlayer\SwarmVision.VideoPlayer.csproj", "{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.Hardware", "..\SwarmVision.GPU\SwarmVision.Hardware.csproj", "{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmVision.Filters", "..\..\..\..\Christina Burden\SwarmVision.Filters\SwarmVision.Filters.csproj", "{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{74412F3E-6822-40D4-99C0-965946F688D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74412F3E-6822-40D4-99C0-965946F688D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74412F3E-6822-40D4-99C0-965946F688D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74412F3E-6822-40D4-99C0-965946F688D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B880E4CB-AAD4-48FD-BFEF-63108C9C41CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

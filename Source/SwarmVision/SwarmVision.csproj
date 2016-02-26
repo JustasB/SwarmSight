@@ -100,6 +100,9 @@
     <Compile Include="UserControls\ComparisonTable.xaml.cs">
       <DependentUpon>ComparisonTable.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UserControls\ReceptiveField.xaml.cs">
+      <DependentUpon>ReceptiveField.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserControls\RegionOfInterest.xaml.cs">
       <DependentUpon>RegionOfInterest.xaml</DependentUpon>
     </Compile>
@@ -126,6 +129,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UserControls\ComparisonTable.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\ReceptiveField.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -194,6 +201,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Averaged Head.png" />
+    <Resource Include="Assets\move.png" />
+    <Resource Include="Assets\resize.png" />
+    <Resource Include="Assets\Rotate.png" />
     <Content Include="ffprobe.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -216,6 +227,7 @@
       <Name>SwarmVision.VideoPlayer</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

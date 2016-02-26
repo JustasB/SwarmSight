@@ -19,6 +19,7 @@ namespace SwarmVision.HeadPartsTracking.Models
         public const int HeadWidth = 44;
         public const int HeadHeight = 47;
         public const int HeadLength = 35;//43; //Front to back distance of the head template
+        public const int ScapeDistance = 17;
         public const int HeadOffsetX = 19;
         public const int HeadOffsetY = 18;
 

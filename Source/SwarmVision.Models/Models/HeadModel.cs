@@ -9,11 +9,12 @@ namespace SwarmVision.HeadPartsTracking.Models
 {
     public class HeadModel : IDisposable
     {
-        public MinMaxDouble ScaleX = new MinMaxDouble(1, 0.8, 1.5);
-        public MinMaxDouble ScaleY = new MinMaxDouble(1, 0.8, 1.5);
-        public AngleInDegrees Angle = new AngleInDegrees(180, 180-45, 180+45);
+        public MinMaxDouble ScaleX = new MinMaxDouble(1, 0.1, 7.9);
+        public MinMaxDouble ScaleY = new MinMaxDouble(1, 0.1, 7.9);
+        public AngleInDegrees Angle = new AngleInDegrees(0, -270, +270);
 
-        public System.Windows.Point Origin;
+        public System.Windows.Point Origin = new System.Windows.Point(0, 0);
+        public System.Windows.Point Dimensions = new System.Windows.Point(4*83, 4*83);
 
         public TwoSegmentModel LeftAntena;
         public TwoSegmentModel RightAntena;

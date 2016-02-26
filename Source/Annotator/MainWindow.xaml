@@ -12,7 +12,7 @@
                FontWeight="Bold" />
 
         <Image x:Name="videoCanvas" Height="388" Margin="10,38,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
-    		Width="695" Stretch="Fill" MouseUp="videoCanvas_MouseUp" PreviewKeyUp="Grid_PreviewKeyUp" />
+    		Width="695" Stretch="Fill" MouseUp="videoCanvas_MouseUp" PreviewKeyUp="Grid_PreviewKeyUp" MouseMove="videoCanvas_MouseMove" />
 
         <Label Content="Select Video:" HorizontalAlignment="Left" VerticalAlignment="Top" Height="26" Width="88"
                Margin="5,7,0,0" FontWeight="Bold" />
@@ -31,9 +31,8 @@
                     HorizontalAlignment="Left" Width="79">
             <Button x:Name="btnPlayPause" Content="7" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="41"
                     FontFamily="Webdings" Height="18" Opacity="0.8"
-                    ToolTip="Play/Pause video playback" />
-            <Button Content="8" HorizontalAlignment="Left" VerticalAlignment="Top" Width="38" FontFamily="Webdings"
-                    Height="18"  Opacity="0.8" ToolTip="Stop playing video" />
+                    ToolTip="Play/Pause video playback" Click="btnPlayPause_Click" />
+            <Button Content="8" HorizontalAlignment="Left" Width="38" FontFamily="Webdings"  Opacity="0.8" ToolTip="Stop playing video" Height="18" VerticalAlignment="Top" Click="Button_Click" />
         </StackPanel>
         <Label x:Name="lblTime" Content="00:00:00" HorizontalAlignment="Left" Margin="10,426,0,0"
                VerticalAlignment="Top" Width="83" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
@@ -54,7 +53,23 @@
                 </StackPanel>
             </Grid>
         </Border>
-        <Image x:Name="smallTemplate" HorizontalAlignment="Left" Height="95" Margin="10,37,0,0" VerticalAlignment="Top" Width="83" Opacity="0.5" Visibility="Hidden"/>
+        
+        <Grid HorizontalAlignment="Left" Height="95" Margin="10,37,0,0" VerticalAlignment="Top" Width="83" Opacity="0.5" RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
+                <TransformGroup>
+                    <RotateTransform x:Name="rotateThumbnail" Angle="12"/>
+                </TransformGroup>
+            </Grid.RenderTransform>
+            <Image x:Name="smallTemplate"/>
+        </Grid>
+        <Button x:Name="btnCounterClockwise" Content="Counter" HorizontalAlignment="Left" Margin="10,132,0,0" VerticalAlignment="Top" HorizontalContentAlignment="Center"  FontSize="12" Width="42" Height="20" Opacity="0.5" Visibility="Visible" Padding="0" Click="btnRotate_Click"/>
+
         <Label x:Name="lblReward" Content="Very Good!" HorizontalAlignment="Center" Margin="210,37,211,0" VerticalAlignment="Top" HorizontalContentAlignment="Center" Background="Black" BorderBrush="Black" BorderThickness="1" FontWeight="Bold" Foreground="#FFE8FF00" FontSize="20" Width="294" Height="40" Opacity="0.5" Visibility="Hidden"/>
+        <Image x:Name="zoomClip" HorizontalAlignment="Left" Height="100" Margin="608,38,0,0" VerticalAlignment="Top" Width="100" Stretch="Fill"/>
+        <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="98" Margin="608,38,0,0" Stroke="Black" VerticalAlignment="Top" Width="48"/>
+        <Rectangle Fill="Transparent" HorizontalAlignment="Left" Width="98" Margin="608,38,0,0" Stroke="Black" VerticalAlignment="Top" Height="48"/>
+        <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="51" Margin="655,85,0,0" Stroke="Black" VerticalAlignment="Top" Width="51"/>
+        <Button x:Name="btnClockwise" Content="Clock" HorizontalAlignment="Left" Margin="52,132,0,0" VerticalAlignment="Top" HorizontalContentAlignment="Center"  FontSize="12" Width="42" Height="20" Opacity="0.5" Visibility="Visible" Padding="0" Click="btnClockwise_Click"/>
+
     </Grid>
 </Window>

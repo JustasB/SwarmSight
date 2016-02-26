@@ -1,0 +1,45 @@
+﻿<UserControl x:Class="SwarmVision.UserControls.ReceptiveField"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SwarmVision.UserControls"
+             mc:Ignorable="d" Height="113.224" Width="113.224" AllowDrop="True">
+    <Grid>
+
+        <Grid.Effect>
+            <DropShadowEffect Color="White" BlurRadius="9" ShadowDepth="0"/>
+        </Grid.Effect>
+
+        <Grid x:Name="gridHead" RenderTransformOrigin="0.5,0.5" Margin="15">
+
+            <Border BorderBrush="Black" BorderThickness="1" Margin="0"/>
+            <Grid RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform>
+                    <TransformGroup x:Name="transformGroup">
+                        <ScaleTransform x:Name="gridScale" ScaleX="1.0"/>
+                        <SkewTransform/>
+                        <RotateTransform x:Name="gridTransform" Angle="0"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Grid.RenderTransform>
+                <Image x:Name="image" HorizontalAlignment="Center" VerticalAlignment="Center" Source="/SwarmVision;component/Assets/Averaged Head.png" Stretch="Fill" RenderTransformOrigin="0.5,0.5" Width="43" Height="45"/>
+                <Ellipse x:Name="imgLeftBase" Fill="White" HorizontalAlignment="Center" Height="5" Margin="0,0,15,0" Stroke="Black" VerticalAlignment="Center" Width="5" StrokeThickness="0.5" ToolTip="Click and drag to reposition left antenna base" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="imgLeftBase_MouseMove"/>
+                <Ellipse x:Name="imgRightBase" Fill="White" HorizontalAlignment="Center" Height="5" Margin="15,0,0,0" Stroke="Black" VerticalAlignment="Center" Width="5" StrokeThickness="0.5" RenderTransformOrigin="8.04,0.39" ToolTip="Click and drag to reposition right antenna base" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="imgRightBase_MouseMove"/>
+            </Grid>
+            <Image x:Name="imgMove" HorizontalAlignment="Left" Height="15" VerticalAlignment="Top" Width="15" Source="/SwarmVision;component/Assets/move.png" ToolTip="Click and drag to move" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="TRANSLATE_move" Margin="-15,-15,0,0"/>
+            <Image x:Name="imgRotate" HorizontalAlignment="Center" Height="15" VerticalAlignment="Top" Width="15" Source="/SwarmVision;component/Assets/Rotate.png" ToolTip="Click and drag to rotate" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="ROTATE_move" Margin="0,-15,0,0"/>
+            <Image x:Name="imgScale" HorizontalAlignment="Right" Height="15" VerticalAlignment="Bottom" Source="/SwarmVision;component/Assets/resize.png" Margin="0,0,-9,-12" ToolTip="Click and drag to resize" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="SCALE_move" RenderTransformOrigin="0.5,0.5" Width="7">
+                <Image.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="-45"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Image.RenderTransform>
+            </Image>
+
+        </Grid>
+    </Grid>
+</UserControl>

@@ -19,6 +19,9 @@ using SwarmVision.HeadPartsTracking;
 using SwarmVision.UserControls;
 using Frame = SwarmVision.Filters.Frame;
 using Point = System.Windows.Point;
+using System.Windows.Input;
+using SwarmVision.HeadPartsTracking.Algorithms;
+using SwarmVision.HeadPartsTracking.Models;
 
 namespace SwarmVision
 {
@@ -41,6 +44,10 @@ namespace SwarmVision
         private FrameComparer _comparer;
         private FrameRenderer _renderer;
         private readonly VideoProcessorBase _processor = new AntennaAndPERDetector();
+        private HeadModel HeadLocation = new HeadModel();
+
+        List<string> filesToProcess = new List<string>();
+        int currentFileIndex = 6;
 
         public MainWindow()
         {
@@ -55,6 +62,21 @@ namespace SwarmVision
             Loaded += (sender, args) => UpdateComparerBounds();
             Closing += (sender, args) => Stop();
 
+            receptiveField.Canvas = videoCanvas;
+            receptiveField.Moved += ReceptiveField_Moved;
+            receptiveField.Scaled += ReceptiveField_Scaled;
+            receptiveField.Rotated += ReceptiveField_Rotated;
+            HeadLocation = new HeadModel()
+            {
+                Angle = new AngleInDegrees(0, -10, 180),
+                Origin = new System.Windows.Point(148.8, 67.7),
+                ScaleX = new MinMaxDouble(1, 0, 1),
+                ScaleY = new MinMaxDouble(1, 0, 2)
+            };
+
+            (_processor as AntennaAndPERDetector).BestHead = HeadLocation;
+
+
             Application.Current.Exit += (sender, args) => Stop();
 
 #if !DEBUG
@@ -62,21 +84,64 @@ namespace SwarmVision
                 (sender, args) => { MessageBox.Show((args.ExceptionObject as Exception).Message); };
 #endif
             //TESTs
-            txtFileName.Text =
-                @"Y:\Downloads\BeeVids\down.mp4";
-                //@"Y:\Downloads\BeeVids\2015.8.15 Bee 5 Rose White Back.MP4";//done
-                //@"Y:\Downloads\BeeVids\2015.8.15 Bee 1 Rose White Back.MP4";//done
-                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 9 Rose.MP4";//done
-                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 8 Rose.MP4";//DONE
-                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 4 Rose.MP4";//done
-                //@"Y:\Downloads\BeeVids\2015.8.13 Bee 2 Rose.MP4";
+            //txtFileName.Text =
+            //    @"y:\Downloads\BeeVids\TestB-Feb16-Mirrors.mov";
+            //@"c:\temp\frames\B2-Feb11-bouquet.mov";
+            //@"c:\temp\frames\B1-Feb11-bouquet.mov";
+            //@"c:\temp\frames\Bee1_Feb10-Test.mov";
+            //@"Y:\Downloads\2Feb16-Antennal Movement practice\b3.mov";
+            //@"Y:\Downloads\2Feb16-Antennal Movement practice\b1.mov";
+            //@"Y:\Downloads\2Feb16-Antennal Movement practice\b4.mov";
+            //@"Y:\Downloads\BeeVids\down.mp4";
+            //@"Y:\Downloads\BeeVids\2015.8.15 Bee 5 Rose White Back.MP4";//done
+            //@"Y:\Downloads\BeeVids\2015.8.15 Bee 1 Rose White Back.MP4";//done
+            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 9 Rose.MP4";//done
+            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 8 Rose.MP4";//DONE
+            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 4 Rose.MP4";//done
+            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 2 Rose.MP4";
 
 
-            _comparer.MostRecentFrameIndex = 750;
+            // _comparer.MostRecentFrameIndex = 750;
 
-            OnPlayClicked(null, null);
+            //OnPlayClicked(null, null);
+
+            filesToProcess = Directory
+                .EnumerateFiles(@"C:\Users\Justas\Downloads\2Feb16-Antennal Movement practice\19Feb16-Start Hept Tests\19th")
+                //.EnumerateFiles(@"C:\Users\Justas\Downloads\2Feb16-Antennal Movement practice\22Feb16\22nd")
+                .Where(f => f.EndsWith("mov"))
+                .ToList();
+
+            txtFileName.Text = filesToProcess[currentFileIndex];
+
+            Play();
         }
 
+        private void ReceptiveField_Rotated(object sender, EventArgs e)
+        {
+            HeadLocation.Angle.Value = receptiveField.Angle;
+        }
+
+        private void ReceptiveField_Scaled(object sender, EventArgs e)
+        {
+            HeadLocation.ScaleX.Value = receptiveField.Scale.X;
+            HeadLocation.ScaleY.Value = receptiveField.Scale.Y;
+
+            //HeadLocation.Origin = ToVideoCoordinates(receptiveField.Position);
+            //HeadLocation.Dimensions = ToVideoCoordinates(receptiveField.Dimensions);
+        }
+
+        private void ReceptiveField_Moved(object sender, EventArgs e)
+        {
+            HeadLocation.Origin = ToVideoCoordinates(receptiveField.Position);
+        }
+
+        private Point ToVideoCoordinates(Point source)
+        {
+            return new Point(
+                _decoder.PlayerOutputWidth *  source.X / videoCanvas.Width,
+                _decoder.PlayerOutputHeight * source.Y / videoCanvas.Height
+            );
+        }
         private void SetupChart()
         {
             _chart = new ChartModel();
@@ -128,7 +193,7 @@ namespace SwarmVision
                                                  tTest.MeanDifference.ToString("N2");
 
             if (tTest.TTest.FirstSeriesMean != 0)
-                comparisonTable.lblAvgPercent.Content = tTest.PercentMeanDifference.ToString("P2");
+                comparisonTable.lblAvgPercent.Content = tTest.PercentMeanDifference.ToString("RFB");
             else
                 comparisonTable.lblAvgPercent.Content = "-";
 
@@ -204,7 +269,7 @@ namespace SwarmVision
                     _decoder.Dispose();
                     _decoder = null;
                     _decoder = new VideoDecoder();
-                    _decoder.PlayStartTimeInSec = 10;
+                    _decoder.PlayStartTimeInSec = 0;
                     _decoder.Processor = _processor;
                     _decoder.Open(txtFileName.Text);
                     _comparer.Decoder = _decoder;
@@ -218,8 +283,8 @@ namespace SwarmVision
                 _activity.RemoveAll(p => p.X > _comparer.MostRecentFrameIndex);
 
                 //Adjust for any quality changes, before starting again
-                _decoder.PlayerOutputWidth = 204;//(int) (_decoder.VideoInfo.Width*_quality);
-                _decoder.PlayerOutputHeight = 152;//(int) (_decoder.VideoInfo.Height*_quality);
+                _decoder.PlayerOutputWidth = (int) (_decoder.VideoInfo.Width*_quality); //204;//
+                _decoder.PlayerOutputHeight = (int) (_decoder.VideoInfo.Height*_quality); //152;//
 
                 //Setup fps counter
                 _fpsStartFrame = _comparer.MostRecentFrameIndex;
@@ -278,9 +343,24 @@ namespace SwarmVision
 
         private void OnStopped(object sender, EventArgs eventArgs)
         {
+            var rows = ((AntennaAndPERDetector)_processor).dataFrame;
+
+            File.WriteAllLines(filesToProcess[currentFileIndex] + "_antennaBins_"+ DateTime.Now.ToString("yyyyMMdd-HHmm") +".csv", rows);
+
             _chart.Stop();
 
             Reset();
+
+
+            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Thread.Sleep(1500);
+                currentFileIndex++;
+                txtFileName.Text = filesToProcess[currentFileIndex];
+                ((AntennaAndPERDetector)_processor).dataFrame.Clear();
+                Play();
+                Activate();
+            }));
         }
 
         public static LinkedList<DateTime> fpsHist = new LinkedList<DateTime>();
@@ -535,20 +615,20 @@ namespace SwarmVision
             {
                 _comparer.SetBounds(roi.LeftPercent, roi.TopPercent, roi.RightPercent, roi.BottomPercent);
 
-                txtLeft.Text = roi.LeftPercent.ToString("P2");
-                txtRight.Text = roi.RightPercent.ToString("P2");
-                txtTop.Text = roi.TopPercent.ToString("P2");
-                txtBottom.Text = roi.BottomPercent.ToString("P2");
+                txtLeft.Text = roi.LeftPercent.ToString("RFB");
+                txtRight.Text = roi.RightPercent.ToString("RFB");
+                txtTop.Text = roi.TopPercent.ToString("RFB");
+                txtBottom.Text = roi.BottomPercent.ToString("RFB");
             }
 
             else
             {
                 _comparer.SetBounds(0, 0, 1, 1);
 
-                txtLeft.Text = 0.ToString("P2");
-                txtRight.Text = 0.ToString("P2");
-                txtTop.Text = 1.ToString("P2");
-                txtBottom.Text = 1.ToString("P2");
+                txtLeft.Text = 0.ToString("RFB");
+                txtRight.Text = 0.ToString("RFB");
+                txtTop.Text = 1.ToString("RFB");
+                txtBottom.Text = 1.ToString("RFB");
             }
         }
 

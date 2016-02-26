@@ -16,6 +16,8 @@ using System.IO;
 using System.Threading;
 using System.Windows.Media.Imaging;
 using Point = System.Drawing.Point;
+using SwarmVision.Filters;
+using SwarmVision.HeadPartsTracking.Algorithms;
 
 namespace SwarmVision
 {
@@ -27,8 +29,10 @@ namespace SwarmVision
         public static MainWindow Current;
 
         private VideoDecoder _decoder;
-        public static int ResumeFrame = 300; // Start at 10s 
-
+        public static int ResumeFrame = 0; // Start at 10s 
+        public static int RandomFramesCount = 100;
+        public static List<int> RandomFrames = new List<int>();
+        public FrameIterator iterator = null;
         public MainWindow()
         {
             Current = this;
@@ -41,9 +45,13 @@ namespace SwarmVision
 
             //TEST VIDEO
             txtFileName.Text =
-                @"Y:\Documents\Dropbox\Research\Christina Burden\out.mp4";
-            
+                @"C:\temp\frames\Bee1_Feb10-Test.mov";
+                //@"C:\temp\frames\B2-Feb11-bouquet.mov";
+                //@"C:\temp\frames\B1-Feb11-bouquet.mov";
+                //@"Y:\Downloads\BeeVids\2015.8.15 Bee 5 Rose White Back.MP4";
+
             SetupPlayer();
+
         }
 
         private void SetupPlayer()
@@ -51,6 +59,7 @@ namespace SwarmVision
             if (_decoder != null)
             {
                 _decoder.Stop();
+                _decoder.ClearBuffer();
                 _decoder.Dispose();
                 _decoder = null;
             }
@@ -61,6 +70,8 @@ namespace SwarmVision
 
             _decoder = new VideoDecoder();
             _decoder.Open(file);
+            _decoder.PlayerOutputWidth = _decoder.VideoInfo.Width;
+            _decoder.PlayerOutputHeight = _decoder.VideoInfo.Height;
 
             Dispatcher.Invoke(() =>
             {
@@ -68,9 +79,16 @@ namespace SwarmVision
                 sliderTime.Maximum = _decoder.VideoInfo.TotalFrames - 1;
             });
 
-            _decoder.SeekTo(ResumeFrame);
+            if (iterator == null)
+            {
+                iterator = new FrameIterator(_decoder.VideoInfo.TotalFrames, templateView.TemplatePaths.Keys.Count, 100);
+                //iterator.InitLinearSequence(10, 0);
+                iterator.InitRandomSequence(50, 0);
+            }
+
+            _decoder.SeekTo(iterator.BurstBeginFrameIndex);
             _decoder.Start();
-            _decoder.FrameDecoder.FrameBufferCapacity = 2;
+            _decoder.FrameDecoder.FrameBufferCapacity = 1;
             _decoder.FrameDecoder.MinimumWorkingFrames = 1;
         }
 
@@ -186,10 +204,10 @@ namespace SwarmVision
         private void Reset()
         {
             Application.Current.Dispatcher.Invoke(() =>
-                {
-                    _sliderValueChangedByCode = true;
-                    sliderTime.Value = 0;
-                });
+            {
+                _sliderValueChangedByCode = true;
+                sliderTime.Value = 0;
+            });
         }
 
         private void txtFileName_LostFocus(object sender, RoutedEventArgs e)
@@ -219,9 +237,9 @@ namespace SwarmVision
                     .Max();
 
                 var decision = MessageBox.Show(
-                    string.Format("The associated .CSV file has data for frame {0}. Do you want to resume from frame {1}?", maxFrame, maxFrame+1), 
-                    "Resume where left off?", 
-                    MessageBoxButton.YesNo, 
+                    string.Format("The associated .CSV file has data for frame {0}. Do you want to resume from frame {1}?", maxFrame, maxFrame + 1),
+                    "Resume where left off?",
+                    MessageBoxButton.YesNo,
                     MessageBoxImage.Question
                 );
 
@@ -289,6 +307,8 @@ namespace SwarmVision
         private Dictionary<int, Dictionary<string, System.Drawing.Point?>> FrameData = new Dictionary<int, Dictionary<string, System.Drawing.Point?>>();
         public static bool IsMarking;
         public static bool ReadyForNextFrame = false;
+        public static SwarmVision.Filters.Frame currentFrame = null;
+        public static Filters.Frame nextFrame = null;
         private void StartStopMarking(object sender, RoutedEventArgs e)
         {
             IsMarking = true;
@@ -299,57 +319,77 @@ namespace SwarmVision
 
             Thread.Sleep(50);
             HideInstructions();
-            
+
 
             new Thread(() =>
             {
                 while (IsMarking)
                 {
-                    using (var nextFrame = _decoder.PlayNextFrame())
-                    {
-                        if (nextFrame != null)
+                    //for(var i = 0; i < 500; i++)
+                    { 
+                        lock(_decoder)
                         {
-                            Dispatcher.Invoke(() =>
+                            _decoder.Stop();
+                            _decoder.ClearBuffer();
+                            _decoder.SeekTo(iterator.FrameIndex);
+                            _decoder.Start(true);
+                    
+                            while(!_decoder.FramesInBuffer)
                             {
-                                ShowFrame(nextFrame.Bitmap);
-                                lblTime.Content = nextFrame.FrameTime.ToString(@"mm\:ss") + " (" + nextFrame.FrameIndex + ")";
-                            });
-
-                            ReadyForNextFrame = false;
-
-                            while (!ReadyForNextFrame && IsMarking)
-                            {
-                                Thread.Sleep(10); //Wait for position data
+                                Thread.Sleep(10);
                             }
 
-                            //Store the position data
-                            if (!FrameData.ContainsKey(nextFrame.FrameIndex))
-                                FrameData[nextFrame.FrameIndex] = new Dictionary<string, System.Drawing.Point?>();
+                            if (nextFrame != null)
+                                nextFrame.Dispose();
 
-                            FrameData[nextFrame.FrameIndex][TemplateView.Current.CurrentPartName] = _capturedMousePosition;
-
-                            UpdateReward();
-
-                            templateView.AdvanceBurst();
-
-                            if (templateView.AtBatchStart && _decoder.VideoInfo.TotalFrames > nextFrame.FrameIndex + 1)
-                            {
-                                ResumeFrame = nextFrame.FrameIndex + 1; //Save current position for later resuming
-                                
-                                IsMarking = false;
-                                ShowInstructions();
-                                return;
-                            }
-                            
-                            if (templateView.AtBurstStart)
-                            {
-                                SetupPlayer(); //Rewind to first frame
-                                IsMarking = false;
-                                ShowInstructions();
-                                return;
-                            }
+                            nextFrame = _decoder.PlayNextFrame();
                         }
                     }
+                    if (currentFrame != null)
+                        currentFrame.Dispose();
+
+                    currentFrame = nextFrame;
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        ShowFrame(currentFrame);
+                    });
+
+                    ReadyForNextFrame = false;
+
+                    while (!ReadyForNextFrame && IsMarking)
+                    {
+                        Thread.Sleep(1); //Wait for position data (use value < smallest inter-click interval)
+                    }
+
+                    //Store the position data
+                    if (!FrameData.ContainsKey(currentFrame.FrameIndex))
+                        FrameData[currentFrame.FrameIndex] = new Dictionary<string, System.Drawing.Point?>();
+
+                    FrameData[currentFrame.FrameIndex][TemplateView.Current.CurrentPartName] = _capturedMousePosition;
+
+                    UpdateReward();
+
+                    if (iterator.IsAtEndOfBurstOrSequenceOrVideo && iterator.IsAtEndOfBatch)
+                    {
+                        iterator.AdvanceBurst();
+                        templateView.CurrentPartIndex = iterator.BatchPartIndex;
+                        IsMarking = false;
+                        ShowInstructions();
+                        return;
+                    }
+
+                    if (iterator.IsAtEndOfBurstOrSequenceOrVideo)
+                    {
+                        iterator.AdvanceBurst();
+                        templateView.CurrentPartIndex = iterator.BatchPartIndex;
+                        SetupPlayer(); //Rewind to first frame
+                        IsMarking = false;
+                        ShowInstructions();
+                        return;
+                    }
+
+                    iterator.AdvanceBurst();
 
                     Thread.Sleep(10);
                 }
@@ -359,29 +399,29 @@ namespace SwarmVision
 
         private void UpdateReward()
         {
-            if (templateView.CurrentBurstPosition == 0)
+            if (iterator.BurstPositionIndex == 0)
                 ShowReward("Very Good! Keep Going...");
 
-            else if (templateView.CurrentBurstPosition == 1)
+            else if (iterator.BurstPositionIndex == 1)
                 ShowReward("Excellent!");
 
-            else if (templateView.CurrentBurstPosition == templateView.BurstSize - 2)
+            else if (iterator.BurstPositionIndex == iterator.BurstPositionCount - 2)
                 ShowReward("Last one!");
 
-            else if (templateView.CurrentBurstPosition == templateView.BurstSize - 1)
+            else if (iterator.BurstPositionIndex == iterator.BurstPositionCount - 1)
                 ShowReward("Great job!");
 
-            else if (templateView.CurrentBurstPosition == templateView.BurstSize - 10 - 1)
-                ShowReward((templateView.BurstSize - templateView.CurrentBurstPosition - 1) + " more to go");
+            else if (iterator.BurstPositionIndex <= iterator.BurstPositionCount - 10 - 1)
+                ShowReward((iterator.BurstPositionCount - iterator.BurstPositionIndex - 1) + " more to go");
         }
 
         private void ShowReward(string text)
         {
             Dispatcher.Invoke(() =>
-                {
-                    lblReward.Visibility = Visibility.Visible;
-                    lblReward.Content = text;
-                });
+            {
+                lblReward.Visibility = Visibility.Visible;
+                lblReward.Content = text;
+            });
         }
 
         private void HideInstructions()
@@ -406,11 +446,31 @@ namespace SwarmVision
             });
         }
 
-        private void ShowFrame(Bitmap bitmap)
+        private void ShowFrame(Filters.Frame frame)
         {
+            using (var g = Graphics.FromImage(frame.Bitmap))
+            {
+                var white = new System.Drawing.Pen(System.Drawing.Color.White, 1);
+                var black = new System.Drawing.Pen(System.Drawing.Color.Black, 1);
+
+                if (FrameData.ContainsKey(frame.FrameIndex))
+                {
+                    FrameData[frame.FrameIndex].Select(p => p.Value).ToList().ForEach(p =>
+                    {
+                        if (p != null)
+                        {
+                            g.DrawEllipse(white, new RectangleF(p.Value.ToWindowsPoint().ToPointF(), new SizeF(1, 1)));
+                            g.DrawEllipse(black, new RectangleF(p.Value.ToWindowsPoint().Moved(-1, -1).ToPointF(), new SizeF(3, 3)));
+
+                        }
+                    });
+                }
+            }
+
+
             using (var memory = new MemoryStream())
             {
-                bitmap.Save(memory, ImageFormat.Bmp);
+                frame.Bitmap.Save(memory, ImageFormat.Bmp);
                 memory.Position = 0;
 
                 var bitmapImage = new BitmapImage();
@@ -418,9 +478,15 @@ namespace SwarmVision
                 bitmapImage.StreamSource = memory;
                 bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                 bitmapImage.EndInit();
-
+                
                 videoCanvas.Source = bitmapImage;
             }
+
+            videoCanvas_MouseMove(this, null);
+
+            lblTime.Content = currentFrame.FrameTime.ToString(@"mm\:ss") + " (" + currentFrame.FrameIndex + ")";
+            _sliderValueChangedByCode = true;
+            sliderTime.Value = currentFrame.FrameIndex;
         }
 
         private void videoCanvas_MouseUp(object sender, MouseButtonEventArgs e)
@@ -450,16 +516,16 @@ namespace SwarmVision
         /// <returns></returns>
         private Point RelativeToVideo(Point target)
         {
-            var videoWidth = _decoder.VideoInfo.Width;
-            var videoHeight = _decoder.VideoInfo.Height;
+            var videoWidth = currentFrame.Width;
+            var videoHeight = currentFrame.Height;
 
-            var screenWidth = videoCanvas.ActualWidth;
-            var screenHeight = videoCanvas.ActualHeight;
+            var screenWidth = videoCanvas.ActualWidth == 0 ? videoCanvas.Width : videoCanvas.ActualWidth;
+            var screenHeight = videoCanvas.ActualHeight == 0 ? videoCanvas.Height : videoCanvas.ActualHeight;
 
             return new Point
             (
-                x: (int)Math.Round(target.X/screenWidth*videoWidth), 
-                y: (int)Math.Round(target.Y/screenHeight*videoHeight)
+                x: Math.Max(0, Math.Min(videoWidth, (target.X / screenWidth * videoWidth).Rounded())),
+                y: Math.Max(0, Math.Min(videoHeight, (target.Y / screenHeight * videoHeight).Rounded()))
             );
         }
 
@@ -468,8 +534,8 @@ namespace SwarmVision
             //Find head center by taking the midpoint of top and back
             var headCenter = new Point
             (
-                x: (int) Math.Round((headTop.X + headBack.X)/2.0),
-                y: (int) Math.Round((headTop.Y + headBack.Y)/2.0)
+                x: (int)Math.Round((headTop.X + headBack.X) / 2.0),
+                y: (int)Math.Round((headTop.Y + headBack.Y) / 2.0)
             );
 
             //Find the head angle, where 0 degrees is pointing right and 90 is up
@@ -486,12 +552,12 @@ namespace SwarmVision
 
             var targetAngleRelativeToHead = targetAngle - headAngle;
 
-            var targetDistanceInTermsOfHeadLength = targetDistance/headLength;
+            var targetDistanceInTermsOfHeadLength = targetDistance / headLength;
 
             return new Point
             (
-                x: (int)Math.Round(100.0 * targetDistanceInTermsOfHeadLength * Math.Cos((targetAngleRelativeToHead+90) * Math.PI / 180.0)),
-                y: (int)Math.Round(100.0 * targetDistanceInTermsOfHeadLength * Math.Sin((targetAngleRelativeToHead+90) * Math.PI / 180.0))
+                x: (int)Math.Round(100.0 * targetDistanceInTermsOfHeadLength * Math.Cos((targetAngleRelativeToHead + 90) * Math.PI / 180.0)),
+                y: (int)Math.Round(100.0 * targetDistanceInTermsOfHeadLength * Math.Sin((targetAngleRelativeToHead + 90) * Math.PI / 180.0))
             );
         }
 
@@ -500,8 +566,8 @@ namespace SwarmVision
         {
             if (!skipped)
             {
-                var pos = Mouse.GetPosition(videoCanvas);
-                _capturedMousePosition = RelativeToVideo(new Point((int) pos.X, (int) pos.Y));
+                var pos = Mouse.GetPosition(videoCanvas).ToDrawingPoint();
+                _capturedMousePosition = RelativeToVideo(pos);
             }
             else
             {
@@ -519,9 +585,19 @@ namespace SwarmVision
             Dispatcher.Invoke(() => btnSaveActivity.Content = "Saving...");
 
             var fileInfo = new FileInfo(videoFileName.ToString());
-            var csvFile = fileInfo.FullName + "_HandAnnotated.csv";
+            var csvFile = fileInfo.FullName + "_HandAnnotated_"+ DateTime.Now.ToString("yyyyMMdd HHmm") + ".csv";
             var csvExists = File.Exists(csvFile);
 
+            if (csvExists)
+            {
+                var choice = MessageBox.Show("The file '" + csvFile + "' already exists. Append data? \n Yes - Append to the end of the file. \n No - Overwrite the file contents. \n Cancel", "Append or overwrite?", MessageBoxButton.YesNoCancel);
+
+                if (choice == MessageBoxResult.No)
+                    csvExists = false;
+
+                if (choice == MessageBoxResult.Cancel)
+                    return;
+            }
             using (var writer = new StreamWriter(csvFile, csvExists))
             {
                 //Column names based on template keys
@@ -529,8 +605,8 @@ namespace SwarmVision
 
                 //Split into X & Y and add Relative to Head Columns
                 if (!csvExists)
-                    writer.WriteLine("Frame, " + string.Join(",", columns.SelectMany(k => new[] {k + "X", k + "Y"}).ToList()));
-                
+                    writer.WriteLine("Frame, " + string.Join(",", columns.SelectMany(k => new[] { k + "X", k + "Y" }).ToList()));
+
                 //Write out the CSV line
                 foreach (var f in FrameData.Keys)
                 {
@@ -539,36 +615,36 @@ namespace SwarmVision
 
                     var sb = new StringBuilder();
 
-                    Point? headTop = null, headBack = null;
-
-                    if (FrameData[f].ContainsKey("Center of Mouth") &&
-                        FrameData[f].ContainsKey("Back of the Head") &&
-                        FrameData[f]["Center of Mouth"].HasValue &&
-                        FrameData[f]["Back of the Head"].HasValue)
-                    {
-                        headTop = FrameData[f]["Center of Mouth"].Value;
-                        headBack = FrameData[f]["Back of the Head"].Value;
-                    }
+                    //Point? headTop = null, headBack = null;
+                    //
+                    //if (FrameData[f].ContainsKey("Center of Mouth") &&
+                    //    FrameData[f].ContainsKey("Back of the Head") &&
+                    //    FrameData[f]["Center of Mouth"].HasValue &&
+                    //    FrameData[f]["Back of the Head"].HasValue)
+                    //{
+                    //    headTop = FrameData[f]["Center of Mouth"].Value;
+                    //    headBack = FrameData[f]["Back of the Head"].Value;
+                    //}
 
                     columns.ForEach(c =>
                     {
                         //Replace video coordinates with head relative coordinates
-                        if (headBack != null && headTop != null &&
-                            FrameData[f].ContainsKey(c) && FrameData[f][c].HasValue)
-                        {
-                            FrameData[f][c] = RelativeToHead
-                            (
-                                headTop.Value,
-                                headBack.Value,
-                                FrameData[f][c].Value
-                            );
-                        }
+                        //if (headBack != null && headTop != null &&
+                        //    FrameData[f].ContainsKey(c) && FrameData[f][c].HasValue)
+                        //{
+                        //    FrameData[f][c] = RelativeToHead
+                        //    (
+                        //        headTop.Value,
+                        //        headBack.Value,
+                        //        FrameData[f][c].Value
+                        //    );
+                        //}
 
                         if (FrameData[f].ContainsKey(c))
                         {
                             var point = FrameData[f][c];
 
-                            if(point.HasValue)
+                            if (point.HasValue)
                                 sb.Append("," + point.Value.X + "," + point.Value.Y);
                             else
                                 sb.Append(",NA,NA");
@@ -576,25 +652,57 @@ namespace SwarmVision
                         else
                             sb.Append(",NA,NA");
                     });
-                    
+
                     writer.WriteLine(f + sb.ToString());
                 }
-    
+
                 writer.Flush();
             }
 
-            Dispatcher.InvokeAsync(() => btnSaveActivity.Content = "Saved!");
+            Dispatcher.InvokeAsync(() => MessageBox.Show(".CSV file saved to " + csvFile));
+        }
 
-            new Thread(() =>
-                {
-                    Thread.Sleep(2000);
+        public static int zoomWidth = 30;
+        private void videoCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
 
-                    Dispatcher.InvokeAsync(() => { btnSaveActivity.Content = "Save Activity Data"; });
-                })
-                {
-                    IsBackground = true
-                }
-                .Start();
+            var pos = Mouse.GetPosition(videoCanvas);
+            pos.Offset(-zoomWidth / 2, -zoomWidth / 2);
+            var topLeft = RelativeToVideo(new Point((int)pos.X, (int)pos.Y));
+
+            var zoomSize = RelativeToVideo(new Point(zoomWidth, zoomWidth));
+
+            topLeft.X = Math.Max(0, Math.Min(topLeft.X, currentFrame.Width - zoomSize.X));
+            topLeft.Y = Math.Max(0, Math.Min(topLeft.Y, currentFrame.Height - zoomSize.Y));
+
+            using (var clip = currentFrame.SubClipped(topLeft.X, topLeft.Y, zoomSize.X, zoomSize.Y))
+            {
+                var zoomImage = new WriteableBitmap(zoomSize.X, zoomSize.Y, 96, 96, PixelFormats.Bgr24, null);
+                clip.CopyToWriteableBitmap(zoomImage);
+                zoomClip.Source = zoomImage;
+            }
+        }
+
+        private void btnRotate_Click(object sender, RoutedEventArgs e)
+        {
+            templateView.Angle -= 90;
+            rotateThumbnail.Angle = templateView.Angle;
+        }
+
+        private void btnPlayPause_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void btnClockwise_Click(object sender, RoutedEventArgs e)
+        {
+            templateView.Angle += 90;
+            rotateThumbnail.Angle = templateView.Angle;
         }
     }
 }

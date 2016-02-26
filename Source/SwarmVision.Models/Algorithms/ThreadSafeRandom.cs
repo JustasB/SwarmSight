@@ -30,16 +30,28 @@ namespace SwarmVision.HeadPartsTracking.Algorithms
 
         private Random CurrentRandom()
         {
-            var currThread = Thread.CurrentThread.ManagedThreadId;
+            var rand = new Random((int)(DateTime.Now.Ticks % 10000) + nextSeed);
+            nextSeed++;
+            return rand;
 
-            if (!_randoms.ContainsKey(currThread))
-                lock (_randoms)
-                {
-                    _randoms.Add(currThread, new Random(nextSeed));
-                    nextSeed++;
-                }
+            //var currThread = Thread.CurrentThread.ManagedThreadId;
 
-            return _randoms[currThread];
+            //while (!_randoms.ContainsKey(currThread))
+            //{
+            //    try
+            //    {
+            //        var rand = new Random((int)(DateTime.Now.Ticks % 10000) + nextSeed);
+            //        _randoms[currThread] = rand;
+            //        nextSeed++;
+            //        return rand;
+            //    }
+            //    catch
+            //    {
+            //        Thread.Sleep(1);
+            //    }
+            //}
+
+            //return _randoms[currThread];
         }
     }
 }
