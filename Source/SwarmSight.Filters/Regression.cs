@@ -26,6 +26,53 @@ namespace SwarmSight.Filters
             }
         }
 
+        // Find the points of intersection.
+        public static int FindLineCircleIntersections(
+            float cx, float cy, float radius,
+            PointF point1, PointF point2,
+            out PointF intersection1, out PointF intersection2)
+        {
+            float dx, dy, A, B, C, det, t;
+
+            dx = point2.X - point1.X;
+            dy = point2.Y - point1.Y;
+
+            A = dx * dx + dy * dy;
+            B = 2 * (dx * (point1.X - cx) + dy * (point1.Y - cy));
+            C = (point1.X - cx) * (point1.X - cx) +
+                (point1.Y - cy) * (point1.Y - cy) -
+                radius * radius;
+
+            det = B * B - 4 * A * C;
+            if ((A <= 0.0000001) || (det < 0))
+            {
+                // No real solutions.
+                intersection1 = new PointF(float.NaN, float.NaN);
+                intersection2 = new PointF(float.NaN, float.NaN);
+                return 0;
+            }
+            else if (det == 0)
+            {
+                // One solution.
+                t = -B / (2 * A);
+                intersection1 =
+                    new PointF(point1.X + t * dx, point1.Y + t * dy);
+                intersection2 = new PointF(float.NaN, float.NaN);
+                return 1;
+            }
+            else
+            {
+                // Two solutions.
+                t = (float)((-B + Math.Sqrt(det)) / (2 * A));
+                intersection1 =
+                    new PointF(point1.X + t * dx, point1.Y + t * dy);
+                t = (float)((-B - Math.Sqrt(det)) / (2 * A));
+                intersection2 =
+                    new PointF(point1.X + t * dx, point1.Y + t * dy);
+                return 2;
+            }
+        }
+
         public RegressionResult RegressLine(List<Point> points)
         {
             if(points.Count == 0)
@@ -42,6 +89,10 @@ namespace SwarmSight.Filters
             var result = new RegressionResult();
 
             result.Slope = (xtyAve - xAve*yAve) / (xsqAve - xAveSq);
+
+            if (double.IsNaN(result.Slope))
+                result.Slope = 100000;
+
             result.Intercept = yAve - result.Slope*xAve;
             result.RSquared = (xtyAve - xAve*yAve)/Math.Sqrt((xsqAve - xAveSq)*(ysqAve - yAveSq));
 
@@ -151,8 +202,8 @@ namespace SwarmSight.Filters
 
             return new Point
             (
-                point.X + (int)dx, 
-                point.Y + (int)dy
+                point.X + (int)dx * Math.Sign(distance), 
+                point.Y + (int)dy * Math.Sign(distance)
             );
         }
 

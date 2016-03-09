@@ -13,6 +13,7 @@ using SwarmSight.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
 using System.Data;
 using Mono.CSharp;
+using Accord.MachineLearning.VectorMachines;
 
 namespace SwarmSight.HeadPartsTracking.Algorithms
 {
@@ -368,6 +369,54 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         {
             return (target - targetRangeL) / (targetRangeH - targetRangeL) * (resultRangeH - resultRangeL) + resultRangeL;
         }
+
+        public static double? Median<TColl, TValue>(
+            this IEnumerable<TColl> source,
+            Func<TColl, TValue> selector)
+        {
+            return source.Select<TColl, TValue>(selector).Median();
+        }
+
+        public static double? Median<T>(
+            this IEnumerable<T> source)
+        {
+            if (Nullable.GetUnderlyingType(typeof(T)) != null)
+                source = source.Where(x => x != null);
+
+            int count = source.Count();
+            if (count == 0)
+                return null;
+
+            source = source.OrderBy(n => n);
+
+            int midpoint = count / 2;
+            if (count % 2 == 0)
+                return (Convert.ToDouble(source.ElementAt(midpoint - 1)) + Convert.ToDouble(source.ElementAt(midpoint))) / 2.0;
+            else
+                return Convert.ToDouble(source.ElementAt(midpoint));
+        }
+
+        public static Point ToPoint(this PointF pt)
+        {
+            return new Point(pt.X, pt.Y);
+        }
+
+
+        public static Point GetPointDistanceAwayOnLine(this Point startPt, double length, Point linePoint, Point closerToPoint)
+        {
+            PointF int1, int2;
+
+            Regression.FindLineCircleIntersections((float)startPt.X, (float)startPt.Y, (float)length,
+                                startPt.ToPointF(), linePoint.ToPointF(), out int1, out int2);
+
+            var result =
+                int1.ToPoint().Distance(closerToPoint) < int2.ToPoint().Distance(closerToPoint) ?
+                int1 : int2;
+
+            return result.ToPoint();
+        }
+
+
     }
 
     public enum HeadOrientation
@@ -424,6 +473,9 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         public int[] LeftBins;
         public int RightHighest;
         public int LeftHighest;
+
+        private LinkedList<Point> LTpoints = new LinkedList<Point>();
+        private LinkedList<Point> LBpoints = new LinkedList<Point>();
         public override void PreProcessTarget()
         {
             if (Priors == null)
@@ -442,7 +494,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             MutationRange = 1.0;
             
             var decay = 0.15;//0.85;
-
+            
             if (model == null)
             {
                 model = new Frame(Target.ShapeData.Width, Target.ShapeData.Height, Target.ShapeData.PixelFormat, false);
@@ -488,72 +540,161 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     return Color.FromArgb(val, val, val);
                 });
 
+                var modelPts = model
+                    .PointsOverThreshold(36)
+                    ;
 
+                var origin = new Point(-0.5, 0);
+                var leftPts = modelPts
+                    .Select(p => ToPriorSpace(p))
+                    .Where(p =>
+                        p.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip])
+                     || p.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase]))
+                     .Select(p => new { Loc = p, Dist = p.Distance(origin) })
+                     .OrderByDescending(p => p.Dist)
+                     .ToList();
 
-                //compute the sum of motion in a set of quadrants
-                //sweep though pixels and add their values to a bin based on their location
-                var regionCount = 5; //per side, should be even
-                LeftBins = new int[regionCount];
-                RightBins = new int[regionCount];
+                var bufferSize = 10;
 
-                model.ForEachPoint((p, c) =>
-                {
-                    if(c.R > 35)
+                leftPts
+                    .Take((leftPts.Count * 0.1).Rounded())
+                    .ToList()
+                    .ForEach(p =>
                     {
-                        var pt = ToPriorSpace(p.ToWindowsPoint());
-                        var degs = Math.Atan2(pt.Y, pt.X) * 180.0 / Math.PI;
-                        degs = degs < -90 ? degs + 360.0 : degs;
+                        LTpoints.AddLast(p.Loc);
+                        if (LTpoints.Count > bufferSize)
+                            LTpoints.RemoveFirst();
+                    });
 
-                        if (Math.Abs(degs) <= 90.0)
-                        {
-                            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(-90, 90, 0, 1) * regionCount));
-                            RightBins[regionIndex] += c.R;
-                        }
-                        else
-                        {
-                            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(90, 270, 0, 1) * regionCount));
-                            LeftBins[regionIndex] += c.R;
-                        }
+                leftPts
+                    .Skip((leftPts.Count * 0.9).Rounded())
+                    .Take((leftPts.Count * 0.1).Rounded())
+                    .ToList()
+                    .ForEach(p =>
+                    {
+                        LBpoints.AddLast(p.Loc);
+                        if (LBpoints.Count > bufferSize)
+                            LBpoints.RemoveFirst();
+                    });
+
+                if (LTpoints.Count > 0 && LBpoints.Count > 0)
+                {
+                    var leftTipPointPrior =
+                        new Point(
+                            (double)LTpoints.Median(p => p.X),
+                            (double)LTpoints.Median(p => p.Y)
+                        );
+
+                    var leftTipPoint = ToFrameSpace(
+                        leftTipPointPrior
+                    );
+
+                    var leftBasePointPrior = 
+                        new Point(
+                            (double)LBpoints.Median(p => p.X),
+                            (double)LBpoints.Median(p => p.Y)
+                        );
+
+                    var leftBasePoint = ToFrameSpace(leftBasePointPrior);
+                    var geom = new Regression();
+
+                    using (var g = Graphics.FromImage(Target.MotionData.Bitmap))
+                    {
+                        var penThick = new Pen(Color.Yellow) { Width = 3 };
+                        var penThin = new Pen(Color.Blue) { Width = 1 };
+
+                        var penRed = new Pen(Color.Orange);
+                        var length = ToFrameSpace(new Point(1, 0)).X;
+
+                        var ellipseWidth = (0.1 * length).Rounded();
+                        g.DrawEllipse(penThick, (float)(leftTipPoint.X - ellipseWidth/2.0), (float)(leftTipPoint.Y - ellipseWidth / 2.0), ellipseWidth, ellipseWidth);
+                        g.DrawEllipse(penThin, (float)(leftTipPoint.X - ellipseWidth / 2.0), (float)(leftTipPoint.Y - ellipseWidth / 2.0), ellipseWidth, ellipseWidth);
+
+
+                        var leftVanish = leftBasePoint.GetPointDistanceAwayOnLine(length*100, leftTipPoint, leftTipPoint);
+
+                        g.DrawLine(penThick, leftTipPoint.ToDrawingPoint(), leftVanish.ToDrawingPoint());
+                        g.DrawLine(penThin, leftTipPoint.ToDrawingPoint(), leftVanish.ToDrawingPoint());
+
+                        var angle = Math.Atan2(leftTipPointPrior.Y - leftBasePointPrior.Y,
+                            leftTipPointPrior.X - leftBasePointPrior.X) * 180.0 / Math.PI;
+                        var angleBin = 180 / 5.0;
+
+                        angle += 90;
+
+                        g.DrawString(angle.Rounded().ToString(), new Font(FontFamily.GenericSansSerif, 10.0f, FontStyle.Regular),
+                            new SolidBrush(Color.Yellow), (float)(leftTipPoint.X - ellipseWidth / 2.0+1), (float)(leftTipPoint.Y + ellipseWidth+1));
+                        g.DrawString(angle.Rounded().ToString(), new Font(FontFamily.GenericSansSerif, 10.0f, FontStyle.Regular),
+                            new SolidBrush(Color.Blue), (float)(leftTipPoint.X - ellipseWidth / 2.0), (float)(leftTipPoint.Y + ellipseWidth));
+
+
+                        //g.DrawArc(penThick, 0, 0, Target.MotionData.Width, Target.MotionData.Height, (float)(angle - angleBin / 2.0), (float)angleBin); 
                     }
-                });
+                }
+                ////compute the sum of motion in a set of quadrants
+                ////sweep though pixels and add their values to a bin based on their location
+                //var regionCount = 5; //per side, should be even
+                //LeftBins = new int[regionCount];
+                //RightBins = new int[regionCount];
 
-                if (RightBins.Max() > 150)
-                    RightHighest = RightBins.ToList().IndexOf(RightBins.Max());
+                //model.ForEachPoint((p, c) =>
+                //{
+                //    if(c.R > 35)
+                //    {
+                //        var pt = ToPriorSpace(p.ToWindowsPoint());
+                //        var degs = Math.Atan2(pt.Y, pt.X) * 180.0 / Math.PI;
+                //        degs = degs < -90 ? degs + 360.0 : degs;
 
-                if(LeftBins.Max() > 150)
-                    LeftHighest = regionCount - 1 - LeftBins.ToList().IndexOf(LeftBins.Max());
+                //        if (Math.Abs(degs) <= 90.0)
+                //        {
+                //            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(-90, 90, 0, 1) * regionCount));
+                //            RightBins[regionIndex] += c.R;
+                //        }
+                //        else
+                //        {
+                //            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(90, 270, 0, 1) * regionCount));
+                //            LeftBins[regionIndex] += c.R;
+                //        }
+                //    }
+                //});
+
+                //if (RightBins.Max() > 150)
+                //    RightHighest = RightBins.ToList().IndexOf(RightBins.Max());
+
+                //if(LeftBins.Max() > 150)
+                //    LeftHighest = regionCount - 1 - LeftBins.ToList().IndexOf(LeftBins.Max());
 
 
                 //Debug.WriteLine(leftHighest + "," + rightHighest);
 
-                var directionFrame = model.Clone();
-                directionFrame.ColorIfTrue(Color.Yellow, p =>
-                {
-                    if (Random.NextDouble() < 0.1)
-                    {
-                        var pt = ToPriorSpace(p.ToWindowsPoint());
-                        var degs = Math.Atan2(pt.Y, pt.X)*180.0/Math.PI;
-                        degs = degs < -90 ? degs + 360.0 : degs;
+                //var directionFrame = model.Clone();
+                //directionFrame.ColorIfTrue(Color.Yellow, p =>
+                //{
+                //    if (Random.NextDouble() < 0.1)
+                //    {
+                //        var pt = ToPriorSpace(p.ToWindowsPoint());
+                //        var degs = Math.Atan2(pt.Y, pt.X)*180.0/Math.PI;
+                //        degs = degs < -90 ? degs + 360.0 : degs;
 
-                        if (Math.Abs(Math.Abs(degs)-90) < 0.5)
-                            return true;
+                //        if (Math.Abs(Math.Abs(degs)-90) < 0.5)
+                //            return true;
 
-                        if (Math.Abs(degs) < 90.0)
-                        {
-                            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(-90, 90, 0, 1)*regionCount));
+                //        if (Math.Abs(degs) < 90.0)
+                //        {
+                //            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(-90, 90, 0, 1)*regionCount));
 
-                            return regionIndex == RightHighest;
-                        }
-                        else
-                        {
-                            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(90, 270, 0, 1)*regionCount));
+                //            return regionIndex == RightHighest;
+                //        }
+                //        else
+                //        {
+                //            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(90, 270, 0, 1)*regionCount));
 
-                            return regionIndex == regionCount - 1 - LeftHighest;
-                        }
-                    }
+                //            return regionIndex == regionCount - 1 - LeftHighest;
+                //        }
+                //    }
 
-                    return false;
-                });
+                //    return false;
+                //});
 
 
                 if (DebugFrame != null)
@@ -563,18 +704,16 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
                 DebugFrame.DrawFrame(Target.MotionData, 0, 0, 1, 0);
                 DebugFrame.DrawFrame(model, prevMotionFrame.Width, 0, 1, 0);
-                DebugFrame.DrawFrame(directionFrame, prevMotionFrame.Width * 2, 0, 1, 0); directionFrame.Dispose();
+                //DebugFrame.DrawFrame(directionFrame, prevMotionFrame.Width * 2, 0, 1, 0); directionFrame.Dispose();
             }
 
             return;
 
-            var andDarkNow = model
-                .PointsOverThreshold(36);
-
-            var priorSpaced = andDarkNow
+            var priorSpaced = model
+                .PointsOverThreshold(36)
                 .AsParallel()
                 .Select(p => new Point(p.X, p.Y).ToPriorSpace(new Point(Target.ShapeData.Width, Target.ShapeData.Height), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance))
-                ;
+                .ToList();
 
             var leftSide = priorSpaced
                 .Where(p =>

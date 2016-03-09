@@ -58,8 +58,7 @@ namespace SwarmSight
             ToggleCompare();
             SetupChart();
             SetupPlayer();
-
-            Loaded += (sender, args) => UpdateComparerBounds();
+            
             Closing += (sender, args) => Stop();
 
             receptiveField.Canvas = videoCanvas;
@@ -215,8 +214,7 @@ namespace SwarmSight
             _comparer.FrameCompared += OnFrameCompared;
             _renderer.FrameReady += OnFrameReadyToRender;
             _comparer.Stopped += OnStopped;
-
-            roi.RegionChanged += (sender, args) => UpdateComparerBounds();
+            
         }
 
         private bool Open()
@@ -479,11 +477,7 @@ namespace SwarmSight
 
         private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (_processor != null)
-                ((MotionDetector)_processor).Threshold = (int)e.NewValue;
 
-            if (lblThreshold != null)
-                lblThreshold.Content = ((MotionDetector)_processor).Threshold;
         }
 
         private void OnPlayClicked(object sender, RoutedEventArgs e)
@@ -608,31 +602,7 @@ namespace SwarmSight
                 roi.Visibility = Visibility.Visible;
                 btnROI.Content = "Remove Region of Interest";
             }
-
-            UpdateComparerBounds();
-        }
-
-        private void UpdateComparerBounds()
-        {
-            if (roi.Visibility == Visibility.Visible)
-            {
-                ((MotionDetector)_processor).SetBounds(roi.LeftPercent, roi.TopPercent, roi.RightPercent, roi.BottomPercent);
-
-                txtLeft.Text = roi.LeftPercent.ToString("P2");
-                txtRight.Text = roi.RightPercent.ToString("P2");
-                txtTop.Text = roi.TopPercent.ToString("P2");
-                txtBottom.Text = roi.BottomPercent.ToString("P2");
-            }
-
-            else
-            {
-                ((MotionDetector)_processor).SetBounds(0, 0, 1, 1);
-
-                txtLeft.Text = 0.ToString("P2");
-                txtRight.Text = 0.ToString("P2");
-                txtTop.Text = 1.ToString("P2");
-                txtBottom.Text = 1.ToString("P2");
-            }
+            
         }
 
         private void ddlParams_Loaded(object sender, RoutedEventArgs e)
