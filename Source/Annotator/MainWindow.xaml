@@ -2,50 +2,45 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:oxy="http://oxyplot.org/wpf"
-    xmlns:local="clr-namespace:SwarmVision" x:Name="windowMain" x:Class="SwarmVision.MainWindow"
-    Title="Templated Video Frame Annotator" Height="504" Width="728"
-    ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen" SizeToContent="WidthAndHeight" Cursor="Cross">
+    xmlns:local="clr-namespace:SwarmSight" xmlns:SwarmSight="clr-namespace:SwarmSight" x:Name="windowMain" x:Class="SwarmSight.MainWindow"
+    Title="SwarmSight Video Frame Annotator" Height="504" Width="728"
+    ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen" SizeToContent="WidthAndHeight" Cursor="Cross" Icon="Icon.ico">
     <Grid Margin="0,0,4,10" PreviewKeyUp="Grid_PreviewKeyUp">
-        <Label Content="ì" HorizontalAlignment="Left" Margin="629,38,0,0" VerticalAlignment="Top"
-               FontFamily="Wingdings" FontSize="36" />
-        <Label Content="Browse for video file" HorizontalAlignment="Left" Margin="509,62,0,0" VerticalAlignment="Top"
-               FontWeight="Bold" />
 
-        <Image x:Name="videoCanvas" Height="388" Margin="10,38,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
-    		Width="695" Stretch="Fill" MouseUp="videoCanvas_MouseUp" PreviewKeyUp="Grid_PreviewKeyUp" MouseMove="videoCanvas_MouseMove" />
+        <Image x:Name="videoCanvas" Height="388" Margin="8,38,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+			Width="695" Stretch="Fill" MouseUp="videoCanvas_MouseUp" PreviewKeyUp="Grid_PreviewKeyUp" MouseMove="videoCanvas_MouseMove" />
 
-        <Label Content="Select Video:" HorizontalAlignment="Left" VerticalAlignment="Top" Height="26" Width="88"
-               Margin="5,7,0,0" FontWeight="Bold" />
-        <TextBox x:Name="txtFileName" Height="22" Margin="98,10,0,0" VerticalAlignment="Top" Width="553"
-                 HorizontalAlignment="Left" LostFocus="txtFileName_LostFocus"
-                 ToolTip="The path of the video file you want to analyse" MaxLines="1" />
-        <Button Content="Browse" HorizontalAlignment="Left" Margin="656,9,0,0" VerticalAlignment="Top" Width="49"
-                Height="22" Click="OnBrowseClicked" ToolTip="Click to find the video file you want to analyze" />
+        <Label Content="Selected Video:" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="125"
+			Margin="5,7,0,0" FontWeight="Bold" FontSize="14.667" />
+        <TextBox x:Name="txtFileName" Height="22" Margin="135,13,0,0" VerticalAlignment="Top" Width="573"
+			HorizontalAlignment="Left" LostFocus="txtFileName_LostFocus" IsReadOnly="True"
+			ToolTip="The path of the video file you want to analyse" MaxLines="1" />
 
-        <Slider x:Name="sliderTime" HorizontalAlignment="Left" Margin="98,429,0,0" VerticalAlignment="Top" Width="330"
-                Height="22" ValueChanged="timeSlider_ValueChanged" Maximum="1000" LargeChange="10" SmallChange="1"
-                TickFrequency="100" ToolTip="Slide to the desired location in the video" MouseUp="sliderTime_MouseUp"
-               />
+        <Grid x:Name="gridControls" Visibility="Hidden">
+            <Slider x:Name="sliderTime" HorizontalAlignment="Left" Margin="98,429,0,0" VerticalAlignment="Top" Width="330"
+				Height="22" ValueChanged="timeSlider_ValueChanged" Maximum="1000" LargeChange="10" SmallChange="1"
+				TickFrequency="100" IsEnabled="False" ToolTip="Slide to the desired location in the video" MouseUp="sliderTime_MouseUp"
+                   />
 
-        <StackPanel Height="18" Margin="439,431,0,0" VerticalAlignment="Top" Orientation="Horizontal"
-                    HorizontalAlignment="Left" Width="79">
-            <Button x:Name="btnPlayPause" Content="7" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="41"
-                    FontFamily="Webdings" Height="18" Opacity="0.8"
-                    ToolTip="Play/Pause video playback" Click="btnPlayPause_Click" />
-            <Button Content="8" HorizontalAlignment="Left" Width="38" FontFamily="Webdings"  Opacity="0.8" ToolTip="Stop playing video" Height="18" VerticalAlignment="Top" Click="Button_Click" />
-        </StackPanel>
-        <Label x:Name="lblTime" Content="00:00:00" HorizontalAlignment="Left" Margin="10,426,0,0"
-               VerticalAlignment="Top" Width="83" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
-               ToolTip="Current video playback position" Background="#7FFFFFFF" />
-        <Button x:Name="btnSaveActivity" Content="Save Activity Data" HorizontalAlignment="Left" Margin="523,429,0,0"
-                VerticalAlignment="Top" Width="182" Height="23" Click="btnSaveActivity_Click"
-                ToolTip="Saves the changed pixels for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video." />
-
+            <StackPanel Height="18" Margin="439,431,0,0" VerticalAlignment="Top" Orientation="Horizontal"
+				HorizontalAlignment="Left" Width="79" IsEnabled="False">
+                <Button x:Name="btnPlayPause" Content="7" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="41"
+					FontFamily="Webdings" Height="18" Opacity="0.8"
+					ToolTip="Play/Pause video playback" Click="btnPlayPause_Click" />
+                <Button Content="8" HorizontalAlignment="Left" Width="38" FontFamily="Webdings"  Opacity="0.8" ToolTip="Stop playing video" Height="18" VerticalAlignment="Top" Click="Button_Click" />
+            </StackPanel>
+            <Label x:Name="lblTime" Content="00:00:00" HorizontalAlignment="Left" Margin="10,426,0,0"
+				VerticalAlignment="Top" Width="83" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+				ToolTip="Current video playback position" Background="#7FFFFFFF" />
+            <Button x:Name="btnSaveActivity" Content="Save Activity Data" HorizontalAlignment="Left" Margin="523,429,0,0"
+				VerticalAlignment="Top" Width="182" Height="23" Click="btnSaveActivity_Click"
+				ToolTip="Saves the marked positions for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video and timestamped." />
+        </Grid>
         <Border BorderThickness="3" BorderBrush="Black" CornerRadius="10" Padding="2" x:Name="pnlInstructions"
-        HorizontalAlignment="Center" VerticalAlignment="Center">
+			HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden">
 
             <Grid Background="White">
-                <Border Name="mask" Background="White" CornerRadius="7"/>
+                <Border x:Name="mask" Background="White" CornerRadius="7"/>
 
                 <StackPanel HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center">
                     <local:TemplateView x:Name="templateView" Margin="0" VerticalAlignment="Top" Height="250" Width="285" HorizontalAlignment="Center"/>
@@ -53,23 +48,33 @@
                 </StackPanel>
             </Grid>
         </Border>
-        
-        <Grid HorizontalAlignment="Left" Height="95" Margin="10,37,0,0" VerticalAlignment="Top" Width="83" Opacity="0.5" RenderTransformOrigin="0.5,0.5">
+
+        <Grid x:Name="gridTemplate" HorizontalAlignment="Left" Height="95" Margin="10,37,0,0" VerticalAlignment="Top" Width="83" Opacity="0.5" RenderTransformOrigin="0.5,0.5">
             <Grid.RenderTransform>
                 <TransformGroup>
-                    <RotateTransform x:Name="rotateThumbnail" Angle="12"/>
+                    <RotateTransform x:Name="rotateThumbnail" Angle="0                                      "/>
                 </TransformGroup>
             </Grid.RenderTransform>
-            <Image x:Name="smallTemplate"/>
+            <Image x:Name="smallTemplate" Visibility="Hidden"/>
         </Grid>
-        <Button x:Name="btnCounterClockwise" Content="Counter" HorizontalAlignment="Left" Margin="10,132,0,0" VerticalAlignment="Top" HorizontalContentAlignment="Center"  FontSize="12" Width="42" Height="20" Opacity="0.5" Visibility="Visible" Padding="0" Click="btnRotate_Click"/>
+        <Button x:Name="btnCounterClockwise" Content="Rotate" HorizontalAlignment="Left" Margin="10,137,0,0" VerticalAlignment="Top" HorizontalContentAlignment="Center"  FontSize="12" Width="83" Height="20" Opacity="0.5" Visibility="Hidden" Padding="0" Click="btnRotate_Click"/>
 
         <Label x:Name="lblReward" Content="Very Good!" HorizontalAlignment="Center" Margin="210,37,211,0" VerticalAlignment="Top" HorizontalContentAlignment="Center" Background="Black" BorderBrush="Black" BorderThickness="1" FontWeight="Bold" Foreground="#FFE8FF00" FontSize="20" Width="294" Height="40" Opacity="0.5" Visibility="Hidden"/>
-        <Image x:Name="zoomClip" HorizontalAlignment="Left" Height="100" Margin="608,38,0,0" VerticalAlignment="Top" Width="100" Stretch="Fill"/>
-        <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="98" Margin="608,38,0,0" Stroke="Black" VerticalAlignment="Top" Width="48"/>
-        <Rectangle Fill="Transparent" HorizontalAlignment="Left" Width="98" Margin="608,38,0,0" Stroke="Black" VerticalAlignment="Top" Height="48"/>
-        <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="51" Margin="655,85,0,0" Stroke="Black" VerticalAlignment="Top" Width="51"/>
-        <Button x:Name="btnClockwise" Content="Clock" HorizontalAlignment="Left" Margin="52,132,0,0" VerticalAlignment="Top" HorizontalContentAlignment="Center"  FontSize="12" Width="42" Height="20" Opacity="0.5" Visibility="Visible" Padding="0" Click="btnClockwise_Click"/>
+        <Grid x:Name="gridZoom" Visibility="Hidden">
+            <Grid Margin="608,38,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Height="98" Width="98">
+                <Image x:Name="zoomClip" HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="98" Stretch="Fill"/>
+            </Grid>
+            <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="98" Margin="608,38,0,0" VerticalAlignment="Top" Width="48" Stroke="#7FFFFF00"/>
+            <Rectangle Fill="Transparent" HorizontalAlignment="Left" Width="98" Margin="608,38,0,0" VerticalAlignment="Top" Height="48" Stroke="#7FFFFF00"/>
+            <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="51" Margin="655,85,0,0" VerticalAlignment="Top" Width="51" Stroke="#7FFFFF00"/>
+
+        </Grid>
+        <TextBlock x:Name="lblActivePartName" HorizontalAlignment="Left" Margin="10,162,0,0" TextWrapping="Wrap" Text="[Active Template Part]" VerticalAlignment="Top" Width="83" Height="46" TextAlignment="Center" Background="#7FFFFFFF" Visibility="Hidden"/>
+
+        <Border BorderThickness="3" BorderBrush="Black" CornerRadius="10" Padding="2" x:Name="pnlSettings"
+			HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden">
+            <SwarmSight:VideoSettings x:Name="videoSettingsControl" />
+        </Border>
 
     </Grid>
 </Window>

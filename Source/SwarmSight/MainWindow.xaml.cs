@@ -68,7 +68,7 @@ namespace SwarmSight
             HeadLocation = new HeadModel()
             {
                 Angle = new AngleInDegrees(0, -10, 180),
-                Origin = new System.Windows.Point(148.8, 67.7),
+                Origin = new System.Drawing.Point(149, 68),
                 ScaleX = new MinMaxDouble(1, 0, 1),
                 ScaleY = new MinMaxDouble(1, 0, 2)
             };
@@ -134,11 +134,11 @@ namespace SwarmSight
             HeadLocation.Origin = ToVideoCoordinates(receptiveField.Position);
         }
 
-        private Point ToVideoCoordinates(Point source)
+        private System.Drawing.Point ToVideoCoordinates(Point source)
         {
-            return new Point(
-                _decoder.PlayerOutputWidth *  source.X / videoCanvas.Width,
-                _decoder.PlayerOutputHeight * source.Y / videoCanvas.Height
+            return new System.Drawing.Point(
+                (_decoder.PlayerOutputWidth *  source.X / videoCanvas.Width).Rounded(),
+                (_decoder.PlayerOutputHeight * source.Y / videoCanvas.Height).Rounded()
             );
         }
         private void SetupChart()
@@ -340,7 +340,7 @@ namespace SwarmSight
         {
             var rows = ((AntennaAndPERDetector)_processor).dataFrame;
 
-            File.WriteAllLines(filesToProcess[currentFileIndex] + "_antennaBins_"+ DateTime.Now.ToString("yyyyMMdd-HHmm") +".csv", rows);
+            //File.WriteAllLines(filesToProcess[currentFileIndex] + "_antennaBins_"+ DateTime.Now.ToString("yyyyMMdd-HHmm") +".csv", rows);
 
             _chart.Stop();
 
@@ -351,9 +351,9 @@ namespace SwarmSight
             {
                 Thread.Sleep(1500);
                 currentFileIndex++;
-                txtFileName.Text = filesToProcess[currentFileIndex];
+                //txtFileName.Text = filesToProcess[currentFileIndex];
                 ((AntennaAndPERDetector)_processor).dataFrame.Clear();
-                Play();
+                //Play();
                 Activate();
             }));
         }
@@ -384,7 +384,7 @@ namespace SwarmSight
                     videoCanvas.Source = canvasBuffer;
                 }
 
-                if ((DateTime.Now - prevFrameTime).TotalMilliseconds >= 1000/30.0)
+                if ((DateTime.Now - prevFrameTime).TotalMilliseconds >= 1000/10.0)
                 {
                     frame.CopyToWriteableBitmap(canvasBuffer);
                     prevFrameTime = DateTime.Now;

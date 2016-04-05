@@ -1,0 +1,50 @@
+﻿<UserControl x:Class="SwarmSight.VideoSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SwarmSight"
+             mc:Ignorable="d" 
+             d:DesignHeight="430" d:DesignWidth="540" Background="White" Cursor="Arrow">
+    <Grid Margin="10">
+        <StackPanel HorizontalAlignment="Left" Height="421" VerticalAlignment="Top" Width="520">
+            <GroupBox x:Name="groupBox" Header="Video Range To Label" HorizontalAlignment="Left" Margin="0,0,-314,0" VerticalAlignment="Top" Height="75" Width="520" FontSize="14.667">
+                <Grid>
+                    <Label x:Name="label2" Content="Start Time" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" FontSize="14.667"/>
+                    <Label x:Name="label4" Content="seconds    End Time                         seconds" HorizontalAlignment="Left" Margin="152,10,0,0" VerticalAlignment="Top" FontSize="14.667"/>
+                    <TextBox x:Name="txtStartSeconds" HorizontalAlignment="Left" Height="27" Margin="91,13,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="56" ToolTip="The start of the section of the video that will be annotated (in seconds)"/>
+                    <TextBox x:Name="txtEndSeconds" HorizontalAlignment="Left" Height="28" Margin="295,12,0,0" TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="84" ToolTip="The end of the video section that will be annotated in seconds. Defaults to end of the video."/>
+                </Grid>
+            </GroupBox>
+            <GroupBox x:Name="groupRandom" Header="Annotate Random Frames" HorizontalAlignment="Left" Margin="0,0,-314,0" VerticalAlignment="Top" Width="520" Height="141" FontSize="14.667" IsEnabled="False">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="109*"/>
+                    </Grid.RowDefinitions>
+                    <Label x:Name="label" Content="Max Frames to Label" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="label1" Content="Each Session Same Random Sequence?" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="label5" Content="Random Sequence Seed" HorizontalAlignment="Left" Margin="10,80,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="chkUseRandomSeed" Content="" HorizontalAlignment="Left" Margin="281,52,0,0" VerticalAlignment="Top" IsChecked="True" Checked="chkUseRandomSeed_Checked" Unchecked="chkUseRandomSeed_Unchecked" ToolTip="Useful if multiple people will annotate the same video. The frames will be random, but the sequence of frames will be the same when the same seed (below) is specified. If unchecked, the random sequence will be random each time the video is annotated."/>
+                    <TextBox x:Name="txtRandomSeed" HorizontalAlignment="Left" Height="28" Margin="182,80,0,0" TextWrapping="Wrap" Text="12345" VerticalAlignment="Top" Width="80" ToolTip="The random seed to use if the same random sequence is desired. Changing the seed will change the sequence."/>
+                    <TextBox x:Name="txtMaxRandomFrames" HorizontalAlignment="Left" Height="28" Margin="158,11,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="75" ToolTip="The maximum number of frames to annotate. May be less than this number if the video range is too small."/>
+
+                </Grid>
+            </GroupBox>
+            <GroupBox x:Name="groupSequential" Header="Annotate Every N'th Frame" HorizontalAlignment="Left" VerticalAlignment="Top" Height="84" FontSize="14.667" Width="520">
+                <Grid>
+                    <Label x:Name="label3" Content="Annotate Every           th Frames" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="txtNthFrame" TextWrapping="Wrap" Text="1" Margin="120,11,338,19" ToolTip="1 means annotate every frame. 2 every other frame, and so on..."/>
+                </Grid>
+            </GroupBox>
+            <GroupBox x:Name="groupBox2" Header="Annotate Parts in Bursts of N Frames" HorizontalAlignment="Left" VerticalAlignment="Top" Width="520" FontSize="14.667">
+                <Grid>
+                    <Label x:Name="label6" Content="Number of frames to mark per part, before starting the next part" HorizontalAlignment="Left" Margin="0,6,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="txtBurstSize" HorizontalAlignment="Left" Height="28" Margin="431,8,0,0" TextWrapping="Wrap" Text="50" VerticalAlignment="Top" Width="67" ToolTip="The software shows the template parts in 'bursts' of N frames. The user is asked to mark the same template part N frames from the above chosen sequence. When N frames is marked, the video rewinds, and shows the N frames for the next part in the template. This focuses the user on a single part for a specific time period. Longer burst durations are uncomfortable, while short ones are inneficient. Between 30 and 100 is a good range."/>
+                </Grid>
+            </GroupBox>
+            <Button x:Name="btnStart" Content="Save and Start Annotating" Height="42" FontSize="14.667" Click="btnStart_Click" Margin="0,8,0,0"/>
+        </StackPanel>
+        <RadioButton x:Name="chkRandomSeq" Content="" HorizontalAlignment="Left" Margin="185,79,0,0" VerticalAlignment="Top" IsChecked="True" GroupName="SeqRandom" Checked="chkRandomSeq_Checked" ToolTip="Annotate a random sample of frames from the video section selected above"/>
+        <RadioButton x:Name="chkSequential" Content="" HorizontalAlignment="Left" Margin="187,220,0,0" VerticalAlignment="Top" GroupName="SeqRandom" IsChecked="True" Checked="chkSequential_Checked" ToolTip="Annotate every Nth frame in the video range selected above"/>
+    </Grid>
+</UserControl>

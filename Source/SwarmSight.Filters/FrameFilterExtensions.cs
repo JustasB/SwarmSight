@@ -11,17 +11,37 @@ using SwarmSight.Hardware;
 using Cudafy;
 using Cudafy.Host;
 using Point = System.Drawing.Point;
+using System.Windows.Media.Media3D;
+using static System.Math;
+using SwarmSight.Filters.ColorDemo;
 
 namespace SwarmSight.Filters
 {
     public unsafe static class FrameFilterExtensions
     {
+        public static void MarkPoint(this Frame target, Point pt, Color? inner = null, Color? outer = null)
+        {
+            if (inner == null)
+                inner = Color.Yellow;
+
+            if (outer == null)
+                outer = Color.Blue;
+
+            using (var g = Graphics.FromImage(target.Bitmap))
+            {
+                var inC = new Pen(inner.Value, 1);
+                var outC = new Pen(outer.Value, 1);
+
+                g.DrawRectangle(inC, pt.X, pt.Y, 1, 1);
+                g.DrawRectangle(outC, pt.X-1, pt.Y-1, 3, 3);
+            }
+        }
         public static void CopyToWriteableBitmap(this Frame source, WriteableBitmap writeableBitmap)
         {
             // Reserve the back buffer for updates.
             writeableBitmap.Lock();
 
-            var targetFirstPx = (int) writeableBitmap.BackBuffer;
+            var targetFirstPx = (long) writeableBitmap.BackBuffer;
             var targetStride = writeableBitmap.BackBufferStride;
             var sourceFirstPx = source.FirstPixelPointer;
             var sourceStride = source.Stride;
@@ -82,6 +102,59 @@ namespace SwarmSight.Filters
                 return new Frame(width, height, resultStride, target.PixelFormat, resultBytes, true);
             }
         }
+
+        public static double Distance(this Color a, Color b)
+        {
+            return (Math.Abs(b.R - a.R) + Math.Abs(b.G - a.G) + Math.Abs(b.B - a.B)) / 3.0;
+        }
+
+        public static Point? FindNearbyColor(this Frame target, Point start, int radius, Color color)
+        {
+            var result = new List<Point3D>();
+            var startingColorDist = target.GetColor(start).Distance(color);
+
+            var targetColor = color;
+            var tX = Math.Max(0, start.X - radius);
+            var tY = Math.Max(0, start.Y - radius);
+
+            var height = Math.Min(target.Height, tY + 2*radius);
+            var width = Math.Min(target.Width, tX + 2 * radius);
+            var px01 = target.FirstPixelPointer;
+            var targetStride = target.Stride;
+            
+            Parallel.For(tY, height, row =>
+            {
+                var yT = px01 + targetStride * row;
+                var rowResult = new List<Point3D>();
+
+                for (var col = tX; col < width; col++)
+                {
+                    var offsetT = yT + col * 3;
+                    var pxColor = Color.FromArgb(offsetT[2], offsetT[1], offsetT[0]);
+                    var dist = pxColor.Distance(targetColor);
+
+                    if(dist < startingColorDist)
+                        rowResult.Add(new Point3D(col, row, dist));
+                }
+
+                lock(result)
+                {
+                    result.AddRange(rowResult);
+                }
+            });
+
+            result = result
+                .OrderBy(p => p.Z)
+                .ToList();
+
+            if (result.Count > 0)
+            { 
+                return new Point((int)result[0].X, (int)result[0].Y);
+            }
+
+            return null;
+        }
+
         public static Frame MapByDistanceFunction(this Frame target, Func<Point, double> distanceFunction)
         {
             var result = new Frame(new Bitmap(target.Width, target.Height, target.PixelFormat), false);
@@ -108,6 +181,7 @@ namespace SwarmSight.Filters
 
             return result;
         }
+        
         public static Frame MapIfTrue(this Frame target, Color color, Func<Point, bool> conditional)
         {
             var result = new Frame(new Bitmap(target.Width, target.Height, target.PixelFormat), false);
@@ -175,7 +249,37 @@ namespace SwarmSight.Filters
 
             return result;
         }
-        
+
+        public static Frame ReMap(this Frame target, Func<Point, Color, Color> mapFunction)
+        {
+            var result = new Frame(new Bitmap(target.Width, target.Height, target.PixelFormat), false);
+
+            var targetPx = target.FirstPixelPointer;
+            var resultPx = result.FirstPixelPointer;
+
+            Parallel.For(0, target.Height, new ParallelOptions()
+            {
+                //MaxDegreeOfParallelism = 1
+            }, (int y) =>
+            {
+                var rowStart = target.Stride * y; //Stride is width*3 bytes
+
+                for (var x = 0; x < target.Width; x++)
+                {
+                    var offset = x * 3 + rowStart;
+                    var color = Color.FromArgb(targetPx[offset + 2], targetPx[offset + 1], targetPx[offset]);
+                    var remapColor = mapFunction(new Point(x,y), color);
+
+                    resultPx[offset] = remapColor.B;
+                    resultPx[offset + 1] = remapColor.G;
+                    resultPx[offset + 2] = remapColor.R;
+
+                }
+            });
+
+            return result;
+        }
+
         public static Frame ReMap(this Frame target, Func<Color, Color> mapFunction)
         {
             var result = new Frame(new Bitmap(target.Width, target.Height, target.PixelFormat), false);
@@ -327,6 +431,143 @@ namespace SwarmSight.Filters
                 return c; //Keep as is
             }, 
             size);
+        }
+
+        public static Frame MedianBlur(this Frame target, int size = 2)
+        {
+            return target.ReMap((p, c) =>
+            {
+                var pxs = target.GetSurroundingPixels(p,size);
+                var med = pxs.OrderBy(px => px.Value.GetBrightness()).Skip(pxs.Count / 2).First().Value;
+                return med;
+            });
+        }
+
+        public static List<Tuple<Point, double>> MedianFilter(this List<Tuple<Point,double>> target, int radius = 2)
+        {
+            if (target.Count == 0)
+                return target;
+
+            var min = target[0].Item1;
+            var max = target[0].Item1;
+            var avgZ = 0.0;
+
+            target.ForEach(i =>
+            {
+                //X
+                if (i.Item1.X < min.X)
+                    min.X = i.Item1.X;
+
+                else if (i.Item1.X > max.X)
+                    max.X = i.Item1.X;
+
+                //Y
+                if (i.Item1.Y < min.Y)
+                    min.Y = i.Item1.Y;
+
+                else if (i.Item1.Y > max.Y)
+                    max.Y = i.Item1.Y;
+
+                avgZ += i.Item2;
+            });
+
+            avgZ /= target.Count;
+
+            var width = max.X - min.X + 1;
+            var height = max.Y - min.Y + 1;
+            var grid = new int[width, height];
+
+            Parallel.ForEach(target, i => grid[i.Item1.X-min.X, i.Item1.Y-min.Y] = (int)i.Item2);
+            
+            var length = radius * 2 + 1;
+            var totalHalf = length * length / 2;
+            var result = new List<Tuple<Point, double>>(100);
+
+            Parallel.For(0, height, new ParallelOptions()
+            {
+                //MaxDegreeOfParallelism = 1
+            }, 
+            gy =>
+            {
+                var rowResult = new List<Tuple<Point, double>>(10);
+
+                for(var gx = 0; gx < width; gx++)
+                {
+                    var wxStart = gx - radius;
+                    var wyStart = gy - radius;
+
+                    var balance = 0;
+
+                    //Get surrounding pixel values
+                    for (var wy = 0; wy < length; wy++)
+                    {
+                        var gwy = wyStart + wy;
+
+                        for (var wx = 0; wx < length; wx++)
+                        {
+                            var gwx = wxStart + wx;
+
+                            if (gwy < 0 || gwx < 0 || gwy >= height || gwx >= width)
+                                balance--;
+
+                            else if (grid[gwx, gwy] > 0)
+                                balance++;
+
+                            else
+                                balance--;
+
+                            if (Abs(balance) > totalHalf)
+                                goto doneWithPixel;
+                        }
+                    }
+
+                    doneWithPixel:;
+
+                    if (balance > 0)
+                    {
+                        var zVal = grid[gx, gy];
+
+                        rowResult.Add(new Tuple<Point,double>(new Point(gx+min.X,gy+min.Y), zVal > 0 ? zVal : avgZ));
+                    }
+                }
+
+                lock(result) { result.AddRange(rowResult); }
+            });
+            
+
+            return result;
+        }
+
+        public static Dictionary<Point,Color> GetSurroundingPixels(this Frame target, Point center, int radius = 2)
+        {
+            var length = radius * 2 + 1;
+            var result = new Dictionary<Point, Color>(length * length);
+            
+            var txStart = center.X - radius;
+            var tyStart = center.Y - radius;
+            var width = target.Width;
+            var height = target.Height;
+
+            for (var y = 0; y < length; y++)
+            {
+                for(var x = 0; x < length; x++)
+                {
+                    var tx = txStart + x;
+                    var ty = tyStart + y;
+                    var pt = new Point(tx, ty);
+
+                    if(tx < 0 || ty < 0 || tx >= width || ty >= height)
+                    {
+                        result.Add(pt, Color.Black);
+                    }
+                    else
+                    {
+                        result.Add(pt, target.GetColor(tx, ty));
+                    }
+                }
+            }
+
+            return result;
         }
 
         public static Frame ReMapBasedOnSurroundingPixels(this Frame target, SurroundingPixelsMapFunction mapFunction, int size = 1)
@@ -588,6 +829,8 @@ namespace SwarmSight.Filters
             var yMin = 0;
             var yMax = height;
 
+            
+
             //Do each row in parallel
             Parallel.For(yMin, yMax, new ParallelOptions()
             {
@@ -599,6 +842,17 @@ namespace SwarmSight.Filters
                 for (var x = xMin; x < xMax; x++)
                 {
                     var offset = x * 3 + rowStart;
+                    
+                    var color = new HSLColor(firstPx[offset + 2], firstPx[offset + 1], firstPx[offset]);
+                    var oldBrighness = (float)color.Luminosity;
+                    var ratio = Logistic(oldBrighness, 240, extent, shift/255*240);
+                    color.Luminosity = ratio;
+                    var rgb = (Color)color;
+                    resultFirstPx[offset] = (byte)(Min((byte)255,Max((byte)0, rgb.B)));
+                    resultFirstPx[offset+1] = (byte)(Min((byte)255, Max((byte)0, rgb.G)));
+                    resultFirstPx[offset+2] = (byte)(Min((byte)255, Max((byte)0, rgb.R)));
+
+                    continue;
 
                     resultFirstPx[offset + 0] = (byte)Logistic(firstPx[offset + 0], 255, extent, shift);
                     resultFirstPx[offset + 1] = (byte)Logistic(firstPx[offset + 1], 255, extent, shift);

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Drawing;
+using Point = System.Windows.Point;
 
 namespace SwarmSight.Filters
 {
@@ -221,7 +221,7 @@ namespace SwarmSight.Filters
             var x = (line2.Intercept - line1.Intercept)/(line1.Slope - line2.Slope);
             var y = line1.Slope*x + line1.Intercept;
 
-            return new Point((int)x,(int)y);
+            return new Point(x,y);
         }
 
         public List<Point> PointsOnLineDistanceAway(Point p, RegressionResult line, double dist)

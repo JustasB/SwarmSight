@@ -12,7 +12,7 @@ using SwarmSight.HeadPartsTracking.Models;
 
 namespace SwarmSight.HeadPartsTracking.Algorithms
 {
-    public abstract class GeneticAlgoBase<T> where T: IDisposable, new()
+    public abstract class GeneticAlgoBase<T> where T: class, IDisposable, new()
     {
         protected ThreadSafeRandom Random = new ThreadSafeRandom(1);
         protected Dictionary<T, double> Generation = new Dictionary<T, double>();
@@ -69,7 +69,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             PreProcessTarget();
             PreProcessTime.Stop();
 
-            return default(T);
+            return (this as FastAntennaSearchAlgorithm).PreviousSolution as T;
 
             //Reset the fitness of each member on new frame
             for(var i = 0; i < Generation.Count; i++)

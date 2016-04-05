@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Classes;
-using SwarmVision.VideoPlayer;
+using SwarmSight.VideoPlayer;
 using OxyPlot.Wpf;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,10 +16,12 @@ using System.IO;
 using System.Threading;
 using System.Windows.Media.Imaging;
 using Point = System.Drawing.Point;
-using SwarmVision.Filters;
-using SwarmVision.HeadPartsTracking.Algorithms;
+using SwarmSight.Filters;
+using SwarmSight.HeadPartsTracking.Algorithms;
+using SwarmSight;
+using SwarmSight.Annotator;
 
-namespace SwarmVision
+namespace SwarmSight
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -29,9 +31,7 @@ namespace SwarmVision
         public static MainWindow Current;
 
         private VideoDecoder _decoder;
-        public static int ResumeFrame = 0; // Start at 10s 
-        public static int RandomFramesCount = 100;
-        public static List<int> RandomFrames = new List<int>();
+        public static int ResumeFrame = 0;
         public FrameIterator iterator = null;
         public MainWindow()
         {
@@ -39,19 +39,33 @@ namespace SwarmVision
 
             InitializeComponent();
 
-            Closed += (sender, args) => Environment.Exit(0);
+            Closing += (s, e) =>
+            {
+                if (FrameData.Count > 0)
+                {
+                    var answer = MessageBox.Show("Save frame annotations before closing?", "Save?", MessageBoxButton.YesNoCancel);
+
+                    if (answer == MessageBoxResult.Cancel)
+                        e.Cancel = true; //Cancel the close
+                    else if (answer == MessageBoxResult.Yes)
+                        SaveCSV(txtFileName.Text);
+                }
+            };
+
+            Closed += (s, e) =>
+            {
+                Environment.Exit(0);
+            };
+
+
+            videoSettingsControl.Saved += (sender, args) =>
+            {
+                ShowInstructions();
+            };
 
             this.KeyUp += Grid_PreviewKeyUp;
 
-            //TEST VIDEO
-            txtFileName.Text =
-                @"C:\temp\frames\Bee1_Feb10-Test.mov";
-                //@"C:\temp\frames\B2-Feb11-bouquet.mov";
-                //@"C:\temp\frames\B1-Feb11-bouquet.mov";
-                //@"Y:\Downloads\BeeVids\2015.8.15 Bee 5 Rose White Back.MP4";
-
-            SetupPlayer();
-
+            OnBrowseClicked(this, null);
         }
 
         private void SetupPlayer()
@@ -81,9 +95,31 @@ namespace SwarmVision
 
             if (iterator == null)
             {
-                iterator = new FrameIterator(_decoder.VideoInfo.TotalFrames, templateView.TemplatePaths.Keys.Count, 100);
-                //iterator.InitLinearSequence(10, 0);
-                iterator.InitRandomSequence(50, 0);
+                iterator = new FrameIterator(_decoder.VideoInfo.TotalFrames, 
+                    templateView.TemplatePaths.Keys.Count, 
+                    AppSettings.Default.BurstSize
+                );
+
+                var startFrame = (int)Math.Round(AppSettings.Default.StartTime * _decoder.VideoInfo.FPS);
+                var endFrame = (int)Math.Round(AppSettings.Default.EndTime * _decoder.VideoInfo.FPS);
+
+                if (AppSettings.Default.UseRandom)
+                {
+                    iterator.InitRandomSequence(
+                        AppSettings.Default.MaxFrames, 
+                        Math.Max(0,startFrame), 
+                        Math.Min(_decoder.VideoInfo.TotalFrames, endFrame)-1,
+                        AppSettings.Default.UseSeed ? AppSettings.Default.Seed : (int?)null
+                    );
+                }
+                else
+                {
+                    iterator.InitLinearSequence(
+                        AppSettings.Default.EveryNth,
+                        Math.Max(0, startFrame),
+                        Math.Min(_decoder.VideoInfo.TotalFrames - 1, endFrame)
+                    );
+                }
             }
 
             _decoder.SeekTo(iterator.BurstBeginFrameIndex);
@@ -92,119 +128,18 @@ namespace SwarmVision
             _decoder.FrameDecoder.MinimumWorkingFrames = 1;
         }
 
-        //private bool Open()
-        //{
-        //    var videoFile = txtFileName.Text;
-
-        //    if (!System.IO.File.Exists(videoFile))
-        //    {
-        //        MessageBox.Show("Please select a valid video file");
-        //        return false;
-        //    }
-
-        //    _decoder.Open(videoFile);
-
-        //    return true;
-        //}
-
-
-        //private void Play()
-        //{
-        //    //Play
-        //    if (btnPlayPause.Content.ToString() == PlaySymbol)
-        //    {
-        //        //Reset decoder
-        //        if (_decoder != null)
-        //        {
-        //            _decoder.Dispose();
-        //            _decoder = null;
-        //            _decoder = new VideoDecoder();
-        //            _decoder.Processor = _processor;
-        //            _decoder.Open(txtFileName.Text);
-        //            _comparer.Decoder = _decoder;
-        //        }
-
-        //        //Can't change quality if playing
-        //        sliderQuality.IsEnabled = false;
-
-        //        //Clear chart points after the current position
-        //        _chart.ClearAfter(_comparer.MostRecentFrameIndex);
-        //        _activity.RemoveAll(p => p.X > _comparer.MostRecentFrameIndex);
-
-        //        //Adjust for any quality changes, before starting again
-        //        _decoder.PlayerOutputWidth = (int) (_decoder.VideoInfo.Width*_quality);
-        //        _decoder.PlayerOutputHeight = (int) (_decoder.VideoInfo.Height*_quality);
-
-        //        //Setup fps counter
-        //        _fpsStartFrame = _comparer.MostRecentFrameIndex;
-        //        _fpsStopwatch.Restart();
-
-        //        //Play or resume
-        //        _comparer.Start();
-
-        //        btnPlayPause.Content = PauseSymbol;
-        //    }
-        //    else //Pause
-        //    {
-        //        btnPlayPause.Content = PlaySymbol;
-        //        _comparer.Pause();
-        //    }
-        //}
-
-        //private void Stop()
-        //{
-        //    _comparer.Stop();
-        //    _renderer.Stop();
-        //    Reset();
-        //}
-
         private void SeekTo(int frame)
         {
             //_comparer.SeekTo(percentLocation);
         }
-
-        //private void OnStopped(object sender, EventArgs eventArgs)
-        //{
-        //    Reset();
-        //}
-
-        //private void ShowFrame(Frame frame)
-        //{
-        //    if (Application.Current == null)
-        //        return;
-
-        //    Application.Current.Dispatcher.Invoke(new Action(() =>
-        //        {
-        //            if (Application.Current == null)
-        //                return;
-
-        //            using (var memory = new MemoryStream())
-        //            {
-        //                frame.Bitmap.Save(memory, ImageFormat.Bmp);
-        //                memory.Position = 0;
-        //                var bitmapImage = new BitmapImage();
-        //                bitmapImage.BeginInit();
-        //                bitmapImage.StreamSource = memory;
-        //                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-        //                bitmapImage.EndInit();
-
-        //                videoCanvas.Source = bitmapImage;
-        //            }
-
-        //            _sliderValueChangedByCode = true;
-        //            sliderTime.Value = frame.FramePercentage*1000;
-        //        }));
-        //}
-
-        //private void OnFrameReadyToRender(object sender, OnFrameReady e)
-        //{
-        //    ShowFrame(e.Frame);
-        //}
+        
 
         private void Reset()
         {
+            iterator = null;
             Application.Current.Dispatcher.Invoke(() =>
             {
+                templateView.CurrentPartIndex = 0;
                 _sliderValueChangedByCode = true;
                 sliderTime.Value = 0;
             });
@@ -219,39 +154,45 @@ namespace SwarmVision
 
         private void OnBrowseClicked(object sender, RoutedEventArgs e)
         {
+            HideSettings();
+
             var ofd = new Microsoft.Win32.OpenFileDialog();
 
-            var result = ofd.ShowDialog();
+            ofd.Title = "Select a video file to annotate";
 
-            if (result == false)
-                return;
+            do
+            {
+                var result = ofd.ShowDialog();
+
+                if (result == false)
+                    Environment.Exit(0);
+            }
+            while (!File.Exists(ofd.FileName));
 
             txtFileName.Text = ofd.FileName;
 
-            try
+            btnCounterClockwise.Visibility = Visibility.Visible;
+            gridZoom.Visibility = Visibility.Visible;
+            lblActivePartName.Visibility = Visibility.Visible;
+            gridControls.Visibility = Visibility.Visible;
+
+            ShowSettings();
+        }
+
+        private void ShowSettings()
+        {
+            pnlSettings.Visibility = Visibility.Visible;
+
+            using (var decoder = new VideoDecoder())
             {
-                var maxFrame = File
-                    .ReadAllLines(txtFileName.Text + "_HandAnnotated.csv")
-                    .Skip(1)
-                    .Select(l => int.Parse(l.Split(',')[0]))
-                    .Max();
-
-                var decision = MessageBox.Show(
-                    string.Format("The associated .CSV file has data for frame {0}. Do you want to resume from frame {1}?", maxFrame, maxFrame + 1),
-                    "Resume where left off?",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question
-                );
-
-                if (decision == MessageBoxResult.Yes)
-                    ResumeFrame = maxFrame + 1;
+                decoder.Open(txtFileName.Text);
+                videoSettingsControl.LoadSettings(decoder.VideoInfo);
             }
-            catch { } //Ignore if the file is unreadable 
+        }
 
-
-            //Stop();
-            //Reset();
-            //Open();
+        private void HideSettings()
+        {
+            pnlSettings.Visibility = Visibility.Hidden;
         }
 
         //private void OnPlayClicked(object sender, RoutedEventArgs e)
@@ -301,13 +242,25 @@ namespace SwarmVision
 
         private void btnSaveActivity_Click(object sender, RoutedEventArgs e)
         {
-            new Thread(SaveCSV) { IsBackground = true }.Start(txtFileName.Text);
+            Dispatcher.InvokeAsync(new Action(() => {
+                SaveCSV(txtFileName.Text);
+            }));
         }
+
+        private void Undo()
+        {
+            if (IsMarking)
+                iterator = FrameIterator.GetPreviousState();
+            
+        }
+
+        public event EventHandler FrameMarked;
+        public event EventHandler FrameSkipped;
 
         private Dictionary<int, Dictionary<string, System.Drawing.Point?>> FrameData = new Dictionary<int, Dictionary<string, System.Drawing.Point?>>();
         public static bool IsMarking;
         public static bool ReadyForNextFrame = false;
-        public static SwarmVision.Filters.Frame currentFrame = null;
+        public static SwarmSight.Filters.Frame currentFrame = null;
         public static Filters.Frame nextFrame = null;
         private void StartStopMarking(object sender, RoutedEventArgs e)
         {
@@ -326,7 +279,10 @@ namespace SwarmVision
                 while (IsMarking)
                 {
                     //for(var i = 0; i < 500; i++)
-                    { 
+                    {
+                        if (_decoder == null)
+                            SetupPlayer();
+
                         lock(_decoder)
                         {
                             _decoder.Stop();
@@ -336,7 +292,7 @@ namespace SwarmVision
                     
                             while(!_decoder.FramesInBuffer)
                             {
-                                Thread.Sleep(10);
+                                Thread.Sleep(5);
                             }
 
                             if (nextFrame != null)
@@ -352,21 +308,27 @@ namespace SwarmVision
 
                     Dispatcher.Invoke(() =>
                     {
+                        lblActivePartName.Text = TemplateView.Current.CurrentPartName;
                         ShowFrame(currentFrame);
+
+                        GC.Collect();
                     });
+
+                    
 
                     ReadyForNextFrame = false;
 
                     while (!ReadyForNextFrame && IsMarking)
                     {
-                        Thread.Sleep(1); //Wait for position data (use value < smallest inter-click interval)
+                        Thread.Sleep(5); //Wait for position data (use value < smallest inter-click interval)
                     }
 
                     //Store the position data
                     if (!FrameData.ContainsKey(currentFrame.FrameIndex))
                         FrameData[currentFrame.FrameIndex] = new Dictionary<string, System.Drawing.Point?>();
 
-                    FrameData[currentFrame.FrameIndex][TemplateView.Current.CurrentPartName] = _capturedMousePosition;
+                    if(_capturedMousePosition != null)
+                        FrameData[currentFrame.FrameIndex][TemplateView.Current.CurrentPartName] = _capturedMousePosition;
 
                     UpdateReward();
 
@@ -405,14 +367,14 @@ namespace SwarmVision
             else if (iterator.BurstPositionIndex == 1)
                 ShowReward("Excellent!");
 
-            else if (iterator.BurstPositionIndex == iterator.BurstPositionCount - 2)
+            else if (iterator.FramesTillEndOfBurst == 1)
                 ShowReward("Last one!");
 
-            else if (iterator.BurstPositionIndex == iterator.BurstPositionCount - 1)
+            else if (iterator.FramesTillEndOfBurst == 0)
                 ShowReward("Great job!");
 
-            else if (iterator.BurstPositionIndex <= iterator.BurstPositionCount - 10 - 1)
-                ShowReward((iterator.BurstPositionCount - iterator.BurstPositionIndex - 1) + " more to go");
+            else
+                ShowReward(iterator.FramesTillEndOfBurst + " more to go");
         }
 
         private void ShowReward(string text)
@@ -437,6 +399,9 @@ namespace SwarmVision
         {
             Dispatcher.Invoke(() =>
             {
+                SaveCSV(txtFileName.Text, autoSave: true);
+
+                HideSettings();
                 templateView.UpdateView();
 
                 smallTemplate.Visibility = Visibility.Hidden;
@@ -562,12 +527,17 @@ namespace SwarmVision
         }
 
         private static Point? _capturedMousePosition;
+        private int counter;
         private void CaptureMousePosition(bool skipped)
         {
+            if (ReadyForNextFrame) //Don't overcapture
+                return;
+
             if (!skipped)
             {
                 var pos = Mouse.GetPosition(videoCanvas).ToDrawingPoint();
                 _capturedMousePosition = RelativeToVideo(pos);
+                //_capturedMousePosition.Value.Offset(-1, -1);
             }
             else
             {
@@ -575,9 +545,12 @@ namespace SwarmVision
             }
 
             ReadyForNextFrame = true;
+
+            counter++;
+            Debug.WriteLine((iterator.BurstPositionCount - counter) + " - " + iterator.FramesTillEndOfBurst);
         }
 
-        private void SaveCSV(object videoFileName)
+        private void SaveCSV(object videoFileName, bool autoSave = false)
         {
             if (FrameData.Count == 0)
                 return;
@@ -586,9 +559,13 @@ namespace SwarmVision
 
             var fileInfo = new FileInfo(videoFileName.ToString());
             var csvFile = fileInfo.FullName + "_HandAnnotated_"+ DateTime.Now.ToString("yyyyMMdd HHmm") + ".csv";
+
+            if (autoSave)
+                csvFile = fileInfo.FullName + "_HandAnnotated_autosave.csv";
+
             var csvExists = File.Exists(csvFile);
 
-            if (csvExists)
+            if (csvExists && !autoSave)
             {
                 var choice = MessageBox.Show("The file '" + csvFile + "' already exists. Append data? \n Yes - Append to the end of the file. \n No - Overwrite the file contents. \n Cancel", "Append or overwrite?", MessageBoxButton.YesNoCancel);
 
@@ -598,13 +575,13 @@ namespace SwarmVision
                 if (choice == MessageBoxResult.Cancel)
                     return;
             }
-            using (var writer = new StreamWriter(csvFile, csvExists))
+            using (var writer = new StreamWriter(csvFile, csvExists && !autoSave))
             {
                 //Column names based on template keys
                 var columns = templateView.TemplatePaths.Keys.ToList();
 
                 //Split into X & Y and add Relative to Head Columns
-                if (!csvExists)
+                if (!csvExists || autoSave)
                     writer.WriteLine("Frame, " + string.Join(",", columns.SelectMany(k => new[] { k + "X", k + "Y" }).ToList()));
 
                 //Write out the CSV line
@@ -659,15 +636,19 @@ namespace SwarmVision
                 writer.Flush();
             }
 
-            Dispatcher.InvokeAsync(() => MessageBox.Show(".CSV file saved to " + csvFile));
+            Dispatcher.Invoke(() => btnSaveActivity.Content = "Save Activity");
+
+            if (!autoSave)
+                Dispatcher.InvokeAsync(() => MessageBox.Show(".CSV file saved to " + csvFile));
         }
 
         public static int zoomWidth = 30;
+        public WriteableBitmap zoomImage;
         private void videoCanvas_MouseMove(object sender, MouseEventArgs e)
         {
 
             var pos = Mouse.GetPosition(videoCanvas);
-            pos.Offset(-zoomWidth / 2, -zoomWidth / 2);
+            pos.Offset(-zoomWidth / 2+1, -zoomWidth / 2+1);
             var topLeft = RelativeToVideo(new Point((int)pos.X, (int)pos.Y));
 
             var zoomSize = RelativeToVideo(new Point(zoomWidth, zoomWidth));
@@ -677,9 +658,13 @@ namespace SwarmVision
 
             using (var clip = currentFrame.SubClipped(topLeft.X, topLeft.Y, zoomSize.X, zoomSize.Y))
             {
-                var zoomImage = new WriteableBitmap(zoomSize.X, zoomSize.Y, 96, 96, PixelFormats.Bgr24, null);
+                if (zoomImage == null)
+                {
+                    zoomImage = new WriteableBitmap(zoomSize.X, zoomSize.Y, 96, 96, PixelFormats.Bgr24, null);
+                    zoomClip.Source = zoomImage;
+                }
+
                 clip.CopyToWriteableBitmap(zoomImage);
-                zoomClip.Source = zoomImage;
             }
         }
 

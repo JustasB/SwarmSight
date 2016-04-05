@@ -42,7 +42,7 @@ namespace Testing
             for (var y = 0; y < fitnessMap.Height; y++)
             for (var x = 0; x < fitnessMap.Width;  x++)
             {
-                rotatedHead.Origin = new System.Windows.Point(x,y);
+                rotatedHead.Origin = new System.Drawing.Point(x,y);
                 var fitness = Math.Log(headFinder.ComputeFitness(rotatedHead));
                 var address = 3*x + y*fitnessMap.Stride;
 

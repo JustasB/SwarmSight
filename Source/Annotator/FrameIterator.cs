@@ -4,15 +4,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SwarmVision
+namespace SwarmSight
 {
     public class FrameIterator
     {
+        public static int MaxUndos = 10;
+        public static LinkedList<FrameIterator> PreviousStates = new LinkedList<FrameIterator>();
+
         public int FrameIndex;
         public int FrameCount;
 
         public int SequenceIndex;
         public int SequenceCount {  get { return FrameSequence.Count; } }
+
+        /// <summary>
+        /// Stores the frame indices/frame numbers
+        /// </summary>
         public List<int> FrameSequence = new List<int>();
 
         public int BurstBeginSequenceIndex;
@@ -23,6 +30,10 @@ namespace SwarmVision
         public int BatchPartIndex;
         public int BatchPartCount;
 
+        public event EventHandler Advanced;
+        public event EventHandler EndOfBurst;
+        public event EventHandler EndOfBurstAndSequence;
+
         public FrameIterator(int frameCount, int batchPartCount, int burstLength = 30)
         {
             FrameCount = frameCount;
@@ -30,28 +41,38 @@ namespace SwarmVision
             BatchPartCount = batchPartCount;
         }
 
-        public void InitRandomSequence(int numRandomFrames, int beginFrame = 0)
+        public void InitRandomSequence(int numRandomFrames, int beginFrame = 0, int? endFrame = null, int? seed = null)
         {
-            var frameP = (double)numRandomFrames / FrameCount;
-            var rand = new Random();
+            var allFrames = Enumerable
+                .Range(beginFrame, (endFrame != null ? endFrame.Value : FrameCount)+1-beginFrame)
+                .ToList();
 
+            var rand = seed != null ? new Random(seed.Value) : new Random();
             FrameSequence.Clear();
 
-            for (var i = 0; i < FrameCount; i++)
-                if (rand.NextDouble() <= frameP)
-                    FrameSequence.Add(i);
+            while(FrameSequence.Count < numRandomFrames && allFrames.Count > 0)
+            {
+                var randomIndex = rand.Next(0, allFrames.Count);
 
-            Init(beginFrame);
+                FrameSequence.Add(allFrames[randomIndex]);
+                allFrames.RemoveAt(randomIndex);
+            }
+
+            FrameSequence.Sort();
+
+            Init(FrameSequence[0]);
         }
 
-        public void InitLinearSequence(int everyNthFrame, int beginFrame = 0)
+        public void InitLinearSequence(int everyNthFrame, int beginFrame = 0, int? endFrame = null)
         {
             FrameSequence.Clear();
 
-            for (var i = 0; i < FrameCount; i+= everyNthFrame)
+            var end = endFrame != null ? endFrame.Value : FrameCount-1;
+
+            for (var i = beginFrame; i <= end; i+= everyNthFrame)
                 FrameSequence.Add(i);
 
-            Init(beginFrame);
+            Init(FrameSequence[0]);
         }
 
         /// <summary>
@@ -79,6 +100,20 @@ namespace SwarmVision
 
             ResetBurst();
             ResetBatchPart();
+
+            SaveForUndo();
+        }
+
+        private void SaveForUndo()
+        {
+            var state = (FrameIterator)MemberwiseClone();
+
+            state.FrameSequence = FrameSequence.ToList();
+
+            PreviousStates.AddLast(state);
+
+            if (PreviousStates.Count > MaxUndos)
+                PreviousStates.RemoveFirst();
         }
 
         public bool IsAtEndOfSequenceOrVideo
@@ -87,6 +122,17 @@ namespace SwarmVision
             {
                 return SequenceIndex == SequenceCount - 1
                     || FrameIndex >= FrameCount - 1;
+            }
+        }
+
+        public int FramesTillEndOfBurst
+        {
+            get
+            {
+                var burstLeft = BurstPositionCount - BurstPositionIndex;
+                var sequenceLeft = SequenceCount - SequenceIndex;
+
+                return Math.Min(burstLeft, sequenceLeft)-1;
             }
         }
 
@@ -117,6 +163,11 @@ namespace SwarmVision
 
                 ResetBurst();
             }
+
+            SaveForUndo();
+
+            if (Advanced != null)
+                Advanced(this, null);
         }
 
         /// <summary>
@@ -136,7 +187,7 @@ namespace SwarmVision
         /// <summary>
         /// Moves the burst position to the beggining of the burst 
         /// </summary>
-        public void ResetBurst()
+        private void ResetBurst()
         {
             BurstPositionIndex = 0;
             SequenceIndex = BurstBeginSequenceIndex;
@@ -146,7 +197,7 @@ namespace SwarmVision
         /// <summary>
         /// Moves the batch to the next part
         /// </summary>
-        public void AdvanceBatchPart()
+        private void AdvanceBatchPart()
         {
             BatchPartIndex++;
         }
@@ -159,12 +210,12 @@ namespace SwarmVision
         /// <summary>
         /// Moves the burst position to the beggining of the burst 
         /// </summary>
-        public void ResetBatchPart()
+        private void ResetBatchPart()
         {
             BatchPartIndex = 0;
         }
 
-        public void AdvanceBatch()
+        private void AdvanceBatch()
         {
             var nextBurstBeginSequenceIndex = Math.Min(SequenceCount-1, BurstBeginSequenceIndex + BurstPositionCount);
 
@@ -172,6 +223,13 @@ namespace SwarmVision
             BurstBeginFrameIndex = FrameSequence[BurstBeginSequenceIndex];
         }
 
+        public static FrameIterator GetPreviousState()
+        {
+            var result = PreviousStates.Last.Value;
 
+            PreviousStates.RemoveLast();
+
+            return result;
+        }
     }
 }

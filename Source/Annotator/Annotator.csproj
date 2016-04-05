@@ -7,8 +7,8 @@
     <ProjectGuid>{74412F3E-6822-40D4-99C0-965946F688D3}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SwarmVision</RootNamespace>
-    <AssemblyName>SwarmVision</AssemblyName>
+    <RootNamespace>SwarmSight.Annotator</RootNamespace>
+    <AssemblyName>SwarmSight.Annotator</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -16,7 +16,7 @@
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>Y:\Documents\Dropbox\Research\Chris Jernigan\SwarmVision\Setup\</PublishUrl>
+    <PublishUrl>Y:\Documents\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\Annotator\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
@@ -26,10 +26,10 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <ProductName>SwarmVision</ProductName>
-    <PublisherName>Justas Birgiolas</PublisherName>
+    <ProductName>Video Frame Annotator</ProductName>
+    <PublisherName>SwarmSight</PublisherName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>1</ApplicationRevision>
+    <ApplicationRevision>11</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -69,6 +69,12 @@
   <PropertyGroup>
     <SignManifests>true</SignManifests>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>SwarmSight.App</StartupObject>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="OxyPlot">
       <HintPath>packages\OxyPlot.2014.1.546\lib\OxyPlot.dll</HintPath>
@@ -77,8 +83,11 @@
       <HintPath>packages\OxyPlot.2014.1.546\lib\net45\OxyPlot.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
@@ -93,15 +102,31 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="AppSettings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>AppSettings.settings</DependentUpon>
+    </Compile>
     <Compile Include="FrameIterator.cs" />
     <Compile Include="Helpers\MarginSetterHelper.cs" />
     <ApplicationDefinition Include="App.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
+    <Compile Include="Intro.xaml.cs">
+      <DependentUpon>Intro.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TemplateView.xaml.cs">
       <DependentUpon>TemplateView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="VideoSettings.xaml.cs">
+      <DependentUpon>VideoSettings.xaml</DependentUpon>
+    </Compile>
+    <Page Include="Intro.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -111,6 +136,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="TemplateView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="VideoSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -133,6 +162,13 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="AppSettings.settings">
+      <Generator>PublicSettingsSingleFileGenerator</Generator>
+      <LastGenOutput>AppSettings.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="Assets\Averaged Head.pdn" />
+    <None Include="Assets\HoneyBeeHeadTemplate.pdn" />
+    <None Include="Assets\Icon.pdn" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -164,38 +200,46 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Icon.ico" />
+    <Resource Include="Assets\Averaged Head.png" />
     <Resource Include="Assets\HeadFront.jpg" />
-    <Resource Include="Assets\LeftJoint.jpg" />
-    <Resource Include="Assets\LeftTip.jpg" />
-    <Resource Include="Assets\Proboscis.jpg" />
-    <Resource Include="Assets\RightJoint.jpg" />
-    <Resource Include="Assets\RightTip.jpg" />
+    <Resource Include="Assets\Icon.bmp" />
+    <Resource Include="Assets\Icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\LeftBase.jpg" />
-    <Resource Include="Assets\RightBase.jpg" />
+    <Resource Include="Assets\LeftEyeEdge.jpg" />
+    <Resource Include="Assets\LeftJoint.jpg" />
     <Resource Include="Assets\LeftMandibleBase.jpg" />
     <Resource Include="Assets\LeftMandibleTip.jpg" />
+    <Resource Include="Assets\LeftTip.jpg" />
+    <Resource Include="Assets\Proboscis.jpg" />
+    <Resource Include="Assets\RightBase.jpg" />
+    <Resource Include="Assets\RightEyeEdge.jpg" />
+    <Resource Include="Assets\RightJoint.jpg" />
     <Resource Include="Assets\RightMandibleBase.jpg" />
     <Resource Include="Assets\RightMandibleTip.jpg" />
+    <Resource Include="Assets\RightTip.jpg" />
     <Content Include="ffprobe.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Christina Burden\SwarmVision.Filters\SwarmVision.Filters.csproj">
+    <ProjectReference Include="..\SwarmSight.Filters\SwarmSight.Filters.csproj">
       <Project>{fb2b2220-9b5d-4bb2-b41c-7d19854ffa78}</Project>
-      <Name>SwarmVision.Filters</Name>
+      <Name>SwarmSight.Filters</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SwarmVision.GPU\SwarmVision.Hardware.csproj">
+    <ProjectReference Include="..\SwarmSight.GPU\SwarmSight.Hardware.csproj">
       <Project>{b880e4cb-aad4-48fd-bfef-63108c9c41cc}</Project>
-      <Name>SwarmVision.Hardware</Name>
+      <Name>SwarmSight.Hardware</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SwarmVision.Models\SwarmVision.HeadPartsTracking.csproj">
+    <ProjectReference Include="..\SwarmSight.Models\SwarmSight.HeadPartsTracking.csproj">
       <Project>{4092e9c4-b3fe-4c1a-9180-b07ba3210d02}</Project>
-      <Name>SwarmVision.HeadPartsTracking</Name>
+      <Name>SwarmSight.HeadPartsTracking</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SwarmVision.VideoPlayer\SwarmVision.VideoPlayer.csproj">
+    <ProjectReference Include="..\SwarmSight.VideoPlayer\SwarmSight.VideoPlayer.csproj">
       <Project>{d9309e36-4008-4f68-b08f-9cc2cfbaa53a}</Project>
-      <Name>SwarmVision.VideoPlayer</Name>
+      <Name>SwarmSight.VideoPlayer</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

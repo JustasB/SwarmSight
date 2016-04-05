@@ -32,7 +32,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             //HEAD
             var result = new HeadModel
             {
-                Origin = new Point
+                Origin = new System.Drawing.Point
                 (
                     x: (int)Cross(parent1.Origin.X, parent2.Origin.X, 0),
                     y: (int)Cross(parent1.Origin.Y, parent2.Origin.Y, 0)
@@ -50,10 +50,10 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         {
             var result = new HeadModel();
 
-            result.Origin = new Point
+            result.Origin = new System.Drawing.Point
             (
-                MutateValue(individual.Origin.X, 0, Target.ShapeData.Width - HeadView.Width),
-                MutateValue(individual.Origin.Y, 0, Target.ShapeData.Height - HeadView.Height)
+                MutateValue(individual.Origin.X, 0, Target.ShapeData.Width - HeadView.Width).Rounded(),
+                MutateValue(individual.Origin.Y, 0, Target.ShapeData.Height - HeadView.Height).Rounded()
             );
 
             result.Angle = MutateValue(individual.Angle);
@@ -299,7 +299,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             //HEAD
             var result = new HeadModel
             {
-                Origin = new Point
+                Origin = new System.Drawing.Point
                 (
                     Random.Next(0, Target.ShapeData.Width - HeadView.Width),
                     Random.Next(0, Target.ShapeData.Height - HeadView.Height)

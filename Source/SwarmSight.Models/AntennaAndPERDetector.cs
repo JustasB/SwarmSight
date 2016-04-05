@@ -17,6 +17,7 @@ using SwarmSight.HeadPartsTracking.Algorithms;
 using SwarmSight.HeadPartsTracking.Models;
 using AForge.Neuro;
 using Classes;
+using System.Windows.Media.Media3D;
 
 namespace SwarmSight.HeadPartsTracking
 {
@@ -99,7 +100,7 @@ namespace SwarmSight.HeadPartsTracking
         {
             var result = new FrameComparerResults();
 
-            var antenaPoints = FastFindAnetana(ref rawFrame, BestHead.Origin.ToDrawingPoint(), BestHead.Dimensions.ToDrawingPoint(), BestHead.Angle,
+            var antenaPoints = FastFindAnetana(ref rawFrame, BestHead.Origin, BestHead.Dimensions, BestHead.Angle,
                                                 BestHead.ScaleX, BestHead.ScaleY);
 
 
@@ -108,8 +109,15 @@ namespace SwarmSight.HeadPartsTracking
 
             dataFrame.Add(rawFrame.FrameIndex + "," + buzzer + "," + aa.LeftHighest + "," + aa.RightHighest);
 
-            if(aa.DebugFrame != null)
-                aa.DebugFrame.Bitmap.Save(@"c:\temp\frames\" + rawFrame.FrameIndex + ".jpg", ImageFormat.Jpeg);
+            //if(ll.DebugFrame != null && aa.DebugFrame != null)
+            //{
+            //    using (var comb = new Frame(aa.DebugFrame.Width, aa.DebugFrame.Height + ll.DebugFrame.Height, aa.DebugFrame.PixelFormat, false))
+            //    {
+            //        comb.DrawFrame(ll.DebugFrame, 0, 0, 1, 0);
+            //        comb.DrawFrame(aa.DebugFrame, 0, ll.DebugFrame.Height, 1, 0);
+            //        comb.Bitmap.Save(@"c:\temp\frames\" + rawFrame.FrameIndex + ".jpg", ImageFormat.Jpeg);
+            //    }
+            //}
             
             //var antenaPoints = (AntenaPoints)null;
             
@@ -161,7 +169,10 @@ namespace SwarmSight.HeadPartsTracking
                     BestHead.Origin.Moved(0, BestHead.Dimensions.Y).ToPointF()
                 });
             }
-            
+
+            //Show the prev frame
+            if(pastFrames.Count > 1)
+                rawFrame = pastFrames.ElementAt(1);
 
             return result;
         }
@@ -175,7 +186,8 @@ namespace SwarmSight.HeadPartsTracking
             }
         }
 
-
+        private List<Point3D> leftTips3D = new List<Point3D>();
+        private FastAntennaSearchAlgorithm ll = new FastAntennaSearchAlgorithm();
         public AntenaPoints FastFindAnetana(ref Frame rawFrame, Point origin, Point dims, double angle, double scaleX, double scaleY)
         {
             var rawClone = rawFrame.Clone();
@@ -183,25 +195,44 @@ namespace SwarmSight.HeadPartsTracking
 
             if (pastFrames.Count >= pastFramesNeeded)
             {
-                var clipped =
-                    new List<Frame> { rawFrame, pastFrames.Last.Value, pastFrames.First.Value }
-                    .AsParallel()
-                    .Select(f => f.SubClipped(origin.X, origin.Y, dims.X, dims.Y))
-                    .ToList();
-
                 aa.HeadAngle = angle;
                 aa.ScaleX = scaleX;
                 aa.ScaleY = scaleY;
+                aa.HeadOffset = origin;
+                aa.HeadDims = dims;
+                aa.EvalExpected = true;
 
-                antenaPoints = aa.Search(new FrameCollection() { ShapeData = clipped[0], MotionData = clipped[1], ColorData = clipped[2] });
+                antenaPoints = aa.Search(new FrameCollection()
+                {
+                    Current = rawClone,
+                    Prev1 = pastFrames.Last.Value,
+                    Prev2 = pastFrames.First.Value
+                });
 
-                //aa.SearchTimings(); //DebugWrite slows perf
+                //3d points
+                ////var leftSide = new Rect(34, 107, 166, 166);
+                //ll.HeadAngle = angle;
+                //ll.ScaleX = 166.0 / 332.0;
+                //ll.ScaleY = 166.0 / 332.0;
+                //ll.HeadOffset = new Point(34, 107);
+                //ll.HeadDims = new Point(166,166);
+                //ll.MotionModelThreshold = 35;
+                ////ll.TopViewLeft = antenaPoints.LFT;
 
-                clipped.AsParallel().ForAll(f => f.Dispose());
+                //var leftPoints = ll.Search(new FrameCollection()
+                //{
+                //    Current = rawClone,
+                //    Prev1 = pastFrames.Last.Value,
+                //    Prev2 = pastFrames.First.Value
+                //});
 
-                //Overwrite the current frame with the past one
-                rawFrame.DrawFrame(pastFrames.Last.Value, 0, 0, 1, 0);
+                //var TLcomb = PointExtensions.CombineMirrorPoints(antenaPoints.LFT, leftPoints.LFT, 10, 10);
+
+                //leftTips3D.Add(TLcomb);
             }
+
+            //if (leftTips3D.Count % 500 == 0 && leftTips3D.Count > 0)
+            //    File.WriteAllLines(@"Y:\downloads\beevids\leftTip3D.csv", leftTips3D.Select(p => string.Join(",", new[] { p.X, p.Y, p.Z })));
 
             pastFrames.AddLast(rawClone);
 
@@ -218,7 +249,7 @@ namespace SwarmSight.HeadPartsTracking
 
         private void DecorateAntena(Frame rawFrame, Point origin, Frame combo)
         {
-            combo.ColorPixels(aa.TargetPoints.Select(p => aa.ToFrameSpace(p).ToDrawingPoint()).ToList(), Color.Blue);
+            combo.ColorPixels(aa.TargetPoints.Select(p => aa.ToFrameSpace(p)).ToList(), Color.Blue);
 
 
             //Draw prior space
@@ -226,35 +257,35 @@ namespace SwarmSight.HeadPartsTracking
             {
                 //Prior origin and axes
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-200, 0)).ToDrawingPoint(),
-                    aa.ToFrameSpace(new System.Windows.Point(200, 0)).ToDrawingPoint());
+                    aa.ToFrameSpace(new System.Windows.Point(-200, 0)),
+                    aa.ToFrameSpace(new System.Windows.Point(200, 0)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-200, -50)).ToDrawingPoint(),
-                    aa.ToFrameSpace(new System.Windows.Point(200, -50)).ToDrawingPoint());
+                    aa.ToFrameSpace(new System.Windows.Point(-200, -50)),
+                    aa.ToFrameSpace(new System.Windows.Point(200, -50)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-200, 50)).ToDrawingPoint(),
-                    aa.ToFrameSpace(new System.Windows.Point(200, 50)).ToDrawingPoint());
+                    aa.ToFrameSpace(new System.Windows.Point(-200, 50)),
+                    aa.ToFrameSpace(new System.Windows.Point(200, 50)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(0, -200)).ToDrawingPoint(),
-                    aa.ToFrameSpace(new System.Windows.Point(0, 200)).ToDrawingPoint());
+                    aa.ToFrameSpace(new System.Windows.Point(0, -200)),
+                    aa.ToFrameSpace(new System.Windows.Point(0, 200)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(50, -200)).ToDrawingPoint(),
-                    aa.ToFrameSpace(new System.Windows.Point(50, 200)).ToDrawingPoint());
+                    aa.ToFrameSpace(new System.Windows.Point(50, -200)),
+                    aa.ToFrameSpace(new System.Windows.Point(50, 200)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-50, -200)).ToDrawingPoint(),
-                    aa.ToFrameSpace(new System.Windows.Point(-50, 200)).ToDrawingPoint());
+                    aa.ToFrameSpace(new System.Windows.Point(-50, -200)),
+                    aa.ToFrameSpace(new System.Windows.Point(-50, 200)));
 
                 //All the hulls
                 foreach (var hull in FastAntennaSearchAlgorithm.ConvexHulls.Keys)
                 {
                     var hullPts = FastAntennaSearchAlgorithm
                         .ConvexHulls[hull]
-                        .Select(v => aa.ToFrameSpace(v).ToDrawingPoint())
+                        .Select(v => aa.ToFrameSpace(v))
                         .ToArray();
 
                     if (hullPts.Length > 2)
@@ -266,178 +297,178 @@ namespace SwarmSight.HeadPartsTracking
         }
 
 
-        public object FindAnetana(Frame rawFrame)
-        {
-            var result = new FrameComparerResults();
-            var rawClone = rawFrame.Clone();
+        //public object FindAnetana(Frame rawFrame)
+        //{
+        //    var result = new FrameComparerResults();
+        //    var rawClone = rawFrame.Clone();
 
-            if (pastFrames.Count >= pastFramesNeeded)
-            {
-                using (var darkened = rawFrame.MapOfDarkened(pastFrames.Last()))
-                using (var darkcolor = rawFrame.CloseToColorMap(Config.AntennaColors[0], Config.ColorDistance))
-                using (var combo = darkened.AveragePixels(darkcolor))
-                {
-                    Array.Copy(combo.PixelBytes, rawFrame.PixelBytes, rawFrame.PixelBytesLength);
+        //    if (pastFrames.Count >= pastFramesNeeded)
+        //    {
+        //        using (var darkened = rawFrame.MapOfDarkened(pastFrames.Last()))
+        //        using (var darkcolor = rawFrame.CloseToColorMap(Config.AntennaColors[0], Config.ColorDistance))
+        //        using (var combo = darkened.AveragePixels(darkcolor))
+        //        {
+        //            Array.Copy(combo.PixelBytes, rawFrame.PixelBytes, rawFrame.PixelBytesLength);
 
-                    var whitePxs = combo.PointsOverThreshold(128);
+        //            var whitePxs = combo.PointsOverThreshold(128);
 
-                    //do this based on head orientation
-                    var regression = new Regression();
-                    var minSeg1Length = 30;
-                    var maxSeg1Length = 70;
-                    var aveSeg1Length = 50;
-                    var maxSeg2Length = 100;
-                    var maxDistToTip = 150;
-                    var origin = new Point(325, 270);
-                    var searchPolygon = new Point[]
-                        {
-                            new Point(311, 316), new Point(440, 190), new Point(470, 352), new Point(366, 366),
-                            new Point(332, 337)
-                        };
-                    var path = new GraphicsPath();
-                    path.AddPolygon(searchPolygon);
-                    var region = new Region(path);
+        //            //do this based on head orientation
+        //            var regression = new Regression();
+        //            var minSeg1Length = 30;
+        //            var maxSeg1Length = 70;
+        //            var aveSeg1Length = 50;
+        //            var maxSeg2Length = 100;
+        //            var maxDistToTip = 150;
+        //            var origin = new Point(325, 270);
+        //            var searchPolygon = new Point[]
+        //                {
+        //                    new Point(311, 316), new Point(440, 190), new Point(470, 352), new Point(366, 366),
+        //                    new Point(332, 337)
+        //                };
+        //            var path = new GraphicsPath();
+        //            path.AddPolygon(searchPolygon);
+        //            var region = new Region(path);
 
-                    rawFrame.ColorIfTrue(Color.Orange, p =>
-                    {
-                        lock (region)
-                        {
-                            return region.IsVisible(p.X, p.Y);
-                        }
-                    });
-                    rawFrame.ColorIfTrue(Color.LimeGreen,
-                                         p => regression.Distance(p, origin).Between(maxSeg1Length, maxDistToTip));
+        //            rawFrame.ColorIfTrue(Color.Orange, p =>
+        //            {
+        //                lock (region)
+        //                {
+        //                    return region.IsVisible(p.X, p.Y);
+        //                }
+        //            });
+        //            rawFrame.ColorIfTrue(Color.LimeGreen,
+        //                                 p => regression.Distance(p.ToWindowsPoint(), origin.ToWindowsPoint()).Between(maxSeg1Length, maxDistToTip));
 
-                    var oneAntennaPx = whitePxs
-                        .Where(p =>
-                               p.X > origin.X &&
-                               regression.Distance(p, origin).Between(maxSeg1Length, maxDistToTip)
-                               && region.IsVisible(p.X, p.Y)
-                        )
-                        .OrderByDescending(p => regression.Distance(p, origin))
-                        .Skip(5)
-                        .ToList();
+        //            var oneAntennaPx = whitePxs
+        //                .Where(p =>
+        //                       p.X > origin.X &&
+        //                       regression.Distance(p.ToWindowsPoint(), origin.ToWindowsPoint()).Between(maxSeg1Length, maxDistToTip)
+        //                       && region.IsVisible(p.X, p.Y)
+        //                )
+        //                .OrderByDescending(p => regression.Distance(p.ToWindowsPoint(), origin.ToWindowsPoint()))
+        //                .Skip(5)
+        //                .ToList();
 
-                    var antena = new AntenaParams();
+        //            var antena = new AntenaParams();
 
-                    if (oneAntennaPx.Count >= 50)
-                    {
-                        var mostDistantPoints =
-                            oneAntennaPx.OrderByDescending(p => regression.Distance(p, origin))
-                                        .Take(14)
-                                        .Skip(2)
-                                        .Take(10)
-                                        .ToList();
-                        antena.Tip = new Point((int)(mostDistantPoints.Average(p => p.X)),
-                                               (int)mostDistantPoints.Average(p => p.Y));
+        //            if (oneAntennaPx.Count >= 50)
+        //            {
+        //                var mostDistantPoints =
+        //                    oneAntennaPx.OrderByDescending(p => regression.Distance(p, origin))
+        //                                .Take(14)
+        //                                .Skip(2)
+        //                                .Take(10)
+        //                                .ToList();
+        //                antena.Tip = new Point((int)(mostDistantPoints.Average(p => p.X)),
+        //                                       (int)mostDistantPoints.Average(p => p.Y));
 
-                        var stdevX = oneAntennaPx.StdDev(p => p.X);
-                        var stdevY = oneAntennaPx.StdDev(p => p.Y);
+        //                var stdevX = oneAntennaPx.StdDev(p => p.X);
+        //                var stdevY = oneAntennaPx.StdDev(p => p.Y);
 
-                        if (stdevY / stdevX > 1.5)
-                        {
-                            //If nearly vertical line, flip axes because regression is poor for vertical lines
-                            antena.Seg2 = regression
-                                .RegressLine(oneAntennaPx.Select(p => new Point(p.Y, p.X)).ToList())
-                                .Invert();
-                        }
-                        else
-                        {
-                            antena.Seg2 = regression.RegressLine(oneAntennaPx);
-                        }
+        //                if (stdevY / stdevX > 1.5)
+        //                {
+        //                    //If nearly vertical line, flip axes because regression is poor for vertical lines
+        //                    antena.Seg2 = regression
+        //                        .RegressLine(oneAntennaPx.Select(p => new Point(p.Y, p.X)).ToList())
+        //                        .Invert();
+        //                }
+        //                else
+        //                {
+        //                    antena.Seg2 = regression.RegressLine(oneAntennaPx);
+        //                }
 
-                        rawFrame.ColorPixels(oneAntennaPx, Color.Blue);
-                        rawFrame.ColorPixels(mostDistantPoints, Color.Yellow);
-                    }
-                    else if (prevAntenaModel != null)
-                    {
-                        antena = prevAntenaModel;
-                    }
-
-
-                    if (antena.Seg2 != null)
-                    {
-                        using (var gfx = Graphics.FromImage(rawFrame.Bitmap))
-                        {
-                            var pointsOn2ndSec = regression.PointsOnLineDistanceAway(origin, antena.Seg2, aveSeg1Length);
-
-                            if (pointsOn2ndSec.Count == 0 && prevAntenaModel != null)
-                            {
-                                antena = prevAntenaModel;
-                                pointsOn2ndSec = regression.PointsOnLineDistanceAway(origin, antena.Seg2, aveSeg1Length);
-                            }
-
-                            if (pointsOn2ndSec.Count > 0)
-                            {
-                                var middlePt = pointsOn2ndSec[0];
-
-                                if (regression.Distance(pointsOn2ndSec[0], antena.Tip) >
-                                    regression.Distance(pointsOn2ndSec[1], antena.Tip))
-                                    middlePt = pointsOn2ndSec[1];
-
-                                gfx.DrawLines(new Pen(Color.Blue, 7), new PointF[]
-                                    {
-                                        new PointF(origin.X, origin.Y),
-                                        new PointF(middlePt.X, middlePt.Y)
-                                    });
-
-                                gfx.DrawLines(new Pen(Color.Blue, 7), new PointF[]
-                                    {
-                                        new PointF(middlePt.X, middlePt.Y),
-                                        new PointF(antena.Tip.X, antena.Tip.Y),
-                                    });
-
-                                gfx.DrawLines(new Pen(Color.Yellow, 5), new PointF[]
-                                    {
-                                        new PointF(origin.X, origin.Y),
-                                        new PointF(middlePt.X, middlePt.Y)
-                                    });
-
-                                gfx.DrawLines(new Pen(Color.Yellow, 5), new PointF[]
-                                    {
-                                        new PointF(middlePt.X, middlePt.Y),
-                                        new PointF(antena.Tip.X, antena.Tip.Y),
-                                    });
-
-                                var diameter = 31;
-                                gfx.DrawEllipse(new Pen(Color.White, 1),
-                                                antena.Tip.X - diameter / 2,
-                                                antena.Tip.Y - diameter / 2,
-                                                diameter,
-                                                diameter
-                                    );
-
-                                gfx.DrawEllipse(new Pen(Color.White, 1),
-                                                middlePt.X - diameter / 2,
-                                                middlePt.Y - diameter / 2,
-                                                diameter,
-                                                diameter
-                                    );
-
-                                prevAntenaModel = new AntenaParams
-                                {
-                                    Seg2 = antena.Seg2,
-                                    Tip = antena.Tip,
-                                    LineX = antena.LineX
-                                };
-                            }
+        //                rawFrame.ColorPixels(oneAntennaPx, Color.Blue);
+        //                rawFrame.ColorPixels(mostDistantPoints, Color.Yellow);
+        //            }
+        //            else if (prevAntenaModel != null)
+        //            {
+        //                antena = prevAntenaModel;
+        //            }
 
 
-                        }
-                    }
-                    //rawFrame.Bitmap.Save(@"c:\temp\darkened\" + rawFrame.FrameIndex + ".bmp");
+        //            if (antena.Seg2 != null)
+        //            {
+        //                using (var gfx = Graphics.FromImage(rawFrame.Bitmap))
+        //                {
+        //                    var pointsOn2ndSec = regression.PointsOnLineDistanceAway(origin, antena.Seg2, aveSeg1Length);
 
-                    if (pastFrames.Count > pastFramesNeeded)
-                    {
-                        pastFrames.First().Dispose();
-                        pastFrames.RemoveFirst();
-                    }
-                }
-            }
+        //                    if (pointsOn2ndSec.Count == 0 && prevAntenaModel != null)
+        //                    {
+        //                        antena = prevAntenaModel;
+        //                        pointsOn2ndSec = regression.PointsOnLineDistanceAway(origin, antena.Seg2, aveSeg1Length);
+        //                    }
 
-            pastFrames.AddLast(rawClone);
+        //                    if (pointsOn2ndSec.Count > 0)
+        //                    {
+        //                        var middlePt = pointsOn2ndSec[0];
 
-            return result;
-        }
+        //                        if (regression.Distance(pointsOn2ndSec[0], antena.Tip) >
+        //                            regression.Distance(pointsOn2ndSec[1], antena.Tip))
+        //                            middlePt = pointsOn2ndSec[1];
+
+        //                        gfx.DrawLines(new Pen(Color.Blue, 7), new PointF[]
+        //                            {
+        //                                new PointF(origin.X, origin.Y),
+        //                                new PointF(middlePt.X, middlePt.Y)
+        //                            });
+
+        //                        gfx.DrawLines(new Pen(Color.Blue, 7), new PointF[]
+        //                            {
+        //                                new PointF(middlePt.X, middlePt.Y),
+        //                                new PointF(antena.Tip.X, antena.Tip.Y),
+        //                            });
+
+        //                        gfx.DrawLines(new Pen(Color.Yellow, 5), new PointF[]
+        //                            {
+        //                                new PointF(origin.X, origin.Y),
+        //                                new PointF(middlePt.X, middlePt.Y)
+        //                            });
+
+        //                        gfx.DrawLines(new Pen(Color.Yellow, 5), new PointF[]
+        //                            {
+        //                                new PointF(middlePt.X, middlePt.Y),
+        //                                new PointF(antena.Tip.X, antena.Tip.Y),
+        //                            });
+
+        //                        var diameter = 31;
+        //                        gfx.DrawEllipse(new Pen(Color.White, 1),
+        //                                        antena.Tip.X - diameter / 2,
+        //                                        antena.Tip.Y - diameter / 2,
+        //                                        diameter,
+        //                                        diameter
+        //                            );
+
+        //                        gfx.DrawEllipse(new Pen(Color.White, 1),
+        //                                        middlePt.X - diameter / 2,
+        //                                        middlePt.Y - diameter / 2,
+        //                                        diameter,
+        //                                        diameter
+        //                            );
+
+        //                        prevAntenaModel = new AntenaParams
+        //                        {
+        //                            Seg2 = antena.Seg2,
+        //                            Tip = antena.Tip,
+        //                            LineX = antena.LineX
+        //                        };
+        //                    }
+
+
+        //                }
+        //            }
+        //            //rawFrame.Bitmap.Save(@"c:\temp\darkened\" + rawFrame.FrameIndex + ".bmp");
+
+        //            if (pastFrames.Count > pastFramesNeeded)
+        //            {
+        //                pastFrames.First().Dispose();
+        //                pastFrames.RemoveFirst();
+        //            }
+        //        }
+        //    }
+
+        //    pastFrames.AddLast(rawClone);
+
+        //    return result;
+        //}
     }
 }

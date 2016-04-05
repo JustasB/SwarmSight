@@ -211,6 +211,17 @@ namespace SwarmSight.Filters
             IsDecoded = source.IsDecoded;
         }
 
+        public Color GetColor(int x, int y)
+        {
+            var offset = y * Stride + x * 3;
+
+            return Color.FromArgb(
+                FirstPixelPointer[offset + 2],
+                FirstPixelPointer[offset + 1],
+                FirstPixelPointer[offset]
+            );
+        }
+
         public Color GetColor(Point point)
         {
             var offset = point.Y*Stride + point.X*3;

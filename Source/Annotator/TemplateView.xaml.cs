@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
-namespace SwarmVision
+namespace SwarmSight
 {
     public partial class TemplateView : UserControl
     {
@@ -17,6 +17,9 @@ namespace SwarmVision
 
             { "Right Mandible Base", "Assets/RightMandibleBase.jpg" },
             { "Right Mandible Tip", "Assets/RightMandibleTip.jpg" },
+
+            { "Dorsal Edge of the Right Eye", "Assets/RightEyeEdge.jpg" },
+            { "Dorsal Edge of the Left Eye", "Assets/LeftEyeEdge.jpg" },
 
             { "Left Flagellum Tip", "Assets/LeftTip.jpg" },
             { "Left Flagellum Base", "Assets/LeftJoint.jpg" },
@@ -55,7 +58,7 @@ namespace SwarmVision
 
         public void UpdateView()
         {
-            lblTask.Content = "Task: Find the " + CurrentPartName;
+            lblTask.Text = "Task: Find the " + CurrentPartName;
             partImage.Source = new BitmapImage(new Uri(CurrentPartPath, UriKind.Relative));
         }
     }

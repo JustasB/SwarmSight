@@ -13,8 +13,8 @@ namespace SwarmSight.HeadPartsTracking.Models
         public MinMaxDouble ScaleY = new MinMaxDouble(1, 0.1, 7.9);
         public AngleInDegrees Angle = new AngleInDegrees(0, -270, +270);
 
-        public System.Windows.Point Origin = new System.Windows.Point(0, 0);
-        public System.Windows.Point Dimensions = new System.Windows.Point(4*83, 4*83);
+        public System.Drawing.Point Origin = new System.Drawing.Point(0, 0);
+        public System.Drawing.Point Dimensions = new System.Drawing.Point(4*83, 4*83);
 
         public TwoSegmentModel LeftAntena;
         public TwoSegmentModel RightAntena;
