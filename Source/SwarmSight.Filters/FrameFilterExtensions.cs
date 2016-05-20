@@ -14,11 +14,58 @@ using Point = System.Drawing.Point;
 using System.Windows.Media.Media3D;
 using static System.Math;
 using SwarmSight.Filters.ColorDemo;
+using System.Runtime.CompilerServices;
 
 namespace SwarmSight.Filters
 {
     public unsafe static class FrameFilterExtensions
     {
+        public static void MarkSectors(this Frame target, double[] sectors, int headCtrX, int headCtrY, int headHeight, double headAngle, bool isRight = true)
+        {
+            var startingAngleRad = headAngle / 180.0 * PI;
+            var sectorWidth = PI / sectors.Length;
+            var radius = headHeight;
+            var penThick = new Pen(Color.Black, 3);
+            var penThin = new Pen(Color.LightGray, 1);
+            var maxSectorValue = headCtrX * headHeight * 255 / sectors.Length;
+            var maxBinValue = sectors.Max();
+
+            var prevEnd = new PointF();
+            var prevShade = 0.0;
+
+            using (var g = Graphics.FromImage(target.Bitmap))
+            {
+                for (var s = 0; s <= sectors.Length; s++)
+                {
+                    var sectorAngle = startingAngleRad + (isRight ? +1 : -1) * s * sectorWidth;
+
+                    var endX = (float)(headCtrX + Sin(sectorAngle) * radius);
+                    var endY = (float)(headCtrY - Cos(sectorAngle) * radius);
+
+                    //g.DrawLine(penThick, headCtrX, headCtrY, endX, endY);
+                    //g.DrawLine(penThin, headCtrX, headCtrY, endX, endY);
+                    
+                    if (s > 0 && (int)prevShade > 0)
+                    {
+                        g.FillPolygon(new SolidBrush(Color.FromArgb((int)prevShade,255,255,255)), new[] 
+                        {
+                            new PointF(headCtrX, headCtrY),
+                            prevEnd,
+                            new PointF(endX, endY),
+                            new PointF(headCtrX, headCtrY)
+                        });
+                    }
+
+                    if (s < sectors.Length)
+                    {
+                        //Relative to max possible activation
+                        //prevShade = Min(1, sectors[s] / maxSectorValue / 0.02)*255*0.5;
+                        prevShade = sectors[s] == maxBinValue ? 200 : 0;
+                        prevEnd = new PointF(endX, endY);
+                    }
+                }
+            }
+        }
         public static void MarkPoint(this Frame target, Point pt, Color? inner = null, Color? outer = null)
         {
             if (inner == null)
@@ -36,6 +83,62 @@ namespace SwarmSight.Filters
                 g.DrawRectangle(outC, pt.X-1, pt.Y-1, 3, 3);
             }
         }
+
+        public static Frame Averaged(Queue<Frame> frames)
+        {
+            var result = new Frame(frames.First().Width, frames.First().Height, frames.First().PixelFormat, false);
+
+            var resultFirstPx = result.FirstPixelPointer;
+            var resultStride = result.Stride;
+            var frameCount = frames.Count;
+            var height = result.Height;
+            var width = result.Width;
+
+            var firstPxs = new byte*[frameCount];
+
+            for (var f = 0; f < frameCount; f++)
+            {
+                firstPxs[f] = frames.ElementAt(f).FirstPixelPointer;
+            }
+
+            Parallel.For(0, height, y =>
+            {
+                var resultRowStart = resultFirstPx + y * resultStride;
+
+                var rowStarts = new byte*[frameCount];
+
+                for (var f = 0; f < frameCount; f++)
+                {
+                    rowStarts[f] = firstPxs[f] + y * resultStride;
+                }
+
+                for (var x = 0; x < width; x++)
+                {
+                    var pxSumB = 0;
+                    var pxSumG = 0;
+                    var pxSumR = 0;
+                    var x3 = x * 3;
+
+                    for (var f = 0; f < frameCount; f++)
+                    {
+                        var pxAddr = rowStarts[f] + x3;
+
+                        pxSumB += *(pxAddr);
+                        pxSumG += *(pxAddr+1);
+                        pxSumR += *(pxAddr)+2;
+                    }
+
+                    var resultPxAddr = resultRowStart + x3;
+
+                    *(resultPxAddr) = (byte)(pxSumB / frameCount);
+                    *(resultPxAddr + 1) = (byte)(pxSumG / frameCount);
+                    *(resultPxAddr + 2) = (byte)(pxSumR / frameCount);
+                }
+            });
+
+            return result;
+        }
+
         public static void CopyToWriteableBitmap(this Frame source, WriteableBitmap writeableBitmap)
         {
             // Reserve the back buffer for updates.
@@ -103,6 +206,7 @@ namespace SwarmSight.Filters
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Distance(this Color a, Color b)
         {
             return (Math.Abs(b.R - a.R) + Math.Abs(b.G - a.G) + Math.Abs(b.B - a.B)) / 3.0;
@@ -378,6 +482,30 @@ namespace SwarmSight.Filters
                 }
             });
         }
+
+        public static bool IsDifferentFrom(this Frame target, Frame target2)
+        {
+            var firstPx = target.FirstPixelPointer;
+            var firstPx2 = target2.FirstPixelPointer;
+
+            //Check first row only
+            for (var x = 0; x < target.Width; x++)
+            {
+                var offset = x * 3;
+
+                if(
+                    firstPx[offset + 0] != firstPx2[offset + 0] ||
+                    firstPx[offset + 1] != firstPx2[offset + 1] ||
+                    firstPx[offset + 2] != firstPx2[offset + 2]
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool Between(this double target, double low, double high)
         {
             return low <= target && target <= high;
@@ -756,7 +884,12 @@ namespace SwarmSight.Filters
             return result;
         }
 
-        public static void ForEachPoint(this Frame target, Action<Point,Color> action)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="action">X,Y,R,G,B</param>
+        public static void ForEachPoint(this Frame target, Action<int,int,int,int,int> action)
         {
             //Performance optimizations
             var firstPx = target.FirstPixelPointer;
@@ -775,16 +908,12 @@ namespace SwarmSight.Filters
             }, (int y) =>
             {
                 var rowStart = stride * y; //Stride is width*3 bytes
-                var rowResult = new Dictionary<Point, Color>();
 
                 for (var x = xMin; x < xMax; x++)
                 {
                     var offset = x * 3 + rowStart;
 
-                    var pt = new Point(x, y);
-                    var col = Color.FromArgb(firstPx[offset + 2], firstPx[offset + 1], firstPx[offset]);
-
-                    action(pt, col);
+                    action(x, y, firstPx[offset + 2], firstPx[offset + 1], firstPx[offset]);
                 }
             });
         }
@@ -828,8 +957,12 @@ namespace SwarmSight.Filters
             var xMax = width;
             var yMin = 0;
             var yMax = height;
+            //var shiftConst = 240.0f / 255f;
 
-            
+            var LogisticTable = Enumerable
+                .Range(0, 256)
+                .Select(x => Logistic(x, 255, extent, shift))
+                .ToArray();
 
             //Do each row in parallel
             Parallel.For(yMin, yMax, new ParallelOptions()
@@ -842,21 +975,41 @@ namespace SwarmSight.Filters
                 for (var x = xMin; x < xMax; x++)
                 {
                     var offset = x * 3 + rowStart;
-                    
-                    var color = new HSLColor(firstPx[offset + 2], firstPx[offset + 1], firstPx[offset]);
-                    var oldBrighness = (float)color.Luminosity;
-                    var ratio = Logistic(oldBrighness, 240, extent, shift/255*240);
-                    color.Luminosity = ratio;
-                    var rgb = (Color)color;
-                    resultFirstPx[offset] = (byte)(Min((byte)255,Max((byte)0, rgb.B)));
-                    resultFirstPx[offset+1] = (byte)(Min((byte)255, Max((byte)0, rgb.G)));
-                    resultFirstPx[offset+2] = (byte)(Min((byte)255, Max((byte)0, rgb.R)));
 
-                    continue;
+                    var r = firstPx[offset + 2];
+                    var g = firstPx[offset + 1];
+                    var b = firstPx[offset];
 
-                    resultFirstPx[offset + 0] = (byte)Logistic(firstPx[offset + 0], 255, extent, shift);
-                    resultFirstPx[offset + 1] = (byte)Logistic(firstPx[offset + 1], 255, extent, shift);
-                    resultFirstPx[offset + 2] = (byte)Logistic(firstPx[offset + 2], 255, extent, shift);
+                    var brightness = (r+g+b)/3;
+                    var newBrightness = LogisticTable[brightness];
+                    var adjust = (newBrightness - brightness);
+
+                    var newb = b + adjust;
+                    var newg = g + adjust;
+                    var newr = r + adjust;
+
+                    resultFirstPx[offset] = (byte)(newb < 0 ? 0 : newb > 255 ? 255 : newb);
+                    resultFirstPx[offset + 1] = (byte)(newg < 0 ? 0 : newg > 255 ? 255 : newg);
+                    resultFirstPx[offset + 2] = (byte)(newr < 0 ? 0 : newr > 255 ? 255 : newr);
+
+                    //continue;
+
+                    ////Convert to HSL space change lum, then convert back to RGB -- SLOW
+
+                    //var color = new HSLColor(firstPx[offset + 2], firstPx[offset + 1], firstPx[offset]);
+                    //var oldBrighness = (float)color.Luminosity;
+                    //var ratio = Logistic(oldBrighness, 240, extent, shift/255*240);
+                    //color.Luminosity = ratio;
+                    //var rgb = (Color)color;
+                    //resultFirstPx[offset] = (byte)(Min((byte)255,Max((byte)0, rgb.B)));
+                    //resultFirstPx[offset+1] = (byte)(Min((byte)255, Max((byte)0, rgb.G)));
+                    //resultFirstPx[offset+2] = (byte)(Min((byte)255, Max((byte)0, rgb.R)));
+
+
+                    ////Shfit each component independently - PROBLESM WITH SATURATION
+                    //resultFirstPx[offset + 0] = (byte)Logistic(firstPx[offset + 0], 255, extent, shift);
+                    //resultFirstPx[offset + 1] = (byte)Logistic(firstPx[offset + 1], 255, extent, shift);
+                    //resultFirstPx[offset + 2] = (byte)Logistic(firstPx[offset + 2], 255, extent, shift);
 
                 }
             });
@@ -1247,7 +1400,10 @@ namespace SwarmSight.Filters
             fixed (byte* tPx0 = source.PixelBytes, wPx0 = what.PixelBytes)
             {
                 //Do each row in parallel
-                Parallel.For(yMin, yMax, new ParallelOptions() { MaxDegreeOfParallelism = 1 }, (int y) =>
+                Parallel.For(yMin, yMax, new ParallelOptions()
+                {
+                    //MaxDegreeOfParallelism = 1
+                }, (int y) =>
                 {
                     var targetRowStart = targetStride * y;
                     var whatRowStart = whatStride*(y-yMin);

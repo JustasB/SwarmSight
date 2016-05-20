@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using SwarmSight.Hardware;
+using System.Runtime.CompilerServices;
 
 namespace SwarmSight.Filters
 {
@@ -35,8 +36,6 @@ namespace SwarmSight.Filters
         private GCHandle pixelBytesHandle;
         private IntPtr firstPixelAddress;
         private IntPtr host_bytes;
-        private Bitmap sourceBmp;
-        private BitmapData sourceBmpLockedData;
 
         public Bitmap Bitmap
         {
@@ -211,6 +210,20 @@ namespace SwarmSight.Filters
             IsDecoded = source.IsDecoded;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte[] GetColorBytesBGR(int x, int y)
+        {
+            var offset = y * Stride + x * 3;
+            
+            return new byte[]
+            {
+                FirstPixelPointer[offset],
+                FirstPixelPointer[offset + 1],
+                FirstPixelPointer[offset + 2]
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Color GetColor(int x, int y)
         {
             var offset = y * Stride + x * 3;
@@ -222,6 +235,7 @@ namespace SwarmSight.Filters
             );
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Color GetColor(Point point)
         {
             var offset = point.Y*Stride + point.X*3;
@@ -233,6 +247,7 @@ namespace SwarmSight.Filters
             );
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ComputeStride(int width, PixelFormat pxFormat)
         {
             var bitsPerPixel = ((int)pxFormat >> 8) & 0xFF;

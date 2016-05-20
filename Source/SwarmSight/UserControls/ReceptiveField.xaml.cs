@@ -1,4 +1,4 @@
-﻿using SwarmSight.HeadPartsTracking.Algorithms;
+﻿//using SwarmSight.HeadPartsTracking.Algorithms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,10 +34,48 @@ namespace SwarmSight.UserControls
 
         public Point LeftBase;
         public Point RightBase;
-        public Point Position { get { return gridHead.TranslatePoint(new Point(0, 0), Canvas); } }
-        public double Angle {  get { return gridTransform.Angle; } }
-        public Point Scale {  get { return new Point(gridScale.ScaleX, gridScale.ScaleY); } }
-        public Point Dimensions { get { return new Point(gridHead.ActualWidth, gridHead.ActualHeight); } }
+        public Point Position
+        {
+            get { return gridHead.TranslatePoint(new Point(0, 0), Canvas); }
+            set
+            {
+                var x = value.X - gridHead.Margin.Left + Canvas.Margin.Left;
+                var y = value.Y - gridHead.Margin.Top + Canvas.Margin.Top;
+                
+                Margin = MarginWithinBounds(x, y);
+            }
+        }
+
+        private Thickness MarginWithinBounds(double x, double y)
+        {
+            x = Math.Max(Canvas.Margin.Left, Math.Min(Canvas.Margin.Left + Canvas.ActualWidth - Width, x));
+            y = Math.Max(Canvas.Margin.Top, Math.Min(Canvas.Margin.Top + Canvas.ActualHeight - Height, y));
+
+            return new Thickness(x, y, 0, 0);
+        }
+
+        public double Angle
+        {
+            get { return gridTransform.Angle; }
+            set { gridTransform.Angle = value; }
+        }
+        public Point Scale
+        {
+            get { return new Point(gridScale.ScaleX, gridScale.ScaleY); }
+            set { gridScale.ScaleX = value.X; gridScale.ScaleY = value.Y; }
+        }
+        public Point Dimensions
+        {
+            get { return new Point(gridHead.ActualWidth, gridHead.ActualHeight); }
+            set
+            {
+                Width = value.X + gridHead.Margin.Left + gridHead.Margin.Right;
+                Height = value.Y + gridHead.Margin.Top + gridHead.Margin.Bottom;
+
+                Width = Math.Max(50, Math.Min(Canvas.ActualWidth- gridHead.Margin.Left*2, Width));
+                Height = Math.Max(50, Math.Min(Canvas.ActualHeight- gridHead.Margin.Left*2, Height));
+            }
+        }
 
         public Point mouseOffset;
         public bool mouseCaptured = false;
@@ -103,7 +141,11 @@ namespace SwarmSight.UserControls
             if (mouseCaptured)
             {
                 var pos = Mouse.GetPosition(Canvas);
-                Margin = new Thickness(startPos.Left + pos.X - mouseOffset.X, startPos.Top + pos.Y - mouseOffset.Y, 0, 0);
+
+                var x = startPos.Left + pos.X - mouseOffset.X;
+                var y = startPos.Top + pos.Y - mouseOffset.Y;
+
+                Margin = MarginWithinBounds(x, y);
                 
                 if (Moved != null)
                     Moved(this, e);

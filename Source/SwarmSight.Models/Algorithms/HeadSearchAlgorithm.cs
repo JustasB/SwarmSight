@@ -5,8 +5,8 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
-using AForge.Neuro;
-using Accord.MachineLearning.VectorMachines;
+//using AForge.Neuro;
+//using Accord.MachineLearning.VectorMachines;
 using SwarmSight.Filters;
 using SwarmSight.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
@@ -23,8 +23,8 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         public HeadSearchAlgorithm()
         {
             //neuralNet = Network.Load(@"c:\temp\PER.net");
-            GenerationSize = AntennaAndPERDetector.Config.HeadGenerationSize;
-            NumberOfGenerations = AntennaAndPERDetector.Config.HeadGenerations;
+            //GenerationSize = AntennaAndPERDetector.Config.HeadGenerationSize;
+            //NumberOfGenerations = AntennaAndPERDetector.Config.HeadGenerations;
         }
 
         protected override HeadModel CreateChild(HeadModel parent1, HeadModel parent2)
@@ -172,7 +172,10 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             var gpu = GPU.Current;
             var headGrid = Hardware.Filters.Grid(plainHead.Width, plainHead.Height);
             var block = Hardware.Filters.Block;
-            var pOps = new ParallelOptions() { MaxDegreeOfParallelism = 1 };
+            var pOps = new ParallelOptions()
+            {
+                //fMaxDegreeOfParallelism = 1
+            };
             var results = new double[list.Count];
 
             //Allocate all heads 2x (half for upright, half for rotated)
@@ -275,7 +278,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             return results;
         }
 
-        KernelSupportVectorMachine svm = KernelSupportVectorMachine.Load(@"Y:\Downloads\BeeVids\head.svm");
+        //KernelSupportVectorMachine svm = KernelSupportVectorMachine.Load(@"Y:\Downloads\BeeVids\head.svm");
         public double ComputeFitness(HeadModel individual)
         {
             using (var underHead = Target.ShapeData.SubClipped((int)individual.Origin.X, (int)individual.Origin.Y, HeadView.Width, HeadView.Height))
@@ -288,7 +291,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             ))
             using(var scaledDown = head.ScaleHQ(10,10))
             {
-                var svmOut = svm.Compute(scaledDown.ToAccordInput());
+                var svmOut = 0;// svm.Compute(scaledDown.ToAccordInput());
 
                 return svmOut+6;
             }

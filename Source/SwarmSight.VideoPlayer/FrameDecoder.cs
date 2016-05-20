@@ -15,7 +15,7 @@ namespace SwarmSight.VideoPlayer
     {
         public VideoProcessorBase Processor;
         public event EventHandler<OnFrameReady> FrameReady;
-        public int FrameBufferCapacity = 100; //Max frames to decode ahead
+        public int FrameBufferCapacity = 30; //Max frames to decode ahead
         public int MinimumWorkingFrames = 1; //Don't start processing until this many frames have been decoded
         public FrameBuffer<Frame> FrameBuffer = new FrameBuffer<Frame>();
 
@@ -23,8 +23,7 @@ namespace SwarmSight.VideoPlayer
         {
             get { return FrameBuffer.Count > MinimumWorkingFrames; }
         }
-
-        private long _length;
+        
         private byte[] bmpBuffer;
         private int bufferOffset;
         private int roomInBuffer = 0;
@@ -56,10 +55,10 @@ namespace SwarmSight.VideoPlayer
                     var bmpBufferLength = height*stride;
                     watch = Stopwatch.StartNew();
 
-                    if (false)//GPU.UseGPU)
-                        bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
-                    else
-                        bmpBuffer = new byte[bmpBufferLength];
+                    //if (false)//GPU.UseGPU)
+                    //    bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
+                    //else
+                    bmpBuffer = new byte[bmpBufferLength];
 
                     roomInBuffer = bmpBufferLength;
                     bufferOffset = 0;
@@ -67,9 +66,9 @@ namespace SwarmSight.VideoPlayer
 
                 var bytesToCopy = bytesLeftToCopy <= roomInBuffer ? bytesLeftToCopy : roomInBuffer;
 
-                if (false)//GPU.UseGPU)
-                    GPU.Current.CopyToDevice(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
-                else
+                //if (false)//GPU.UseGPU)
+                //    GPU.Current.CopyToDevice(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
+                //else
                     Buffer.BlockCopy(buffer, offset, bmpBuffer, bufferOffset, bytesToCopy);
 
                 roomInBuffer -= bytesToCopy;
@@ -147,12 +146,12 @@ namespace SwarmSight.VideoPlayer
 
         public override long Length
         {
-            get { return _length; }
+            get { throw new NotImplementedException(); }
         }
 
         public override long Position
         {
-            get { return _length; }
+            get { throw new NotImplementedException(); }
             set { throw new NotImplementedException(); }
         }
 

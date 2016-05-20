@@ -22,6 +22,7 @@ using Point = System.Windows.Point;
 using System.Windows.Input;
 using SwarmSight.HeadPartsTracking.Algorithms;
 using SwarmSight.HeadPartsTracking.Models;
+using Settings;
 
 namespace SwarmSight
 {
@@ -34,175 +35,99 @@ namespace SwarmSight
         private const string PauseSymbol = ";";
 
         private double _fullSizeWidth;
-        private double _quality = 1;
-        private List<Point> _activity = new List<Point>();
         private int _fpsStartFrame;
         private Stopwatch _fpsStopwatch = new Stopwatch();
-
-        private ChartModel _chart;
+        
         private VideoDecoder _decoder;
         private FrameComparer _comparer;
         private FrameRenderer _renderer;
-        private readonly VideoProcessorBase _processor = new AntennaAndPERDetector();
-        private HeadModel HeadLocation = new HeadModel();
-
-        List<string> filesToProcess = new List<string>();
-        int currentFileIndex = 6;
-
+        private VideoProcessorBase _processor;// = new AntennaAndPERDetector();
+        
         public MainWindow()
         {
             InitializeComponent();
 
             _fullSizeWidth = Width;
-            
-            ToggleCompare();
-            SetupChart();
+
             SetupPlayer();
             
             Closing += (sender, args) => Stop();
 
+            Application.Current.Exit += (sender, args) => Stop();
+        }
+
+        private void SetupReceptiveField()
+        {
             receptiveField.Canvas = videoCanvas;
-            receptiveField.Moved += ReceptiveField_Moved;
-            receptiveField.Scaled += ReceptiveField_Scaled;
-            receptiveField.Rotated += ReceptiveField_Rotated;
-            HeadLocation = new HeadModel()
+            receptiveField.Dimensions = ToCanvasCoordinates(AppSettings.Default.Dimensions);
+            receptiveField.Scale = new Point(AppSettings.Default.HeadScale, AppSettings.Default.HeadScale);
+            receptiveField.Position = ToCanvasCoordinates(AppSettings.Default.Origin);
+            receptiveField.Angle = AppSettings.Default.HeadAngle;
+
+            SyncSettings();
+
+            receptiveField.Moved += (s,e) =>
             {
-                Angle = new AngleInDegrees(0, -10, 180),
-                Origin = new System.Drawing.Point(149, 68),
-                ScaleX = new MinMaxDouble(1, 0, 1),
-                ScaleY = new MinMaxDouble(1, 0, 2)
+                var loc = ToVideoCoordinates(receptiveField.Position);
+
+                AppSettings.Default.HeadX = loc.X;
+                AppSettings.Default.HeadY = loc.Y;
+                AppSettings.Default.SaveAsync();
+
+                SyncSettings();
             };
 
-            (_processor as AntennaAndPERDetector).BestHead = HeadLocation;
+            receptiveField.Scaled += (s,e) =>
+            {
+                var loc = ToVideoCoordinates(receptiveField.Position);
 
+                AppSettings.Default.HeadX = loc.X;
+                AppSettings.Default.HeadY = loc.Y;
+                AppSettings.Default.HeadW = receptiveField.Dimensions.X.Rounded();
+                AppSettings.Default.HeadH = receptiveField.Dimensions.Y.Rounded();
+                AppSettings.Default.HeadScale = Math.Max(receptiveField.Scale.X, receptiveField.Scale.Y);
+                AppSettings.Default.SaveAsync();
 
-            Application.Current.Exit += (sender, args) => Stop();
+                SyncSettings();
+            };
 
-#if !DEBUG
-            AppDomain.CurrentDomain.UnhandledException +=
-                (sender, args) => { MessageBox.Show((args.ExceptionObject as Exception).Message); };
-#endif
-            //TESTs
-            //txtFileName.Text =
-            //    @"y:\Downloads\BeeVids\TestB-Feb16-Mirrors.mov";
-            //@"c:\temp\frames\B2-Feb11-bouquet.mov";
-            //@"c:\temp\frames\B1-Feb11-bouquet.mov";
-            //@"c:\temp\frames\Bee1_Feb10-Test.mov";
-            //@"Y:\Downloads\2Feb16-Antennal Movement practice\b3.mov";
-            //@"Y:\Downloads\2Feb16-Antennal Movement practice\b1.mov";
-            //@"Y:\Downloads\2Feb16-Antennal Movement practice\b4.mov";
-            //@"Y:\Downloads\BeeVids\down.mp4";
-            //@"Y:\Downloads\BeeVids\2015.8.15 Bee 5 Rose White Back.MP4";//done
-            //@"Y:\Downloads\BeeVids\2015.8.15 Bee 1 Rose White Back.MP4";//done
-            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 9 Rose.MP4";//done
-            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 8 Rose.MP4";//DONE
-            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 4 Rose.MP4";//done
-            //@"Y:\Downloads\BeeVids\2015.8.13 Bee 2 Rose.MP4";
+            receptiveField.Rotated += (s,e) =>
+            {
+                AppSettings.Default.HeadAngle = receptiveField.Angle;
+                AppSettings.Default.SaveAsync();
 
-
-            // _comparer.MostRecentFrameIndex = 750;
-
-            //OnPlayClicked(null, null);
-            return;
-            filesToProcess = Directory
-                .EnumerateFiles(@"C:\Users\Justas\Downloads\2Feb16-Antennal Movement practice\19Feb16-Start Hept Tests\19th")
-                //.EnumerateFiles(@"C:\Users\Justas\Downloads\2Feb16-Antennal Movement practice\22Feb16\22nd")
-                .Where(f => f.EndsWith("mov"))
-                .ToList();
-
-            txtFileName.Text = filesToProcess[currentFileIndex];
-
-            Play();
+                SyncSettings();
+            };
         }
 
-        private void ReceptiveField_Rotated(object sender, EventArgs e)
+        private void SyncSettings()
         {
-            HeadLocation.Angle.Value = receptiveField.Angle;
-        }
+            txtHeadX.Text = AppSettings.Default.HeadX.ToString();
+            txtHeadY.Text = AppSettings.Default.HeadY.ToString();
 
-        private void ReceptiveField_Scaled(object sender, EventArgs e)
-        {
-            HeadLocation.ScaleX.Value = receptiveField.Scale.X;
-            HeadLocation.ScaleY.Value = receptiveField.Scale.Y;
+            txtHeadW.Text = AppSettings.Default.HeadW.ToString();
+            txtHeadH.Text = AppSettings.Default.HeadH.ToString();
 
-            //HeadLocation.Origin = ToVideoCoordinates(receptiveField.Position);
-            //HeadLocation.Dimensions = ToVideoCoordinates(receptiveField.Dimensions);
-        }
-
-        private void ReceptiveField_Moved(object sender, EventArgs e)
-        {
-            HeadLocation.Origin = ToVideoCoordinates(receptiveField.Position);
+            txtHeadScale.Text = AppSettings.Default.HeadScale.ToString();
+            txtHeadAngle.Text = AppSettings.Default.HeadAngle.ToString();
         }
 
         private System.Drawing.Point ToVideoCoordinates(Point source)
         {
             return new System.Drawing.Point(
-                (_decoder.PlayerOutputWidth *  source.X / videoCanvas.Width).Rounded(),
-                (_decoder.PlayerOutputHeight * source.Y / videoCanvas.Height).Rounded()
+                ((int)(_decoder.VideoInfo.Width * AppSettings.Default.Quality) *  source.X / videoCanvas.ActualWidth).Rounded(),
+                ((int)(_decoder.VideoInfo.Height * AppSettings.Default.Quality) * source.Y / videoCanvas.ActualHeight).Rounded()
             );
         }
-        private void SetupChart()
+
+        private Point ToCanvasCoordinates(System.Drawing.Point source)
         {
-            _chart = new ChartModel();
-            _activity = new List<Point>(100);
-
-            chartPlaceholder.Children.Add(new PlotView()
-                {
-                    Model = _chart.MyModel,
-                    Width = chartPlaceholder.Width,
-                    Height = chartPlaceholder.Height,
-                });
-
-            chartA.UseCurrentClicked += OnUseCurrentClicked;
-            chartB.UseCurrentClicked += OnUseCurrentClicked;
+            var x = videoCanvas.ActualWidth * source.X / (int)(_decoder.VideoInfo.Width * AppSettings.Default.Quality);
+            var y = videoCanvas.ActualHeight * source.Y / (int)(_decoder.VideoInfo.Height * AppSettings.Default.Quality);
+            
+            return new Point(x,y);
         }
 
-        private void OnUseCurrentClicked(object sender, EventArgs e)
-        {
-            ((VideoActivityChart) sender).AddPointsToChart(_activity);
-
-            ComputeComparisonStats();
-        }
-
-        private void ComputeComparisonStats()
-        {
-            if (TTest.Busy ||
-                chartA.Activity == null || chartB.Activity == null ||
-                chartA.Activity.Count <= 1 || chartB.Activity.Count <= 1)
-                return;
-
-            //Compute T-test
-            var tTest = TTest.Perform
-                (
-                    chartA.Activity.Select(p => p.Y).ToList(),
-                    chartB.Activity.Select(p => p.Y).ToList()
-                );
-
-            //Update table
-            comparisonTable.lblAvgA.Content = tTest.TTest.FirstSeriesMean.ToString("N2");
-            comparisonTable.lblAvgB.Content = tTest.TTest.SecondSeriesMean.ToString("N2");
-
-            comparisonTable.lblNA.Content = tTest.FirstSeriesCount.ToString("N0");
-            comparisonTable.lblNB.Content = tTest.SecondSeriesCount.ToString("N0");
-
-            comparisonTable.lblStDevA.Content = tTest.FirstSeriesStandardDeviation.ToString("N2");
-            comparisonTable.lblStDevB.Content = tTest.SecondSeriesStandardDeviation.ToString("N2");
-
-            comparisonTable.lblAvgDiff.Content = (tTest.MeanDifference > 0 ? "+" : "") +
-                                                 tTest.MeanDifference.ToString("N2");
-
-            if (tTest.TTest.FirstSeriesMean != 0)
-                comparisonTable.lblAvgPercent.Content = tTest.PercentMeanDifference.ToString("P2");
-            else
-                comparisonTable.lblAvgPercent.Content = "-";
-
-            //Update Chart
-            comparisonChart.UpdateChart
-                (
-                    tTest.TTest.FirstSeriesMean, tTest.FirstSeries95ConfidenceBound,
-                    tTest.TTest.SecondSeriesMean, tTest.SecondSeries95ConfidenceBound
-                );
-        }
 
         private void SetupPlayer()
         {
@@ -229,18 +154,23 @@ namespace SwarmSight
 
             _decoder.Open(videoFile);
 
-            //Set chart range to number of frames in vid
-            if (_comparer.MostRecentFrameIndex == -1)
-            {
-                _chart.SetRange(0, _decoder.VideoInfo.TotalFrames);
-                _activity = new List<Point>(_decoder.VideoInfo.TotalFrames);
-            }
+            SetupReceptiveField();
 
             return true;
         }
 
+        private void DeleteTempFiles()
+        {
+            var filesToDelete = Directory
+                .GetFiles(@"c:\temp\frames")
+                .Where(name => name.EndsWith(".jpg"))
+                .ToList();
 
-        private void Play()
+
+            filesToDelete.ForEach(f => File.Delete(f));
+        }
+        private static bool playOneFrame;
+        private void Play(bool oneFrame = false)
         {
             //Play
             if (btnPlayPause.Content.ToString() == PlaySymbol)
@@ -250,6 +180,8 @@ namespace SwarmSight
                     MessageBox.Show("Please select a video file.");
                     return;
                 }
+
+                DeleteTempFiles();
 
                 //Reset decoder
                 if (_decoder != null)
@@ -269,13 +201,9 @@ namespace SwarmSight
                 //Can't change quality if playing
                 sliderQuality.IsEnabled = false;
 
-                //Clear chart points after the current position
-                _chart.ClearAfter(_comparer.MostRecentFrameIndex);
-                _activity.RemoveAll(p => p.X > _comparer.MostRecentFrameIndex);
-
                 //Adjust for any quality changes, before starting again
-                _decoder.PlayerOutputWidth = (int) (_decoder.VideoInfo.Width*_quality); //204;//
-                _decoder.PlayerOutputHeight = (int) (_decoder.VideoInfo.Height*_quality); //152;//
+                _decoder.PlayerOutputWidth = (int) (_decoder.VideoInfo.Width* AppSettings.Default.Quality); //204;//
+                _decoder.PlayerOutputHeight = (int) (_decoder.VideoInfo.Height* AppSettings.Default.Quality); //152;//
 
                 //Setup fps counter
                 _fpsStartFrame = _comparer.MostRecentFrameIndex;
@@ -285,6 +213,8 @@ namespace SwarmSight
                 _comparer.Start();
 
                 btnPlayPause.Content = PauseSymbol;
+
+                playOneFrame = oneFrame;
             }
             else //Pause
             {
@@ -320,40 +250,21 @@ namespace SwarmSight
         {
             if (e.Results == null || Application.Current == null)
                 return;
-
-            Application.Current.Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        _chart.AddPoint(e.Results.FrameIndex, e.Results.ChangedPixelsCount);
-                    }
-                    catch
-                    {
-                    }
-
-                    _activity.Add(new Point(e.Results.FrameIndex, e.Results.ChangedPixelsCount));
-                    lblChangedPixels.Content = string.Format("Changed Pixels: {0:n0}", e.Results.ChangedPixelsCount);
-                });
         }
 
         private void OnStopped(object sender, EventArgs eventArgs)
         {
-            var rows = ((AntennaAndPERDetector)_processor).dataFrame;
+            //var rows = ((AntennaAndPERDetector)_processor).dataFrame;
 
             //File.WriteAllLines(filesToProcess[currentFileIndex] + "_antennaBins_"+ DateTime.Now.ToString("yyyyMMdd-HHmm") +".csv", rows);
 
-            _chart.Stop();
+            
 
             Reset();
 
 
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                Thread.Sleep(1500);
-                currentFileIndex++;
-                //txtFileName.Text = filesToProcess[currentFileIndex];
-                ((AntennaAndPERDetector)_processor).dataFrame.Clear();
-                //Play();
                 Activate();
             }));
         }
@@ -408,22 +319,6 @@ namespace SwarmSight
             }));
         }
 
-        private void ToggleCompare()
-        {
-            if (btnShowCompare.Content.ToString().Contains(">>"))
-            {
-                Width = _fullSizeWidth + 15;
-                btnShowCompare.Content = btnShowCompare.Content.ToString().Replace(">>", "<<");
-            }
-            else
-            {
-                Width = borderComparison.Margin.Left + 15;
-                btnShowCompare.Content = btnShowCompare.Content.ToString().Replace("<<", ">>");
-            }
-
-            CenterWindowOnScreen();
-        }
-
         private void CenterWindowOnScreen()
         {
             double screenWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
@@ -449,6 +344,19 @@ namespace SwarmSight
                     sliderTime.Value = 0;
 
                     sliderQuality.IsEnabled = true;
+
+                    Dictionary<int, AntenaPoints> prevData = null;
+
+                    if (_processor != null)
+                    {
+                        prevData = ((AntennaAndPERDetector)_processor).frameData;
+                    }
+                    
+
+                    _comparer.Processor = _decoder.Processor = _processor = new AntennaAndPERDetector();
+                    
+                    if(prevData != null)
+                        ((AntennaAndPERDetector) _processor).frameData = prevData;
                 });
         }
 
@@ -457,6 +365,7 @@ namespace SwarmSight
             Stop();
             Reset();
             Open();
+            Play(oneFrame: true);
         }
 
         private void OnBrowseClicked(object sender, RoutedEventArgs e)
@@ -473,6 +382,7 @@ namespace SwarmSight
             Stop();
             Reset();
             Open();
+            Play(oneFrame: true);
         }
 
         private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -488,11 +398,6 @@ namespace SwarmSight
         private void OnStopClicked(object sender, RoutedEventArgs e)
         {
             Stop();
-        }
-
-        private void chkShowMotion_Click(object sender, RoutedEventArgs e)
-        {
-            _renderer.ShowMotion = sliderContrast.IsEnabled = chkShowMotion.IsChecked.Value;
         }
 
 
@@ -524,31 +429,16 @@ namespace SwarmSight
             SeekTo(e.NewValue/1000.0);
         }
 
-        private void btnShowCompare_Click(object sender, RoutedEventArgs e)
-        {
-            ToggleCompare();
-        }
-
         private void sliderQuality_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             //Force redraw of the buffer
             canvasBuffer = null;
 
-            _quality = e.NewValue/100.0;
+            AppSettings.Default.Quality = e.NewValue/100.0;
+            AppSettings.Default.SaveAsync();
 
             if (lblQuality != null)
-                lblQuality.Content = string.Format("{0:n0}%", _quality*100.0);
-        }
-
-        private void contrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_renderer != null)
-                _renderer.ShadeRadius = (int) e.NewValue;
-
-            if (lblContrast != null)
-            {
-                lblContrast.Content = _renderer.ShadeRadius + "X";
-            }
+                lblQuality.Content = string.Format("{0:n0}%", AppSettings.Default.Quality * 100.0);
         }
 
         private void btnSaveActivity_Click(object sender, RoutedEventArgs e)
@@ -562,11 +452,64 @@ namespace SwarmSight
 
             var fileInfo = new FileInfo(videoFileName.ToString());
 
-            using (var writer = new StreamWriter(fileInfo.FullName + ".csv", false))
+            using (var writer = new StreamWriter(fileInfo.FullName + "_Tracker_" + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + ".csv", false))
             {
-                writer.WriteLine("Frame, Changed Pixels");
+                writer.WriteLine
+                (
+                    "Frame, BuzzerValue, " + 
+                    "LeftSector, RightSector, " +
+                    "LeftFlagellumTip-X, LeftFlagellumTip-Y, RightFlagellumTip-X, RightFlagellumTip-Y, " +
+                    "LeftFlagellumBase-X, LeftFlagellumBase-Y, RightFlagellumBase-X, RightFlagellumBase-Y, " +
+                    "RotationAngle, ReceptiveFieldWidth, ReceptiveFieldHeight, " +
+                    "ReceptiveFieldOffset-X, ReceptiveFieldOffset-Y, ReceptiveFieldScale-X, ReceptiveFieldScale-Y, " +
+                    "SectorData"
+                );
 
-                _activity.ForEach(a => writer.WriteLine("{0}, {1}", a.X + 1, a.Y));
+                var data = ((AntennaAndPERDetector)_processor).frameData;
+                var frames = data.Keys.OrderBy(k => k).ToList();
+
+                frames.ForEach(frameIndex =>
+                {
+                    var value = data[frameIndex];
+
+                    var line = string.Join(",", new[]
+                    {
+                        frameIndex,
+
+                        value.Buzzer,
+
+                        value.LeftSector,
+                        value.RightSector,
+
+                        value.LFT.X, value.LFT.Y,
+                        value.RFT.X, value.RFT.Y,
+
+                        value.LFB.X, value.LFB.Y,
+                        value.RFB.X, value.RFB.Y,
+
+                        value.RecordingConditions.RotationAngle,
+
+                        value.RecordingConditions.Dimensions.X,
+                        value.RecordingConditions.Dimensions.Y,
+
+                        value.RecordingConditions.HeadOffset.X,
+                        value.RecordingConditions.HeadOffset.Y,
+
+                        value.RecordingConditions.Scale.X,
+                        value.RecordingConditions.Scale.Y
+                    });
+
+                    string sectorData = "";
+
+                    if (value.LeftSectorData != null && value.RightSectorData != null)
+                    {
+                        sectorData = string.Join(",", value.LeftSectorData) + "," + string.Join(",", value.RightSectorData);
+                    }
+                    
+
+                    writer.WriteLine(line + ", " + sectorData);
+
+                });
 
                 writer.Flush();
             }
@@ -585,48 +528,62 @@ namespace SwarmSight
                 .Start();
         }
 
-        private void btnComputeStats_Click(object sender, RoutedEventArgs e)
+        private ParameterSetter paramSetter;
+        private void button_Click_1(object sender, RoutedEventArgs e)
         {
-            ComputeComparisonStats();
+            paramSetter = new ParameterSetter();
+            paramSetter.Offset = AppSettings.Default.Origin;
+            paramSetter.Dims = AppSettings.Default.Dimensions;
+            paramSetter.Path = txtFileName.Text;
+
+            paramSetter.Init();
+            paramSetter.Show();
         }
 
-        private void btnROI_Click(object sender, RoutedEventArgs e)
+        private void Slider_ValueChanged_1(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (roi.Visibility == Visibility.Visible)
-            {
-                roi.Visibility = Visibility.Hidden;
-                btnROI.Content = "Add Region of Interest";
-            }
-            else //Hidden
-            {
-                roi.Visibility = Visibility.Visible;
-                btnROI.Content = "Remove Region of Interest";
-            }
-            
-        }
+            if (lblMedianFilterRadius == null)
+                return;
 
-        private void ddlParams_Loaded(object sender, RoutedEventArgs e)
-        {
-            var configClass = typeof (AntennaAndPERDetector.Config);
-            var fields = configClass.GetFields().Select(f => f.Name).ToList();
-
-            ddlParams.ItemsSource = fields;
-            ddlParams.SelectedIndex = 0;
-        }
-
-        private void ddlParams_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            txtValue.Text = typeof(AntennaAndPERDetector.Config).GetField(ddlParams.SelectedItem as string).GetValue(null).ToString();
+            AppSettings.Default.MedianFilterRadius = e.NewValue.Rounded();
+            lblMedianFilterRadius.Content = e.NewValue.Rounded();
+            AppSettings.Default.SaveAsync();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var field = typeof (AntennaAndPERDetector.Config).GetField(ddlParams.SelectedItem as string);
-            var newValue = field.FieldType.GetMethod("Parse", new[] {typeof(string)}).Invoke(null, new object[] {txtValue.Text});
-            field.SetValue(null, newValue);
+            Play(oneFrame: true);
+        }
 
-            Stop();
-            Play();
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            pnlManualData.IsEnabled = (bool)((CheckBox)sender).IsChecked;
+            AppSettings.Default.CompareToManualData = pnlManualData.IsEnabled;
+            AppSettings.Default.SaveAsync();
+        }
+
+        private void OnManualBrowseClicked(object sender, RoutedEventArgs e)
+        {
+            var ofd = new Microsoft.Win32.OpenFileDialog();
+
+            var result = ofd.ShowDialog();
+
+            if (result == false)
+                return;
+
+            txtManualFile.Text = ofd.FileName;
+            AppSettings.Default.ManualDataFile = ofd.FileName;
+            AppSettings.Default.SaveAsync();
+        }
+
+        private void Slider_ValueChanged_2(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (lblCrawlHop == null)
+                return;
+
+            AppSettings.Default.MaxTipCrawlerHop = e.NewValue.Rounded();
+            lblCrawlHop.Content = e.NewValue.Rounded();
+            AppSettings.Default.SaveAsync();
         }
     }
 }

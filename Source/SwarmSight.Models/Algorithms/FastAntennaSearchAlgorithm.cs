@@ -5,25 +5,65 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Accord.Math;
+//using Accord.Math;
 using Cudafy;
 using SwarmSight.Filters;
 using SwarmSight.Hardware;
 using SwarmSight.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
 using System.Data;
-using Accord.MachineLearning.VectorMachines;
+//using Accord.MachineLearning.VectorMachines;
 using System.Windows;
 using System.Windows.Media.Media3D;
 using System.Drawing.Imaging;
 using DPoint = System.Drawing.Point;
 using WPoint = System.Windows.Point;
+using static System.Math;
+using static SwarmSight.HeadPartsTracking.Algorithms.PointExtensions;
 using MoreLinq;
+using Settings;
+using System.Runtime.CompilerServices;
 
 namespace SwarmSight.HeadPartsTracking.Algorithms
 {
     public class AntenaPoints : IDisposable
     {
+        public class RecordingConditionsCollection
+        {
+            /// <summary>
+            /// The offset of the head receptive field 
+            /// </summary>
+            public DPoint HeadOffset;
+
+            /// <summary>
+            /// The dimensions of the receptive field
+            /// </summary>
+            public DPoint Dimensions;
+
+            /// <summary>
+            /// The rotation angle of the head with respect to screen. 0 degrees points up.
+            /// </summary>
+            public double RotationAngle;
+
+            /// <summary>
+            /// The x,y scales of the model within the head receptive field
+            /// </summary>
+            public WPoint Scale;
+        }
+
+        public RecordingConditionsCollection RecordingConditions = new RecordingConditionsCollection();
+
+        public double[] RightSectorData;
+        public double[] LeftSectorData;
+
+        public int RightSector;
+        public int LeftSector;
+
+        /// <summary>
+        /// The value of the light buzzer
+        /// </summary>
+        public double Buzzer;
+
         /// <summary>
         /// Right scape
         /// </summary>
@@ -171,12 +211,12 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
         public AntenaPoints ToFrameSpace(Point headDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double headLength)
         {
-            RS = RS.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
-            RFB = RFB.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
-            RFT = RFT.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
-            LS = LS.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
-            LFB = LFB.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
-            LFT = LFT.ToFrameSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
+            RS = RS.ToHeadSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
+            RFB = RFB.ToHeadSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
+            RFT = RFT.ToHeadSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
+            LS = LS.ToHeadSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
+            LFB = LFB.ToHeadSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
+            LFT = LFT.ToHeadSpace(headDims, headAngle, scaleX, scaleY, offsetX, offsetY, priorAngle, headLength).ToWindowsPoint();
 
             return this;
         }
@@ -196,6 +236,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
     public static class PointExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ToPriorAngle(this double tanhAngle)
         {
             var zeroTothree60 = (tanhAngle - 90 + 360) % 360;
@@ -205,6 +246,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             else
                 return zeroTothree60;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Distance(this Point a, Point b)
         {
             var x = b.X - a.X;
@@ -212,6 +254,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
             return Math.Sqrt(x*x + y*y);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Distance(this System.Drawing.Point a, System.Drawing.Point b)
         {
             var x = b.X - a.X;
@@ -219,23 +262,27 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
             return Math.Sqrt(x * x + y * y);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point ToWindowsPoint(this System.Drawing.Point target)
         {
             return new Point(target.X, target.Y);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF ToPointF(this Point target)
         {
             return new PointF((float) target.X, (float) target.Y);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF ToPointF(this System.Drawing.Point target)
         {
             return new PointF(target.X, target.Y);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point Moved(this Point target, double byX, double byY)
         {
             return new Point(target.X + byX, target.Y + byY);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static System.Drawing.Point Moved(this System.Drawing.Point target, int byX, int byY)
         {
             return new System.Drawing.Point(target.X + byX, target.Y + byY);
@@ -249,7 +296,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 radius*2+1
             );
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point ToPriorSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
         {
             target.Offset(-windowDims.X / 2.0 + offsetX, -windowDims.Y / 2.0 + offsetY);
@@ -259,8 +306,8 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             return target;
 
         }
-
-        public static System.Drawing.Point ToFrameSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static System.Drawing.Point ToHeadSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
         {
             target = target.Multiply(scaleX * scapeDistance, scaleY * scapeDistance);
             target = target.Rotate(headAngle - priorAngle);
@@ -288,22 +335,24 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
             return result;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static System.Drawing.Point ToDrawingPoint(this Point target)
         {
             return new System.Drawing.Point(target.X.Rounded(), target.Y.Rounded());
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point InvertY(this Point target)
         {
             target.Y *= -1;
 
             return target;
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point Clone(this Point target)
         {
             return new Point(target.X, target.Y);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point Rotate(this Point target, double angle)
         {
             var result = target;
@@ -319,7 +368,111 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
             return result;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInPolygon(int testX, int testY, List<DPoint> polygon)
+        {
+            //Cannot be part of empty polygon
+            if (polygon.Count == 0)
+            {
+                return false;
+            }
 
+            var x = testX;
+            var y = testY;
+
+            //With 1-pt polygon, only if it's the point
+            if (polygon.Count == 1)
+            {
+                return (polygon[0].X == x && polygon[0].Y == y);
+            }
+
+            //n>2 Keep track of cross product sign changes
+            var pos = 0;
+            var neg = 0;
+
+            for (var i = 0; i < polygon.Count; i++)
+            {
+                //Form a segment between the i'th point
+                var x1 = polygon[i].X;
+                var y1 = polygon[i].Y;
+
+                //If point is in the polygon
+                if (x1 == x && y1 == y)
+                    return true;
+
+                //And the i+1'th, or if i is the last, with the first point
+                var i2 = i < polygon.Count - 1 ? i + 1 : 0;
+
+                var x2 = polygon[i2].X;
+                var y2 = polygon[i2].Y;
+
+                //Compute the cross product
+                var d = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1);
+
+                if (d > 0) pos++;
+                if (d < 0) neg++;
+
+                //If the sign changes, then point is outside
+                if (pos > 0 && neg > 0)
+                    return false;
+            }
+
+            //If no change in direction, then on same side of all segments, and thus inside
+            return true;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInPolygon(this DPoint testPoint, List<DPoint> polygon)
+        {
+            //Cannot be part of empty polygon
+            if (polygon.Count == 0)
+            {
+                return false;
+            }
+
+            //With 1-pt polygon, only if it's the point
+            if (polygon.Count == 1)
+            {
+                return polygon[0] == testPoint;
+            }
+
+            //n>2 Keep track of cross product sign changes
+            var pos = 0;
+            var neg = 0;
+
+            for (var i = 0; i < polygon.Count; i++)
+            {
+                //If point is in the polygon
+                if (polygon[i] == testPoint)
+                    return true;
+
+                //Form a segment between the i'th point
+                var x1 = polygon[i].X;
+                var y1 = polygon[i].Y;
+
+                //And the i+1'th, or if i is the last, with the first point
+                var i2 = i < polygon.Count - 1 ? i + 1 : 0;
+
+                var x2 = polygon[i2].X;
+                var y2 = polygon[i2].Y;
+
+                var x = testPoint.X;
+                var y = testPoint.Y;
+
+                //Compute the cross product
+                var d = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1);
+
+                if (d > 0) pos++;
+                if (d < 0) neg++;
+
+                //If the sign changes, then point is outside
+                if (pos > 0 && neg > 0)
+                    return false;
+            }
+
+            //If no change in direction, then on same side of all segments, and thus inside
+            return true;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInPolygon(this Point testPoint, List<Point> polygon)
         {
             //Cannot be part of empty polygon
@@ -373,11 +526,12 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         }
 
         public static Stopwatch DistanceTime = new Stopwatch();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double[] DistToSegmentSquared(this List<Point> points, Point x1y1, Point x2y2)
         {
             return DistToSegmentSquared(points, x1y1.X, x1y1.Y, x2y2.X, x2y2.Y);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double[] DistToSegmentSquared(this List<Point> points, Double x1, Double y1, Double x2, Double y2)
         {
             var C = x2 - x1;
@@ -415,44 +569,49 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Positive(this double target)
         {
-            return Math.Abs(target);
+            return Abs(target);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Positive(this int target)
         {
-            return Math.Abs(target);
+            return Abs(target);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Rounded(this double target)
         {
             return (int) Math.Round(target);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Color ToColor(this int bwValue)
         {
             return Color.FromArgb(bwValue, bwValue, bwValue);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Color ToColor(this double index)
         {
             var d = (255*index).Rounded();
 
             return Color.FromArgb(d, d, d);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Scale(this double target, double targetRangeL, double targetRangeH, double resultRangeL, double resultRangeH)
         {
             return (target - targetRangeL) / (targetRangeH - targetRangeL) * (resultRangeH - resultRangeL) + resultRangeL;
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double? Median<TColl, TValue>(
             this IEnumerable<TColl> source,
             Func<TColl, TValue> selector)
         {
             return source.Select<TColl, TValue>(selector).Median();
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double? Median<T>(
             this IEnumerable<T> source)
         {
@@ -471,7 +630,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             else
                 return Convert.ToDouble(source.ElementAt(midpoint));
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point ToPoint(this PointF pt)
         {
             return new Point(pt.X, pt.Y);
@@ -520,12 +679,19 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         RightScape,
         RightFlagellumBase,
         RightFlagellumTip,
+        RightSectorData,
+        RightSector,
 
         LeftScape,
         LeftFlagellumBase,
         LeftFlagellumTip,
+        LeftSectorData,
+        LeftSector,
+
         Mandibles,
         Head
+
+
     }
 
     public class FastAntennaSearchAlgorithm : GeneticAlgoBase<AntenaPoints>
@@ -538,6 +704,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         public double HeadAngle;
         public double ScaleX;
         public double ScaleY;
+        public double ScapeDistanceAtScale1;
 
         public int PointsToKeep = 100;
         public int MinPointsForRegression = 20;
@@ -545,8 +712,11 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         public List<Point> TargetPoints;
         public List<Point> TargetPointsPrev = null;
         public float[,] TargetPointsGPU;
+        public double ConvexHullsFrameAngle;
         private static List<AntenaPoints> Priors = null;
-        public static Dictionary<PointLabels, List<Point>> ConvexHulls = null;
+        public static Dictionary<PointLabels, List<Point>> ConvexHullsPrior = null;
+        public static Dictionary<PointLabels, List<DPoint>> ConvexHullsFrame = null;
+        
 
         public double OffsetY = 0;
         public double OffsetX = 0;
@@ -557,8 +727,8 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         public int FrameIndex = 0;
         public Frame DebugFrame;
 
+        private Background background = null;
         private Frame model = null;
-        private Frame headClip = null;
         public int[] RightBins;
         public int[] LeftBins;
         public int RightHighest;
@@ -571,7 +741,6 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         private LinkedList<Point> LBpoints = new LinkedList<Point>();
         private LinkedList<Point> RTpoints = new LinkedList<Point>();
         private LinkedList<Point> RBpoints = new LinkedList<Point>();
-        public int MotionModelThreshold = 20;
         public Point? TopViewLeft = null;
 
         private unsafe List<System.Drawing.Point> UpdateMotionModel()
@@ -591,18 +760,18 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             var offsetX = HeadOffset.X;
             var offsetY = HeadOffset.Y;
 
-            var antennaColor = AntennaAndPERDetector.Config.AntennaColors[0];
+            var antennaColor = AppSettings.Default.AntennaColor;
             var antR = antennaColor.R;
             var antG = antennaColor.G;
             var antB = antennaColor.B;
 
-            var threshold = MotionModelThreshold;
+            var threshold = 1;//AppSettings.Default.MotionThreshold;
 
             var result = new List<Point3D>(width*height/16);
 
             Parallel.For(0, height, new ParallelOptions()
             {
-                MaxDegreeOfParallelism = 1
+                //MaxDegreeOfParallelism = 1
             }, 
             (int y) =>
             {
@@ -619,9 +788,9 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     var offsetR = offsetB + 2;
                     
                     //Optimized mem access
-                    var curDist =   (Math.Abs(currentPx[offsetR] - antR) + Math.Abs(currentPx[offsetG] - antG) + Math.Abs(currentPx[offsetB] - antB)) / 3.0;
-                    var prev1Dist = (Math.Abs(prev1Px[offsetR] - antR) + Math.Abs(prev1Px[offsetG] - antG) + Math.Abs(prev1Px[offsetB] - antB)) / 3.0;
-                    var prev2Dist = (Math.Abs(prev2Px[offsetR] - antR) + Math.Abs(prev2Px[offsetG] - antG) + Math.Abs(prev2Px[offsetB] - antB)) / 3.0;
+                    var curDist =   (Abs(currentPx[offsetR] - antR) + Abs(currentPx[offsetG] - antG) + Abs(currentPx[offsetB] - antB)) / 3.0;
+                    var prev1Dist = (Abs(prev1Px[offsetR] - antR) + Abs(prev1Px[offsetG] - antG) + Abs(prev1Px[offsetB] - antB)) / 3.0;
+                    var prev2Dist = (Abs(prev2Px[offsetR] - antR) + Abs(prev2Px[offsetG] - antG) + Abs(prev2Px[offsetB] - antB)) / 3.0;
 
                     //var combMotionDist = ((prev2Dist - prev1Dist) + (curDist - prev1Dist)) / 2.0;
                     var combMotionDist = (prev2Dist + curDist - 2 * prev1Dist) / 2.0; //Simplified
@@ -652,105 +821,116 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 }
             });
 
-            var mostActive = result
-                .OrderByDescending(p => p.Z)
-                .Select(p => new System.Drawing.Point((int)p.X, (int)p.Y))
+            //Return all
+            return result
+                .Select(p => new DPoint((int)p.X, (int)p.Y))
                 .ToList();
 
-            model.ColorPixels(mostActive.Skip(result.Count * 3 / 4).ToList(), Color.Black);
+            //Keep only the top active
+            //var mostActive = result
+            //    .OrderByDescending(p => p.Z)
+            //    .Select(p => new System.Drawing.Point((int)p.X, (int)p.Y))
+            //    .ToList();
 
-            return
-                mostActive
-                .Take(result.Count * 3 / 4)
-                .ToList();
+            //model.ColorPixels(mostActive.Skip(result.Count * 3 / 4).ToList(), Color.Black);
+
+            //return
+            //    mostActive
+            //    .Take(result.Count * 3 / 4)
+            //    .ToList();
         }
-        public bool EvalExpected = false;
+        public bool EvalExpected = true;
         public override void PreProcessTarget()
         {
-            if (Priors == null)
-            {
-                ReadPriors();
-                ReadHulls();
-                ReadExpected();
-            }
+            if (Priors == null) ReadPriors();
+            if (AppSettings.Default.CompareToManualData && (Expected == null || Expected.Count == 0)) ReadExpected();
+            if (ConvexHullsPrior == null) ReadHulls();
 
-            //if (!Expected.ContainsKey(Target.Prev1.FrameIndex))
-            //    return;
-
-            SortDescending = false;
-            ValidateRandom = false;
-            NumberOfGenerations = 1;// 150;
-            GenerationSize = 10;// 50;
-            MutationProbability = 0.1;
-            PercentRandom = 80;
-            MutationRange = 1.0;
+            if (AppSettings.Default.CompareToManualData && !Expected.ContainsKey(Target.Prev1.FrameIndex))
+                return;
             
-            if (model == null)
+            if (model == null || HeadDims.X != model.Width || HeadDims.Y != model.Height || ConvexHullsFrameAngle != HeadAngle)
             {
                 model = new Frame(HeadDims.X, HeadDims.Y, Target.Current.PixelFormat, false);
+
+                background = new MedianBackground(5);
+                background.Append(Target.Prev2.SubClipped(HeadOffset.X, HeadOffset.Y, HeadDims.X, HeadDims.Y));
+
+                ReadHullsFrame();
             }
-            
+
             var modelPts = UpdateMotionModel();
 
-            using (var headClip = Target.Prev1.SubClipped(HeadOffset.X, HeadOffset.Y, HeadDims.X, HeadDims.Y))
-            using (var contrastedHead = headClip.ContrastFilter(0.1f, 60f))
+            var headClip = Target.Prev1.SubClipped(HeadOffset.X, HeadOffset.Y, HeadDims.X, HeadDims.Y);
             {
+                AntennaPoints.Clear();
+
+                if(Target.Prev1.FrameIndex == 40)
+                {
+
+                }
+
                 var leftPoints = GetTip
                 (
-                    headClip, contrastedHead, model, modelPts, new Point(-0.5, 0),
-                    PointLabels.LeftFlagellumTip, PointLabels.LeftFlagellumBase,
-                    LTpoints, LBpoints
+                    headClip, model, modelPts, new Point(-0.5, 0), PointLabels.LeftFlagellumTip,
+                    PointLabels.LeftFlagellumBase, LTpoints,
+                    LBpoints
                 );
 
                 var rightPoints = GetTip
                 (
-                    headClip, contrastedHead, model, modelPts, new Point(0.5, 0),
-                    PointLabels.RightFlagellumTip, PointLabels.RightFlagellumBase, 
-                    RTpoints, RBpoints
+                    headClip, model, modelPts, new Point(0.5, 0), PointLabels.RightFlagellumTip,
+                    PointLabels.RightFlagellumBase, RTpoints,
+                    RBpoints
                 );
 
+                //Update background
+                headClip.FrameIndex = Target.Prev1.FrameIndex;
+                background.Append(headClip);
+
+                //Set the return value
                 PreviousSolution = new AntenaPoints();
 
                 if (leftPoints.Count > 0)
                 {
-                    PreviousSolution.LFT = leftPoints[PointLabels.LeftFlagellumTip];
+                    PreviousSolution.LFB = leftPoints[PointLabels.LeftFlagellumBase].ToWindowsPoint();
+                    PreviousSolution.LFT = leftPoints[PointLabels.LeftFlagellumTip].ToWindowsPoint();
                 }
                 if (rightPoints.Count > 0)
                 {
-                    PreviousSolution.RFT = rightPoints[PointLabels.RightFlagellumTip];
+                    PreviousSolution.RFB = rightPoints[PointLabels.RightFlagellumBase].ToWindowsPoint();
+                    PreviousSolution.RFT = rightPoints[PointLabels.RightFlagellumTip].ToWindowsPoint();
                 }
 
+                PreviousSolution.RightSectorData = PrevSectors[PointLabels.RightSectorData];
+                PreviousSolution.LeftSectorData = PrevSectors[PointLabels.LeftSectorData];
 
-                if (EvalExpected && Expected.ContainsKey(Target.Prev1.FrameIndex))
+                //Precompute the sector with highest activation
+                PreviousSolution.RightSector = PreviousSolution.RightSectorData.ToList().IndexOf(PreviousSolution.RightSectorData.Max())+1;
+                PreviousSolution.LeftSector = PreviousSolution.LeftSectorData.ToList().IndexOf(PreviousSolution.LeftSectorData.Max())+1;
+
+                PreviousSolution.RecordingConditions.HeadOffset = HeadOffset;
+                PreviousSolution.RecordingConditions.Dimensions = HeadDims;
+                PreviousSolution.RecordingConditions.Scale = new WPoint(ScaleX,ScaleY);
+                PreviousSolution.RecordingConditions.RotationAngle = HeadAngle;
+
+
+                if (AppSettings.Default.CompareToManualData && Expected.ContainsKey(Target.Prev1.FrameIndex))
                 {
                     var currExp = Expected[Target.Prev1.FrameIndex];
                     var outString = Target.Prev1.FrameIndex.ToString() + ",";
                     var saveFrame = false;
 
-                    #region save tip images
-                    //Save tip images
-                    //var lMoved = new Point(currExp[1], currExp[2]).Moved(-HeadOffset.X, -HeadOffset.Y);
-                    //var rMoved = new Point(currExp[3], currExp[4]).Moved(-HeadOffset.X, -HeadOffset.Y);
-                    //var winSize = 7;
-                    //var lClip = curClip.SubClipped((int)lMoved.X - winSize / 2, (int)lMoved.Y - winSize / 2, winSize, winSize);
-                    //var rClip = curClip.SubClipped((int)rMoved.X - winSize / 2, (int)rMoved.Y - winSize / 2, winSize, winSize);
-                    //var rand1 = curClip.SubClipped(new Random().Next(0,curClip.Width), new Random().Next(0, curClip.Width), winSize, winSize);
-                    //var rand2 = curClip.SubClipped(new Random().Next(0, curClip.Width), new Random().Next(0, curClip.Width), winSize, winSize);
+                    var maxError = 0.0;
+                    headClip = headClip.Clone(); //To protect the bacground calcs
 
-                    //File.AppendAllLines(@"c:\temp\frames\tips.csv", new[]
-                    //{
-                    //    "1,"+string.Join(",", lClip.ToAccordInput(0))+","+string.Join(",", lClip.ToAccordInput(1))+","+string.Join(",", lClip.ToAccordInput(2)),
-                    //    "1,"+string.Join(",", rClip.ToAccordInput(0))+","+string.Join(",", rClip.ToAccordInput(1))+","+string.Join(",", rClip.ToAccordInput(2)),
-                    //    "-1,"+string.Join(",", rand1.ToAccordInput(0))+","+string.Join(",", rand1.ToAccordInput(1))+","+string.Join(",", rand1.ToAccordInput(2)),
-                    //    "-1,"+string.Join(",", rand2.ToAccordInput(0))+","+string.Join(",", rand2.ToAccordInput(1))+","+string.Join(",", rand2.ToAccordInput(2)),
-                    //}); 
-                    #endregion
+                    headClip.ColorPixels(AntennaPoints, Color.Orange);
 
                     //Refine tip location
-                    if (leftPoints.Count > 0)
+                    if (leftPoints.Count > 0 && currExp[13] != 0)
                     {
-                        var expLFT = new System.Drawing.Point(currExp[1], currExp[2]);
-                        var actLFT = ToFrameSpace(leftPoints[PointLabels.LeftFlagellumTip]);
+                        var expLFT = new System.Drawing.Point(currExp[13], currExp[14]);
+                        var actLFT = leftPoints[PointLabels.LeftFlagellumTip];
 
                         headClip.MarkPoint(actLFT, Color.Yellow);
                         actLFT.Offset(HeadOffset.X, HeadOffset.Y);
@@ -760,18 +940,21 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                         expLFT.Offset(-HeadOffset.X, -HeadOffset.Y);
                         headClip.MarkPoint(expLFT, Color.Red);
 
-                        if (LFTdist > 6)
+                        if (maxError < LFTdist)
+                            maxError = LFTdist;
+
+                        if (LFTdist > 10)
                             saveFrame = true;
                     }
                     else
                     {
-                        outString += ",,";
+                        outString += ",,,";
                     }
 
-                    if (rightPoints.Count > 0)
+                    if (rightPoints.Count > 0 && currExp[19] != 0)
                     {
-                        var expRFT = new System.Drawing.Point(currExp[3], currExp[4]);
-                        var actRFT = ToFrameSpace(rightPoints[PointLabels.RightFlagellumTip]);
+                        var expRFT = new System.Drawing.Point(currExp[19], currExp[20]);
+                        var actRFT = rightPoints[PointLabels.RightFlagellumTip];
 
                         headClip.MarkPoint(actRFT, Color.Yellow);
                         actRFT.Offset(HeadOffset.X, HeadOffset.Y);
@@ -780,8 +963,11 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
                         expRFT.Offset(-HeadOffset.X, -HeadOffset.Y);
                         headClip.MarkPoint(expRFT, Color.Red);
+                        
+                        if (maxError < RFTdist)
+                            maxError = RFTdist;
 
-                        if (RFTdist > 6)
+                        if (RFTdist > 10)
                             saveFrame = true;
                     }
                     else
@@ -791,198 +977,31 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
                     Debug.WriteLine(outString);
 
-
-                    
-                }
-                else
-                {
-                    if (leftPoints.Count > 0)
-                        DrawTip(headClip,
-                            ToFrameSpace(leftPoints[PointLabels.LeftFlagellumTip]),
-                            ToFrameSpace(leftPoints[PointLabels.LeftFlagellumBase]));
-
-                    if (rightPoints.Count > 0)
-                        DrawTip(headClip,
-                            ToFrameSpace(rightPoints[PointLabels.RightFlagellumTip]),
-                            ToFrameSpace(rightPoints[PointLabels.RightFlagellumBase]));
-
-
                     if (DebugFrame != null)
                         DebugFrame.Dispose();
 
-                    DebugFrame = new Frame(headClip.Width * 2, headClip.Height, headClip.PixelFormat, false);
+                    DebugFrame = new Frame(headClip.Width, headClip.Height, headClip.PixelFormat, false);
                     DebugFrame.DrawFrame(headClip, 0, 0, 1, 0);
-                    DebugFrame.DrawFrame(model, headClip.Width, 0, 1, 0);
+                    //DebugFrame.DrawFrame(model, headClip.Width, 0, 1, 0);
+                    //DebugFrame.DrawFrame(background.Model, headClip.Width*2, 0, 1, 0);
 
                     //if (saveFrame)
                     {
-                        DebugFrame.Bitmap.Save(@"c:\temp\frames\" + Target.Prev1.FrameIndex + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                        DebugFrame.Bitmap.Save(@"c:\temp\frames\" + maxError.Rounded().ToString("D4") + " - " + Target.Prev1.FrameIndex + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
                     }
 
                     if (DebugFrame != null)
-                    { 
+                    {
                         DebugFrame.Dispose();
                         DebugFrame = null;
                     }
+
                 }
             }
-
-            return;
-
-            #region motion quadrants
-            ////compute the sum of motion in a set of quadrants
-            ////sweep though pixels and add their values to a bin based on their location
-            //var regionCount = 5; //per side, should be even
-            //LeftBins = new int[regionCount];
-            //RightBins = new int[regionCount];
-
-            //model.ForEachPoint((p, c) =>
-            //{
-            //    if(c.R > 35)
-            //    {
-            //        var pt = ToPriorSpace(p.ToWindowsPoint());
-            //        var degs = Math.Atan2(pt.Y, pt.X) * 180.0 / Math.PI;
-            //        degs = degs < -90 ? degs + 360.0 : degs;
-
-            //        if (Math.Abs(degs) <= 90.0)
-            //        {
-            //            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(-90, 90, 0, 1) * regionCount));
-            //            RightBins[regionIndex] += c.R;
-            //        }
-            //        else
-            //        {
-            //            var regionIndex = Math.Min(regionCount - 1, (int)(degs.Scale(90, 270, 0, 1) * regionCount));
-            //            LeftBins[regionIndex] += c.R;
-            //        }
-            //    }
-            //});
-
-            //if (RightBins.Max() > 150)
-            //    RightHighest = RightBins.ToList().IndexOf(RightBins.Max());
-
-            //if(LeftBins.Max() > 150)
-            //    LeftHighest = regionCount - 1 - LeftBins.ToList().IndexOf(LeftBins.Max());
-
-
-            //Debug.WriteLine(leftHighest + "," + rightHighest);
-
-            //var directionFrame = model.Clone();
-            //directionFrame.ColorIfTrue(Color.Yellow, p =>
-            //{
-            //    if (Random.NextDouble() < 0.1)
-            //    {
-            //        var pt = ToPriorSpace(p.ToWindowsPoint());
-            //        var degs = Math.Atan2(pt.Y, pt.X)*180.0/Math.PI;
-            //        degs = degs < -90 ? degs + 360.0 : degs;
-
-            //        if (Math.Abs(Math.Abs(degs)-90) < 0.5)
-            //            return true;
-
-            //        if (Math.Abs(degs) < 90.0)
-            //        {
-            //            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(-90, 90, 0, 1)*regionCount));
-
-            //            return regionIndex == RightHighest;
-            //        }
-            //        else
-            //        {
-            //            var regionIndex = Math.Min(regionCount - 1, (int) (degs.Scale(90, 270, 0, 1)*regionCount));
-
-            //            return regionIndex == regionCount - 1 - LeftHighest;
-            //        }
-            //    }
-
-            //    return false;
-            //}); 
-            #endregion
-
-            #region old
-            //var priorSpaced = model
-            //    .PointsOverThreshold(36)
-            //    .AsParallel()
-            //    .Select(p => new Point(p.X, p.Y).ToPriorSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance))
-            //    .ToList();
-
-            //var leftSide = priorSpaced
-            //    .Where(p =>
-            //        p.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip])
-            //     || p.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase]))
-            //     .OrderByDescending(p => model.GetColor(ToFrameSpace(p).ToDrawingPoint()).R)
-            //     .ToList();
-
-            //var rightSide = priorSpaced
-            //    .Where(p =>
-            //        p.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip])
-            //     || p.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumBase]))
-            //     .OrderByDescending(p => model.GetColor(ToFrameSpace(p).ToDrawingPoint()).R)
-            //     .ToList();
-
-            //var top = leftSide
-            //    .AsParallel()
-            //    .Take((leftSide.Count * 0.5).Rounded())
-            //    .Union(
-            //        rightSide
-            //        .AsParallel()
-            //        .Take((rightSide.Count * 0.5).Rounded())
-            //    )
-            //    .ToList();
-
-            ////Reduce the point count
-            //var pointCount = top.Count;
-
-            //if (pointCount > PointsToKeep)
-            //    top = top.Where(p => Random.NextDouble() < (double) PointsToKeep/pointCount).ToList();
-
-
-            //var withinPolygons = top.Where(p =>
-            //        !p.IsInPolygon(ConvexHulls[PointLabels.Head]) &&
-            //        !p.IsInPolygon(ConvexHulls[PointLabels.Mandibles])
-            //        )
-            //    .ToList();
-
-            //TargetPoints = withinPolygons;
-            ////TargetPointsPrev = withinPolygons;
-
-            ////using (var test = Target.ShapeData.Clone())
-            ////{
-            ////    test.ColorPixels(TargetPoints.Select(p => ToFrameSpace(p).ToDrawingPoint()).ToList(), Color.Yellow);
-            ////    test.Bitmap.Save(@"y:\downloads\beevids\downframes\" + FrameIndex + ".bmp", System.Drawing.Imaging.ImageFormat.Bmp);
-            ////    FrameIndex++;
-            ////}
-
-            ////Debug.WriteLine("Target Points:" 
-            ////    + " R: " + TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.RightTip]))
-            ////    + " L: " + TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.LeftTip])));
-
-            //MinX = (int)ConvexHulls[PointLabels.RightFlagellumTip].Min(p => p.X);
-            //MaxX = (int)ConvexHulls[PointLabels.LeftFlagellumTip].Max(p => p.X);
-
-            //MinY = (int)ConvexHulls[PointLabels.RightFlagellumTip].Min(p => p.Y);
-            //MaxY = (int)ConvexHulls[PointLabels.RightFlagellumTip].Max(p => p.Y);
-
-
-            //if (GPU.UseGPU)
-            //{
-            //    //Store target points copy on GPU
-            //    var points = new float[TargetPoints.Count, 2];
-            //    for (var i = 0; i < TargetPoints.Count; i++)
-            //    {
-            //        points[i, 0] = (float)TargetPoints[i].X;
-            //        points[i, 1] = (float)TargetPoints[i].Y;
-            //    }
-
-            //    if(TargetPointsGPU != null)
-            //        GPU.Current.Free(TargetPointsGPU);
-
-            //    if(TargetPoints.Count == 0)
-            //        points = new float[1,2]; //One dummy point at the origin
-
-            //    TargetPointsGPU = GPU.Current.CopyToDevice(points);
-            //}
-            #endregion
         }
 
-        private void DrawTip(Frame headImage, System.Drawing.Point tipPoint, System.Drawing.Point basePoint)
+
+        public void DrawTip(Frame headImage, System.Drawing.Point tipPoint, System.Drawing.Point basePoint)
         {
             using (var g = Graphics.FromImage(headImage.Bitmap))
             {
@@ -990,7 +1009,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 var penThin = new Pen(Color.Blue) { Width = 1 };
 
                 var penRed = new Pen(Color.Orange);
-                var length = ToFrameSpace(new Point(1, 0)).X;
+                var length = ToHeadSpace(new Point(1, 0)).X;
 
                 var ellipseWidth = (0.1 * length).Rounded();
                 g.DrawEllipse(penThick, (float)(tipPoint.X - ellipseWidth / 2.0), (float)(tipPoint.Y - ellipseWidth / 2.0), ellipseWidth, ellipseWidth);
@@ -1000,9 +1019,9 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 //g.DrawEllipse(penThick, (float)(expectedBasePoint.X - ellipseWidth / 2.0), (float)(expectedBasePoint.Y - ellipseWidth / 2.0), ellipseWidth, ellipseWidth);
                 //g.DrawEllipse(penThin, (float)(expectedBasePoint.X - ellipseWidth / 2.0), (float)(expectedBasePoint.Y - ellipseWidth / 2.0), ellipseWidth, ellipseWidth);
 
-                if(TopViewLeft != null)
+                if (TopViewLeft != null)
                 {
-                    var tvFrame = ToFrameSpace(TopViewLeft.Value);
+                    var tvFrame = ToHeadSpace(TopViewLeft.Value);
                     g.DrawLine(penThick, 0, (float)(tvFrame.Y * 1.2), 1000, (float)(tvFrame.Y * 1.2));
                     g.DrawLine(penThin, 0, (float)(tvFrame.Y * 0.8), 1000, (float)(tvFrame.Y * 0.8));
                 }
@@ -1035,64 +1054,253 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             }
         }
 
-        public Dictionary<PointLabels, Point> PrevTips = new Dictionary<PointLabels, Point>();
+        public Dictionary<PointLabels, DPoint> PrevTips = new Dictionary<PointLabels, DPoint>();
+        public Dictionary<PointLabels, double[]> PrevSectors = new Dictionary<PointLabels, double[]>();
 
-        private List<Tuple<DPoint, double>> AntPts(Frame headClip, PointLabels tipLabel, PointLabels baseLabel)
+        private unsafe List<Tuple<DPoint, double>> AntPts(Frame headClip, Frame motion, PointLabels tipLabel, PointLabels baseLabel)
         {
-            var pts = new List<Tuple<DPoint, double>>(100);
+            var result = new List<Tuple<DPoint, double>>(100);
 
-            headClip.ForEachPoint((p,c) => {
-                var pPrior = ToPriorSpace(p);
-                var dist = c.Distance(Color.FromArgb(29, 29, 17));
+            var antCol = AppSettings.Default.AntennaColor;
+            var antR = antCol.R;
+            var antG = antCol.G;
+            var antB = antCol.B;
 
-                var include =
-                pPrior.Distance(new Point(0, 0)) > 3.0 &&
-                dist < 60
-                && !pPrior.IsInPolygon(ConvexHulls[PointLabels.Mandibles])
-                && !pPrior.IsInPolygon(ConvexHulls[baseLabel])
-                && pPrior.IsInPolygon(ConvexHulls[tipLabel]);
+            var center = ToHeadSpace(new Point(0, 0));
+            var ctrX = center.X;
+            var ctrY = center.Y;
 
-                if (include)
-                    lock (pts)
+            var headRadiusSquared = ToHeadSpace(new Point(3, 0)).X - ToHeadSpace(new Point(0, 0)).X;
+            headRadiusSquared *= headRadiusSquared;
+
+            //Make a histogram of point distances
+            var bgHistBinPts = Enumerable.Range(0, 256).Select(i => new List<DPoint>()).ToArray();
+            var motionHistBinPts = Enumerable.Range(0, 256).Select(i => new List<DPoint>()).ToArray();
+
+            //Keep track of how many points in histogram
+            var bgHistogramTotal = 0;
+            var motionHistogramTotal = 0;
+
+            var ptsWithinHull = 0;
+
+            var width = headClip.Width;
+            var height = headClip.Height;
+            var stride = headClip.Stride;
+
+            var headFirstPx = headClip.FirstPixelPointer;
+            var motionFirstPx = motion.FirstPixelPointer;
+            var bgFirstPx = background.Model.FirstPixelPointer;
+
+            var tipHull = ConvexHullsFrame[tipLabel];
+            var mandiblesHull = ConvexHullsFrame[PointLabels.Mandibles];
+            var jointHull = ConvexHullsFrame[baseLabel];
+
+            Parallel.For(0, height, new ParallelOptions
+            {
+                //MaxDegreeOfParallelism = 1
+            },
+            y =>
+            {
+                var rowStartOffset = y * stride;
+                //These possibky could be initialized faster
+                var rowBgHistBinPts = Enumerable.Range(0, 256).Select(i => new List<DPoint>()).ToArray();
+                var rowMotionHistBinPts = Enumerable.Range(0, 256).Select(i => new List<DPoint>()).ToArray();
+                var rowBgHistTot = 0;
+                var rowMotionHistTot = 0;
+
+                for (var x = 0; x < width; x++)
+                {
+                    //Check if point is within hull
+                    var dx = (x - ctrX);
+                    var dy = (y - ctrY);
+
+                    if (dx * dx + dy * dy <= headRadiusSquared)
+                        continue;
+                    
+                    //These could be pre-computed and cached, invalidated when the size, scale, or angle is changed
+                    if (!IsInPolygon(x, y, tipHull) ||
+                        IsInPolygon(x, y, mandiblesHull) ||
+                        IsInPolygon(x, y, jointHull))
+                        continue;
+
+                    //Passed location tests, now test for color distances
+                    var pxOffset = rowStartOffset + x * 3;
+                    
+                    //Count the number of pts in a hull
+                    ptsWithinHull++;
+
+                    //Head px
+                    var headIntPix = *(int*)(headFirstPx+pxOffset) & 0xFFFFFFFF;
+                    var headB = (headIntPix) & 255;
+                    var headG = (headIntPix >> 8) & 255;
+                    var headR = (headIntPix >> 16) & 255;
+
+                    //Background px
+                    var bgIntPix = *(int*)(bgFirstPx + pxOffset) & 0xFFFFFFFF;
+                    var bgB = (bgIntPix) & 255;
+                    var bgG = (bgIntPix >> 8) & 255;
+                    var bgR = (bgIntPix >> 16) & 255;
+
+                    //Motion px
+                    var motionG = motionFirstPx[pxOffset+1];
+
+                    var headDistNow = (Abs(antR - headR) + Abs(antG - headG) + Abs(antB - headB)); //Color distance to antenna
+                    var headDistWas =     (Abs(bgR - antR) + Abs(bgG - antG) + Abs(bgB - antB)); //Difference from background
+                    var headDistDiff = (headDistWas - headDistNow)/3.0;
+
+                    //Keep track of positive changes (e.g. chages towards antenna color)
+                    if (headDistDiff > 2)
                     {
-                        pts.Add(new Tuple<DPoint, double>(p, 255 * (1 - dist / 60)));
+                        var targetBin = rowBgHistBinPts[(int)headDistDiff];
+
+                        targetBin.Add(new DPoint(x,y));
+
+                        bgHistogramTotal++;
+                        rowBgHistTot++;
                     }
-            });
-            //headClip.ColorPixels(pts.Select(p => p.Item1).ToList(), Color.Blue);
-
-            return pts;
-        }
-        private List<Tuple<DPoint,double>> AntPts2(Frame headClip, PointLabels tipLabel, PointLabels baseLabel)
-        {
-            var pts = new List<Tuple<DPoint, double>>(100);
-
-            headClip.ForEachPoint((p, c) => {
-                var pPrior = ToPriorSpace(p);
-
-                var include =
-                pPrior.Distance(new Point(0, 0)) > 3.0 &&
-                c.G > 10 
-                && !pPrior.IsInPolygon(ConvexHulls[PointLabels.Mandibles])
-                && !pPrior.IsInPolygon(ConvexHulls[baseLabel])
-                && pPrior.IsInPolygon(ConvexHulls[tipLabel]);
-
-                if (include)
-                    lock (pts)
+                    
+                    if (motionG > 2)
                     {
-                        pts.Add(new Tuple<DPoint, double>(p, 255 * c.G / 245));
+                        var targetBin = rowMotionHistBinPts[motionG];
+
+                        targetBin.Add(new DPoint(x,y));
+
+                        motionHistogramTotal++;
+                        rowMotionHistTot++;
                     }
+                }
+
+                if (rowBgHistTot > 0)
+                {
+                    for (var bin = 0; bin < 256; bin++)
+                    {
+                        var binPts = rowBgHistBinPts[bin];
+
+                        if(binPts.Count > 0)
+                            lock (bgHistBinPts)
+                            {
+                                bgHistBinPts[bin].AddRange(binPts);
+                            }
+                    }
+                }
+
+                if (rowMotionHistTot > 0)
+                {
+                    for (var bin = 0; bin < 256; bin++)
+                    {
+                        var binPts = rowMotionHistBinPts[bin];
+
+                        if(binPts.Count > 0)
+                            lock (motionHistBinPts)
+                            {
+                                motionHistBinPts[bin].AddRange(binPts);
+                            }
+                    }
+                }
+
             });
 
-            return pts;
-        }
+            //Slow motion component
+            if (bgHistogramTotal > 0)
+            {
+                var histSum = 0.0;
+                var histBin = 255;
 
-        private Dictionary<PointLabels,Point> GetTip(Frame headClip, Frame contrastedHead, Frame motionClip, List<System.Drawing.Point> modelPts, Point origin, PointLabels tipLabel, PointLabels baseLabel, LinkedList<Point> tipBuffer, LinkedList<Point> baseBuffer)
-        {
-            var result = new Dictionary<PointLabels, Point>();
+                var debug = headClip.Clone();
+                var stopCount = (int)(ptsWithinHull * 0.04);
+
+                //Collect the points from the histogram tail until reached X% of possible hull points
+                do
+                {
+                    var binPoints = bgHistBinPts[histBin];
+                    var binCount = binPoints.Count;
+
+                    if(binCount > 0)
+                    { 
+                        histSum += binCount;
+                        result.AddRange(binPoints.Select(p => new Tuple<DPoint,double>(p, histBin)));
+                    }
+
+                    //DEBUG
+                    if (binCount > 0)
+                    {
+                        var col = Math.Min(histBin * histBin, 255); //Square the distance for emphasis
+                        debug.ColorPixels(binPoints, Color.FromArgb(col, col, col));
+                    }
+
+                    histBin--;
+                }
+                while (histBin > 0 && histSum < stopCount);
+
+                var bmp = debug.Bitmap;
+                var uncertainty = Math.Min(
+                    result.StdDev(p => p.Item1.X), 
+                    result.StdDev(p => p.Item1.Y)) / headClip.Width;
+
+
+            }
+
+            //Fast motion component
+            if (motionHistogramTotal > 0)
+            {
+                var motionResult = result.Take(0).ToList();
+                var histSum = 0.0;
+                var histBin = 255;
+
+                var debug = headClip.Clone();
+                var stopCount = (int)(ptsWithinHull * 0.04);
+
+                //Collect the points from the histogram tail until reached X% of possible hull points
+                do
+                {
+                    var binPoints = motionHistBinPts[histBin];
+                    var binCount = binPoints.Count;
+
+                    if (binCount > 0)
+                    {
+                        histSum += binCount;
+                        motionResult.AddRange(binPoints.Select(p => new Tuple<DPoint, double>(p, histBin)));
+                    }
+
+                    ////DEBUG
+                    if (binCount > 0)
+                    {
+                        var col = Math.Min(histBin * histBin, 255); //Square the distance for emphasis
+                        debug.ColorPixels(binPoints, Color.FromArgb(col, col, col));
+                    }
+
+                    histBin--;
+                }
+                while (histBin > 0 && histSum < stopCount);
+
+                var bmp = debug.Bitmap;
+                var t = motionResult;
+                var uncertainty = Math.Min(
+                    motionResult.StdDev(p => p.Item1.X),
+                    motionResult.StdDev(p => p.Item1.Y)) / headClip.Width;
+
+                if (motionResult.First().Item2 < 10)
+                {
+
+                }
+
+                result.AddRange(motionResult);
+            }
             
-            var rawAnt = AntPts(contrastedHead, tipLabel, baseLabel);
-            var moAnt = AntPts2(motionClip, tipLabel, baseLabel);
-            var ctr = ToFrameSpace(new Point(tipLabel == PointLabels.LeftFlagellumTip ? -0.5 : 0.5, 0));
+
+            return result;
+        }
+
+        public List<DPoint> AntennaPoints = new List<DPoint>();
+
+        private Dictionary<PointLabels,DPoint> GetTip(Frame headClip, Frame motionClip, List<System.Drawing.Point> modelPts, Point origin, PointLabels tipLabel, PointLabels baseLabel, LinkedList<Point> tipBuffer, LinkedList<Point> baseBuffer)
+        {
+            var result = new Dictionary<PointLabels, DPoint>();
+            
+            //These can be combined into one loop to avoid repeated X,Y validation checks
+            //And replace deleages with for-loops
+            var rawAnt = AntPts(headClip, motionClip, tipLabel, baseLabel);
+            var ctr = ToHeadSpace(new Point(tipLabel == PointLabels.LeftFlagellumTip ? -0.5 : 0.5, 0));
             //var rawAntPts = rawAnt.Select(p => p.Item1).ToList();
             //var moAntPts = moAnt.Select(p => p.Item1).ToList();
 
@@ -1100,86 +1308,134 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             //t.ColorPixels(rawAntPts, Color.White);
             //t.ColorPixels(moAntPts, Color.White);
 
-            
-            rawAnt.AddRange(moAnt);
-
             //Median the point list
             //t.ColorPixels(rawAnt.Select(p => p.Item1).ToList(), Color.White);
             if(rawAnt.Count > 100)
-                rawAnt = rawAnt.MedianFilter(1);
+                rawAnt = rawAnt.MedianFilter(AppSettings.Default.MedianFilterRadius);
             //t = headClip.Clone();
             //t.Clone().ColorPixels(rawAnt.Select(p => p.Item1).ToList(), Color.White);
 
             if (rawAnt.Count > 0)
             {
-                //Weighted centroid
-                var sumW = rawAnt.Sum(p => p.Item2);
-                var centerX = rawAnt.Sum(p => p.Item1.X * p.Item2 / sumW);
-                var centerY = rawAnt.Sum(p => p.Item1.Y * p.Item2 / sumW);
-                var med = new DPoint(centerX.Rounded(), centerY.Rounded());
+                //Take the top one
+                //var maxW = rawAnt.MaxBy(p => p.Item2);
 
-                //Ensure an actual point
-                med = rawAnt.MinBy(p => p.Item1.Distance(med)).Item1;
+                //Pool top ones
+                var topPts = rawAnt.OrderByDescending(p => p.Item2).Take(10).ToList();
+                //var maxPooled = ;
+                var med = rawAnt.MinBy(p => p.Item1.Distance(new DPoint(
+                    topPts.Average(pt => pt.Item1.X).Rounded(),
+                    topPts.Average(pt => pt.Item1.Y).Rounded()))).Item1;
 
-                t.ColorPixels(rawAnt.Select(p => p.Item1).ToList(), Color.White);
+                //Square-Weighted centroid
+                //var sumW = rawAnt.Sum(p => p.Item2 * p.Item2);
+                //var centerX = rawAnt.Sum(p => p.Item1.X * p.Item2 * p.Item2 / sumW);
+                //var centerY = rawAnt.Sum(p => p.Item1.Y * p.Item2 * p.Item2 / sumW);
+                //var med = new DPoint(centerX.Rounded(), centerY.Rounded());
+                //med = rawAnt.MinBy(p => p.Item1.Distance(med)).Item1;
+
+                var pointList = rawAnt.Select(p => p.Item1).ToList();
+                
+                t.ColorPixels(pointList, Color.White);
+                AntennaPoints.AddRange(pointList);
 
                 //Could do with lookup table
-                var tip = CrawlToTip(t, med, ctr, 1, 34);
-                
-                
+                //var tip = CrawlToTip(t, med, ctr, 1, 34);
+                var tip = CrawlToTip(t, med, ctr, 1, AppSettings.Default.TipCrawlerRadius.Rounded(), AppSettings.Default.MaxTipCrawlerHop);
+                var baseLoc = CrawlToTip(t, med, ctr, 1, AppSettings.Default.TipCrawlerRadius.Rounded(), AppSettings.Default.MaxTipCrawlerHop, crawlingAway:false);
+
+                t.MarkPoint(baseLoc, inner: Color.Black);
                 t.MarkPoint(med);
                 t.MarkPoint(tip, inner:Color.Orange);
 
-                PrevTips[tipLabel] = result[tipLabel] = ToPriorSpace(tip);
-                PrevTips[baseLabel] = result[baseLabel] = ToPriorSpace(med);
+                var sectors = ComputeSectorWeights(rawAnt, headClip.Width, headClip.Height, HeadAngle);
+                //t.MarkSectors(sectors, headClip.Width/2, headClip.Height/2, HeadAngle, tipLabel == PointLabels.RightFlagellumTip);
+
+                PrevTips[tipLabel] = result[tipLabel] = tip;
+                PrevTips[baseLabel] = result[baseLabel] = baseLoc;
+
+                PrevSectors[tipLabel == PointLabels.RightFlagellumTip ? PointLabels.RightSectorData : PointLabels.LeftSectorData] = sectors;
             }
-            else if(PrevTips.Count > 0) //If nothing at all, use previous solution
+            else if(PrevTips.ContainsKey(tipLabel) && PrevTips.ContainsKey(baseLabel)) //If nothing at all, use previous solution
             {
                 result[tipLabel] = PrevTips[tipLabel];
                 result[baseLabel] = PrevTips[baseLabel];
             }
 
             
-            //Always save
-            t.Bitmap.Save(@"c:\temp\frames\lomo\" + tipLabel.ToString() + "-" + Target.Prev1.FrameIndex + ".jpg", ImageFormat.Jpeg);
+            //DEBUG save
+            //t.Bitmap.Save(@"c:\temp\frames\lomo\" + tipLabel.ToString() + "-" + Target.Prev1.FrameIndex + ".jpg", ImageFormat.Jpeg);
 
             return result;
         }
 
-        public System.Drawing.Point CrawlToTip(Frame target, System.Drawing.Point start, System.Drawing.Point origin, int threshold = 50, int radius = 30)
+        private double[] ComputeSectorWeights(List<Tuple<DPoint, double>> points, int width, int height, double angle)
+        {
+            var ctrX = width / 2;
+            var ctrY = height / 2;
+
+            var sectors = 5;
+            var sectorContribution = sectors / 180.0;
+            var histogram = new double[sectors];
+
+            Parallel.ForEach(points, new ParallelOptions
+            {
+                //MaxDegreeOfParallelism = 1
+            }, 
+            p =>
+            {
+                //Move origin to 0,0
+                var x = p.Item1.X - ctrX;
+                var y = p.Item1.Y - ctrY;
+
+                var tanAngle = Atan2(y, x) * 180.0 / PI + 90;
+                tanAngle -= angle;
+
+                tanAngle = tanAngle % 360;
+
+                if (tanAngle > 180)
+                    tanAngle -= 360;
+                else if (tanAngle < -180)
+                    tanAngle += 360;
+
+
+                var priorAngle = Abs(tanAngle);
+
+                var sector = priorAngle * sectorContribution;
+
+                if (sector < 0)
+                    sector = 0;
+
+                else if (sector >= sectors)
+                    sector = sectors - 1;
+
+                histogram[(int)sector] += p.Item2;
+            });
+
+            return histogram;
+        }
+
+        public System.Drawing.Point CrawlToTip(Frame target, System.Drawing.Point start, System.Drawing.Point origin, int threshold = 50, int maxDistance = 30, int maxHopDistance = 2, bool crawlingAway = true)
         {
             var loopCount = 0;
             var startColor = target.GetColor(start);
             var bestDistance = start.Distance(origin);
             var bestPoint = start;
-            var visited = new bool[radius * 2+1, radius * 2+1];
-            var visitedOffset = new System.Drawing.Point(start.X - radius, start.Y - radius);
+            var visited = new bool[maxDistance * 2+1, maxDistance * 2+1];
+            var visitedOffsetX = start.X - maxDistance;
+            var visitedOffsetY = start.Y - maxDistance;
+            var bestLocationLockpad = new object();
+
             var queue = new Queue<System.Drawing.Point>();
             queue.Enqueue(start);
+            
 
             while (queue.Count > 0 && loopCount < 500)
             {
                 loopCount++;
                 var point = queue.Dequeue();
 
-                new List<System.Drawing.Point>
-                {
-                    new System.Drawing.Point(point.X - 1, point.Y),
-                    new System.Drawing.Point(point.X + 1, point.Y),
-                    new System.Drawing.Point(point.X, point.Y - 1),
-                    new System.Drawing.Point(point.X, point.Y + 1),
-
-                    new System.Drawing.Point(point.X - 2, point.Y),
-                    new System.Drawing.Point(point.X + 2, point.Y),
-                    new System.Drawing.Point(point.X, point.Y - 2),
-                    new System.Drawing.Point(point.X, point.Y + 2),
-
-                    new System.Drawing.Point(point.X - 2, point.Y - 2),
-                    new System.Drawing.Point(point.X + 2, point.Y + 2),
-                    new System.Drawing.Point(point.X + 2, point.Y - 2),
-                    new System.Drawing.Point(point.X - 2, point.Y + 2),
-                }
-                .ForEach(p =>
+                Parallel.ForEach(getCandidateLocations(point, maxHopDistance), p =>
                 {
                     //Check bounds
                     if (p.X < 0 || p.X >= target.Width ||
@@ -1189,12 +1445,13 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     //Check if within search radius
                     var distFromStart = p.Distance(start);
 
-                    if (distFromStart > radius)
+                    if (distFromStart > maxDistance)
                         return;
 
                     //Check if already checked
-                    var visitedPos = new System.Drawing.Point(p.X - visitedOffset.X, p.Y - visitedOffset.Y);
-                    var exists = visited[visitedPos.X, visitedPos.Y];
+                    var visitedX = p.X - visitedOffsetX;
+                    var visitedY = p.Y - visitedOffsetY;
+                    var exists = visited[visitedX, visitedY];
                     //var searchTarget = p.X * 100000 + p.Y;
                     //var searchResult = visited.BinarySearch(searchTarget);
                     //var exists = searchResult >= 0;
@@ -1203,8 +1460,11 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                         return;
 
                     //Mark as checked, regardless of outcome
-                    visited[visitedPos.X, visitedPos.Y] = true;
-                    
+                    lock(visited)
+                    {
+                        visited[visitedX, visitedY] = true;
+                    }
+
                     //Check if within color range
                     var distFromStartColor = target.GetColor(p).Distance(startColor);
 
@@ -1214,18 +1474,28 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     //See if distance is further
                     var dist = p.Distance(origin);
 
-                    //Don't bother if distance is much worse than the best
-                    if (dist < bestDistance * 0.975)
+                    //Don't bother if distance is much worse than the best (maximizing distance)
+                    if (crawlingAway && dist < bestDistance * 0.975)
                         return;
 
-                    //Save best distance
-                    if (dist > bestDistance)
+                    //Or opposite if crawling closer (minimizing distance)
+                    else if (!crawlingAway && dist > bestDistance * 1.025)
+                        return;
+
+                    //Save best distance (away = maximizing, towards = minimizing)
+                    if ((crawlingAway && dist > bestDistance) || (!crawlingAway && dist < bestDistance))
                     { 
-                        bestDistance = dist;
-                        bestPoint = p;
+                        lock(bestLocationLockpad)
+                        {
+                            bestDistance = dist;
+                            bestPoint = p;
+                        }
                     }
-                    queue.Enqueue(p);
-                    
+
+                    lock(queue)
+                    {
+                        queue.Enqueue(p);
+                    }
                     //visited.Insert(~searchResult, searchTarget);
                     //visited.ToString();
                 });
@@ -1236,11 +1506,37 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             return bestPoint;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private List<DPoint> getCandidateLocations(DPoint point, int maxHopDistance)
+        {
+            var result = new List<DPoint>(maxHopDistance * maxHopDistance);
+
+            Parallel.For(point.X - maxHopDistance, point.X + maxHopDistance + 1, x =>
+            {
+                var rowResult = result.Take(0).ToList();
+
+                for (var y = point.Y - maxHopDistance; y <= point.Y + maxHopDistance; y++)
+                {
+                    if (x == point.X && y == point.Y)
+                        continue;
+
+                    rowResult.Add(new DPoint(x, y));
+                }
+
+                lock(result)
+                {
+                    result.AddRange(rowResult);
+                }
+            });
+
+            return result;
+        }
+
         public bool IsAntenaColored(Frame target, System.Drawing.Point p)
         {
             var pxC = target.GetColor(p);
 
-            return pxC.Distance(Color.Black) <= 90 || Math.Abs(pxC.GetHue() - 333) <= 10;
+            return pxC.Distance(Color.Black) <= 90 || Abs(pxC.GetHue() - 333) <= 10;
         }
 
         public static void ReadPriors()
@@ -1287,7 +1583,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 .ToList();
         }
 
-        public static void ReadHulls()
+        public void ReadHulls()
         {
             var cols = File
                 .ReadLines(ConvexHullsPath)
@@ -1296,7 +1592,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 .Select((name, i) => new { name = name.Replace(@"""", ""), i })
                 .ToDictionary(c => c.name);
 
-            ConvexHulls = new Dictionary<PointLabels, List<Point>>
+            ConvexHullsPrior = new Dictionary<PointLabels, List<Point>>
             {
                 { PointLabels.RightScape, new List<Point>() },
                 { PointLabels.RightFlagellumBase, new List<Point>() },
@@ -1311,6 +1607,8 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
             };
 
+            
+
             File
                 .ReadAllLines(ConvexHullsPath)
                 .Skip(1)
@@ -1324,52 +1622,70 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
                     if (column[cols["lftX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.LeftFlagellumTip].Add(new Point(column[cols["lftX"].i], column[cols["lftY"].i]));
+                        ConvexHullsPrior[PointLabels.LeftFlagellumTip].Add(new Point(column[cols["lftX"].i], column[cols["lftY"].i]));
                     }
 
                     if (column[cols["rftX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.RightFlagellumTip].Add(new Point(column[cols["rftX"].i], column[cols["rftY"].i]));
+                        ConvexHullsPrior[PointLabels.RightFlagellumTip].Add(new Point(column[cols["rftX"].i], column[cols["rftY"].i]));
                     }
 
                     if (column[cols["rfbX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.RightFlagellumBase].Add(new Point(column[cols["rfbX"].i], column[cols["rfbY"].i]));
+                        ConvexHullsPrior[PointLabels.RightFlagellumBase].Add(new Point(column[cols["rfbX"].i], column[cols["rfbY"].i]));
                     }
 
                     if (column[cols["lfbX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.LeftFlagellumBase].Add(new Point(column[cols["lfbX"].i], column[cols["lfbY"].i]));
+                        ConvexHullsPrior[PointLabels.LeftFlagellumBase].Add(new Point(column[cols["lfbX"].i], column[cols["lfbY"].i]));
                     }
 
                     if (column[cols["rsX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.RightScape].Add(new Point(column[cols["rsX"].i], column[cols["rsY"].i]));
+                        ConvexHullsPrior[PointLabels.RightScape].Add(new Point(column[cols["rsX"].i], column[cols["rsY"].i]));
                     }
 
                     if (column[cols["lsX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.LeftScape].Add(new Point(column[cols["lsX"].i], column[cols["lsY"].i]));
+                        ConvexHullsPrior[PointLabels.LeftScape].Add(new Point(column[cols["lsX"].i], column[cols["lsY"].i]));
                     }
 
                     if (column[cols["mandiblesX"].i] != double.MinValue)
                     {
-                        ConvexHulls[PointLabels.Mandibles].Add(new Point(column[cols["mandiblesX"].i], column[cols["mandiblesY"].i]));
+                        ConvexHullsPrior[PointLabels.Mandibles].Add(new Point(column[cols["mandiblesX"].i], column[cols["mandiblesY"].i]));
                     }
-
-                    //if (column[cols["lftX"].i] != double.MinValue)
-                    //{
-                    //    ConvexHulls[PointLabels.Head].Add(new Point(column[10], column[11]));
-                    //}
                 });
+
+            ReadHullsFrame();
         }
 
-        public static string ExpectedPath = @"\\psf\Home\Downloads\BeeVids\19Feb16-Start Hept Tests\B4-Feb19-2M-Heptanol.mov_HandAnnotated_20160326 1605.csv";
-        public static Dictionary<int, int[]> Expected = new Dictionary<int, int[]>();
+        public void ReadHullsFrame()
+        {
+            //Convert prior spaced hulls to frame space
+            ConvexHullsFrameAngle = HeadAngle;
+            ConvexHullsFrame = ConvexHullsPrior.Keys.ToDictionary(k => k, v => new List<DPoint>());
+
+            ConvexHullsPrior.Keys.ForEach(k =>
+                ConvexHullsFrame[k].AddRange(ConvexHullsPrior[k].Select(pv =>
+                    ToHeadSpace(pv)
+                ))
+            );
+        }
+
+        public static Dictionary<int, int[]> Expected = null;
         public static void ReadExpected()
         {
+            var path = AppSettings.Default.ManualDataFile;
+
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                Expected = new Dictionary<int, int[]>();
+                return;
+            }
+                
+
             Expected = File
-                .ReadAllLines(ExpectedPath)
+                .ReadAllLines(path)
                 .Skip(1)
                 .Select(line =>
                 {
@@ -1407,14 +1723,14 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         protected override bool ValidChild(AntenaPoints child)
         {
             var valid =
-                       child.RFB.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumBase])
-                    && child.RFT.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip])
+                       child.RFB.IsInPolygon(ConvexHullsPrior[PointLabels.RightFlagellumBase])
+                    && child.RFT.IsInPolygon(ConvexHullsPrior[PointLabels.RightFlagellumTip])
 
-                    && child.LFB.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase])
-                    && child.LFT.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip])
+                    && child.LFB.IsInPolygon(ConvexHullsPrior[PointLabels.LeftFlagellumBase])
+                    && child.LFT.IsInPolygon(ConvexHullsPrior[PointLabels.LeftFlagellumTip])
 
-                    && child.LS.IsInPolygon(ConvexHulls[PointLabels.LeftScape])
-                    && child.RS.IsInPolygon(ConvexHulls[PointLabels.RightScape])
+                    && child.LS.IsInPolygon(ConvexHullsPrior[PointLabels.LeftScape])
+                    && child.RS.IsInPolygon(ConvexHullsPrior[PointLabels.RightScape])
 
                     ;
 
@@ -1423,108 +1739,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
         protected override AntenaPoints SelectLocation()
         {
-            if (GPU.UseGPU)
-            {
-                //Free the target points since they're only useful once per frame
-                if (TargetPointsGPU != null)
-                {
-                    GPU.Current.Free(TargetPointsGPU);
-                    TargetPointsGPU = null;
-                }
-            }
-
-            var bestSolution = Generation.First().Key.ToFrameSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
-
-            if (PreviousSolution != null)
-            {
-                var leftPoints = TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip]));
-                var rightPoints = TargetPoints.Count(point => point.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip]));
-
-                if (rightPoints <= MinPointsForRegression)
-                {
-                    bestSolution.RS = PreviousSolution.RS;
-                    bestSolution.RFB = PreviousSolution.RFB;
-                    bestSolution.RFT = PreviousSolution.RFT;
-                }
-
-                if (leftPoints <= MinPointsForRegression)
-                {
-                    bestSolution.LS = PreviousSolution.LS;
-                    bestSolution.LFB = PreviousSolution.LFB;
-                    bestSolution.LFT = PreviousSolution.LFT;
-                }
-
-
-            }
-
-            PreviousSolution = bestSolution;
-
-            var motionModel = model.Clone();
-
-            ////take the best solution, and eval the tip location actoss the whole side of the head
-            ////so for each pixel, eval the fitness
-            //var fitnessMap = motionModel.MapByDistanceFunction(pt =>
-            //{
-            //    var newTry = bestSolution.Clone();
-
-            //    if (pt.X <= motionModel.Width / 2.0)
-            //        newTry.LFT = ToPriorSpace(pt.ToWindowsPoint());
-            //    else
-            //        newTry.RFT = ToPriorSpace(pt.ToWindowsPoint());
-
-            //    lock (fitnesScores)
-            //    {
-            //        ComputeFitnessCPU(new AntenaPoints[] { newTry });
-
-            //        return Math.Log(fitnesScores[0]) / 10.0;
-            //    }
-            //});
-
-            //Draw the model
-            using (var g = Graphics.FromImage(motionModel.Bitmap))
-            {
-                var yellow = new Pen(Color.Yellow, 1);
-                var red = new Pen(Color.Red, 1);
-                var black = new Pen(Color.Black, 1);
-
-                g.DrawLines(yellow, new[]
-                {
-                    bestSolution.RS.ToPointF(),
-                    bestSolution.RFB.ToPointF(),
-                    bestSolution.RFT.ToPointF()
-                });
-                g.DrawLines(yellow, new[]
-                {
-                    bestSolution.LS.ToPointF(),
-                    bestSolution.LFB.ToPointF(),
-                    bestSolution.LFT.ToPointF()
-                });
-
-                var headBoundary = ConvexHulls[PointLabels.Head].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
-                var mouthBoundary = ConvexHulls[PointLabels.Mandibles].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
-                var left = ConvexHulls[PointLabels.LeftFlagellumTip].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
-                var right = ConvexHulls[PointLabels.RightFlagellumTip].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
-                var rightJ = ConvexHulls[PointLabels.RightFlagellumBase].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
-                var leftJ = ConvexHulls[PointLabels.LeftFlagellumBase].Select(p => ToFrameSpace(p).ToPointF()).ToArray();
-
-
-
-                //g.DrawPolygon(red, headBoundary);
-                g.DrawPolygon(red, mouthBoundary);
-                g.DrawPolygon(red, left);
-                g.DrawPolygon(red, right);
-                g.DrawPolygon(red, rightJ);
-                g.DrawPolygon(red, leftJ);
-            }
-            motionModel.ColorPixels(TargetPoints.Select(p => ToFrameSpace(p)).ToList(), Color.Blue);
-
-            
-            //DebugFrame.DrawFrame(fitnessMap, HeadDims.X, 0, 1, 0);
-            DebugFrame.DrawFrame(motionModel, HeadDims.X*2, 0, 1, 0);
-            motionModel.Dispose();
-            //fitnessMap.Dispose();
-
-            return bestSolution;
+            return PreviousSolution;
         }
 
         public override AntenaPoints Mutated(AntenaPoints individual)
@@ -1558,10 +1773,10 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         private static bool InConvexHulls(Point point)
         {
             var result =
-                point.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumTip]) ||
-                point.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumTip]) ||
-                point.IsInPolygon(ConvexHulls[PointLabels.RightFlagellumBase]) ||
-                point.IsInPolygon(ConvexHulls[PointLabels.LeftFlagellumBase])
+                point.IsInPolygon(ConvexHullsPrior[PointLabels.RightFlagellumTip]) ||
+                point.IsInPolygon(ConvexHullsPrior[PointLabels.LeftFlagellumTip]) ||
+                point.IsInPolygon(ConvexHullsPrior[PointLabels.RightFlagellumBase]) ||
+                point.IsInPolygon(ConvexHullsPrior[PointLabels.LeftFlagellumBase])
                 ;
 
             return result;
@@ -1569,21 +1784,21 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
         public Point ToPriorSpace(Point p)
         {
-            return p.ToPriorSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
+            return p.ToPriorSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
 
-        public System.Drawing.Point ToFrameSpace(Point p)
+        public System.Drawing.Point ToHeadSpace(Point p)
         {
-            return p.ToFrameSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
+            return p.ToHeadSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
         public Point ToPriorSpace(System.Drawing.Point p)
         {
-            return p.ToWindowsPoint().ToPriorSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
+            return p.ToWindowsPoint().ToPriorSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
 
-        public System.Drawing.Point ToFrameSpace(System.Drawing.Point p)
+        public System.Drawing.Point ToHeadSpace(System.Drawing.Point p)
         {
-            return p.ToWindowsPoint().ToFrameSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, HeadView.ScapeDistance);
+            return p.ToWindowsPoint().ToHeadSpace(new Point(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleY, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
 
         private static float[] fitnesScores;

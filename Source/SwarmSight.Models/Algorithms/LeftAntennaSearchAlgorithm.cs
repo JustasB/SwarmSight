@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
-using AForge.Neuro;
+//using AForge.Neuro;
 using SwarmSight.HeadPartsTracking.Models;
 using Point = System.Windows.Point;
 

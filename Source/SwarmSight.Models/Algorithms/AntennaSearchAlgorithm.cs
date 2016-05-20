@@ -14,8 +14,6 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
         protected AntennaSearchAlgorithm()
         {
-            GenerationSize = AntennaAndPERDetector.Config.AntennaGenerationSize;
-            NumberOfGenerations = AntennaAndPERDetector.Config.AntennaGenerations;
         }
 
         public override void PreProcessTarget()

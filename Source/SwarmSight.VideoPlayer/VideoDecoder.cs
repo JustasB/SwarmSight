@@ -68,7 +68,7 @@ namespace SwarmSight.VideoPlayer
             VideoInfo = new VideoInfo(VideoPath);
         }
 
-        public void Start(bool open = true)
+        public void Start(bool open = true, string customArgs = "")
         {
             if(open)
                 Open(VideoPath);
@@ -91,7 +91,7 @@ namespace SwarmSight.VideoPlayer
             _settings = new ConvertSettings
             {
                 VideoFrameSize = PlayerOutputWidth + "x" + PlayerOutputHeight,
-                CustomOutputArgs = " -pix_fmt bgr24 "
+                CustomOutputArgs = " -pix_fmt bgr24 " + customArgs,
             };
 
             //Set start time

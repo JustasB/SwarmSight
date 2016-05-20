@@ -19,7 +19,7 @@ namespace SwarmSight.HeadPartsTracking.Models
         public const int HeadWidth = 44;
         public const int HeadHeight = 47;
         public const int HeadLength = 35;//43; //Front to back distance of the head template
-        public const int ScapeDistance = 17;
+        //public const int ScapeDistance = 17;
         public const int HeadOffsetX = 19;
         public const int HeadOffsetY = 18;
 
@@ -75,73 +75,9 @@ namespace SwarmSight.HeadPartsTracking.Models
                 return headAlone;
             }
         }
-
-        public Frame DrawGPU()
-        {
-            int headHeight, headWidth, headTopY, midLineX = Width / 2;
-            
-            var result = PlainHeadGPU.Clone();
-            
-            
-            headHeight = HeadTemplate.Height;
-            headWidth = HeadTemplate.Width;
-            headTopY = (Height - headHeight) / 2;
-
-            var segments = new List<LineSegment>();
-
-            //Mandibles
-            //DrawMandible(midLineX, headTopY, gfx, flip: true); //Right
-            //DrawMandible(midLineX, headTopY, gfx); //Left
-
-            //Proboscis
-            //DrawProboscis(midLineX, headTopY, gfx);
-
-            //Antenae;
-            var headCenterY = headTopY + (headHeight / 2);
-
-            //Right antena
-            if (Head.RightAntena.Tip.Length > 0)
-            {
-                var rightRootStart = GetAntenaStart(midLineX, headCenterY, Head.RightAntena);
-                var rightRootEnd = GetAntenaRootEnd(rightRootStart, Head.RightAntena);
-                var rightTipEnd = GetAntenaTipEnd(rightRootEnd, Head.RightAntena);
-                segments.Add(new LineSegment
-                    {
-                        Thickness = (int)Head.RightAntena.Tip.Thickness,
-                        Start = rightRootEnd,
-                        End = rightTipEnd
-                    });
-            }
-
-            //Left antena
-            if (Head.LeftAntena.Tip.Length > 0)
-            {
-                var leftRootStart = GetAntenaStart(midLineX, headCenterY, Head.LeftAntena, true);
-                var leftRootEnd = GetAntenaRootEnd(leftRootStart, Head.LeftAntena, true);
-                var leftTipEnd = GetAntenaTipEnd(leftRootEnd, Head.LeftAntena, true);
-                segments.Add(new LineSegment
-                    {
-                        Thickness = (int)Head.LeftAntena.Tip.Thickness,
-                        Start = leftRootEnd,
-                        End = leftTipEnd
-                    });
-            }
-
-            //Draw segments all at once
-            result.DrawSegmentsGPU(segments);
-
-            throw new NotImplementedException();
-            if (Head.Angle != 0 || Head.ScaleX != 1 || Head.ScaleY != 1)
-                return result.RotateScaleGPU(Head.Angle, Head.ScaleX);
-
-            else
-                return result;
-        }
-
+        
         public Frame Draw(bool storeOnGPU)
         {
-            if (storeOnGPU)
-                return DrawGPU();
 
             var result = new Bitmap(Width, Height, PixelFormat.Format24bppRgb);
 

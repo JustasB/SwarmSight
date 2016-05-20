@@ -7,7 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Accord.MachineLearning.VectorMachines;
+//using Accord.MachineLearning.VectorMachines;
 using SwarmSight.Filters;
 using System.Text;
 using System.Linq;
@@ -15,9 +15,10 @@ using System.Runtime.InteropServices;
 using SwarmSight.VideoPlayer;
 using SwarmSight.HeadPartsTracking.Algorithms;
 using SwarmSight.HeadPartsTracking.Models;
-using AForge.Neuro;
+//using AForge.Neuro;
 using Classes;
 using System.Windows.Media.Media3D;
+using Settings;
 
 namespace SwarmSight.HeadPartsTracking
 {
@@ -29,40 +30,6 @@ namespace SwarmSight.HeadPartsTracking
             public Point Tip { get; set; }
             public int LineX { get; set; }
         }
-
-        public static class Config
-        {
-            public static double ShapeWeight = 1;
-            public static double MotionWeight = 5;
-            public static double ColorWeight = 0.2;
-
-            public static int MotionThreshold = 20;
-
-            public static float ContrastSteepness = 1f;
-            public static float ContrastShift = 10f;
-
-            public static int AntennaGenerations = 5;
-            public static int AntennaGenerationSize = 25;
-
-            public static int HeadGenerations = 10;
-            public static int HeadGenerationSize = 50;
-
-            public static List<Color> AntennaColors = new List<Color>
-            {
-
-                Color.FromArgb(29, 29, 17),
-                Color.FromArgb(147, 120, 128),
-            };
-            public static int ColorDistance = 40;
-
-
-            public static bool ShowModel = true;
-            public static bool ShowMotionData = true;
-            public static bool ShowShapeData = true;
-            public static bool ShowColorData = true;
-        }
-
-        private Frame _prevFrame;
 
         private static readonly HeadSearchAlgorithm HeadSearchAlgo = new HeadSearchAlgorithm();
         private static readonly AntennaSearchAlgorithm LeftAntenaSearchAlgo = new LeftAntennaSearchAlgorithm();
@@ -83,31 +50,32 @@ namespace SwarmSight.HeadPartsTracking
         }
 
         public StringBuilder sb = new StringBuilder("t, x, y" + Environment.NewLine);
-        double prevProbX = 0;
-        double prevProbY = 0;
-
-        LinkedList<Frame> pastFrames = new LinkedList<Frame>();
-        private int pastFramesNeeded = 2;
-        private AntenaParams prevAntenaModel;
+        Queue<Frame> pastFrames = new Queue<Frame>();
+        private int pastFramesNeeded = 3;
         HeadSearchAlgorithm headFinder = new HeadSearchAlgorithm();
         FastAntennaSearchAlgorithm aa = new FastAntennaSearchAlgorithm();
-        public HeadModel BestHead = null;
-        private int frameIndex = 0;
+        public Dictionary<int, AntenaPoints> frameData = new Dictionary<int, AntenaPoints>();
 
-
-        public List<string> dataFrame = new List<string>(); 
+        //public List<string> dataFrame = new List<string>(); //for buzzer
         public override object OnProcessing(Frame rawFrame)
         {
             var result = new FrameComparerResults();
 
-            var antenaPoints = FastFindAnetana(ref rawFrame, BestHead.Origin, BestHead.Dimensions, BestHead.Angle,
-                                                BestHead.ScaleX, BestHead.ScaleY);
+            
+            var antenaPoints = FastFindAnetana(
+                ref rawFrame,
+                new Point(AppSettings.Default.HeadX, AppSettings.Default.HeadY),
+                new Point(AppSettings.Default.HeadW, AppSettings.Default.HeadH),
+                AppSettings.Default.HeadAngle,
+                AppSettings.Default.HeadScale, AppSettings.Default.HeadScale,
+                AppSettings.Default.ScapeDistanceAtScale1
+            );
 
 
-            //var buzzer = rawFrame.GetColor(new System.Drawing.Point(344, 47)).R;
-            var buzzer = rawFrame.GetColor(new System.Drawing.Point(261,49)).GetBrightness();
 
-            dataFrame.Add(rawFrame.FrameIndex + "," + buzzer + "," + aa.LeftHighest + "," + aa.RightHighest);
+            //var buzzer = rawFrame.GetColor(new System.Drawing.Point(261,49)).GetBrightness();
+
+            //dataFrame.Add(rawFrame.FrameIndex + "," + buzzer + "," + aa.LeftHighest + "," + aa.RightHighest);
 
             //if(ll.DebugFrame != null && aa.DebugFrame != null)
             //{
@@ -118,39 +86,81 @@ namespace SwarmSight.HeadPartsTracking
             //        comb.Bitmap.Save(@"c:\temp\frames\" + rawFrame.FrameIndex + ".jpg", ImageFormat.Jpeg);
             //    }
             //}
-            
+
             //var antenaPoints = (AntenaPoints)null;
-            
-            using (var g = Graphics.FromImage(rawFrame.Bitmap))
+
+            //Show the prev frame
+            result.Frame = pastFrames.Count > 1 ? pastFrames.ElementAt(1).Clone() : rawFrame;
+
+            if (antenaPoints != null)
             {
-                var yellow = new Pen(Color.Yellow, 1);
+                antenaPoints.Buzzer = rawFrame.GetColor(new System.Drawing.Point(333, 28)).R;
+
+                frameData[result.Frame.FrameIndex] = antenaPoints;
+            }
+            //if(AppSettings.De)
+
+            if(AppSettings.Default.ShowMotion)
+                result.Frame.ColorPixels(aa.AntennaPoints.Select(p => p.Moved(AppSettings.Default.HeadX,AppSettings.Default.HeadY)).ToList(), Color.White);
+
+            if (AppSettings.Default.ShowSectors)
+            {
+                foreach (var sectors in aa.PrevSectors)
+                {
+                    result.Frame.MarkSectors(
+                        sectors: sectors.Value, 
+                        headCtrX: AppSettings.Default.HeadX + AppSettings.Default.Dimensions.X/2, 
+                        headCtrY: AppSettings.Default.HeadY + AppSettings.Default.Dimensions.Y/2, 
+                        headHeight: AppSettings.Default.Dimensions.Y,
+                        headAngle: AppSettings.Default.HeadAngle, 
+                        isRight: sectors.Key == PointLabels.RightSectorData
+                    );
+                }
+            }
+            using (var g = Graphics.FromImage(result.Frame.Bitmap))
+            {
+                var yellow5 = new Pen(Color.Yellow, 3);
+                var blue7 = new Pen(Color.Blue, 5);
                 var red = new Pen(Color.Red, 1);
                 var black = new Pen(Color.Black, 1);
 
                 if (antenaPoints != null)
                 {
-                    g.DrawLines(yellow, new[]
+
+                    g.DrawLines(blue7, new[]
                     {
-                        antenaPoints.RS.Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF(),
-                        antenaPoints.RFB.Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF(),
-                        antenaPoints.RFT.Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()
+                        //antenaPoints.RS.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.RFB.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.RFT.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()
                     });
-                    g.DrawLines(yellow, new[]
+                    g.DrawLines(blue7, new[]
                     {
-                        antenaPoints.LS.Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF(),
-                        antenaPoints.LFB.Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF(),
-                        antenaPoints.LFT.Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()
+                        //antenaPoints.LS.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.LFB.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.LFT.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()
+                    });
+                    g.DrawLines(yellow5, new[]
+                    {
+                        //antenaPoints.RS.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.RFB.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.RFT.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()
+                    });
+                    g.DrawLines(yellow5, new[]
+                    {
+                        //antenaPoints.LS.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.LFB.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF(),
+                        antenaPoints.LFT.Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()
                     });
                 }
 
-                if(FastAntennaSearchAlgorithm.ConvexHulls != null)
+                if(FastAntennaSearchAlgorithm.ConvexHullsPrior != null)
                 { 
-                    var headBoundary = FastAntennaSearchAlgorithm.ConvexHulls[PointLabels.Head].Select(p => aa.ToFrameSpace(p).Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()).ToArray();
-                    var mouthBoundary = FastAntennaSearchAlgorithm.ConvexHulls[PointLabels.Mandibles].Select(p => aa.ToFrameSpace(p).Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()).ToArray();
-                    var left = FastAntennaSearchAlgorithm.ConvexHulls[PointLabels.LeftFlagellumTip].Select(p => aa.ToFrameSpace(p).Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()).ToArray();
-                    var right = FastAntennaSearchAlgorithm.ConvexHulls[PointLabels.RightFlagellumTip].Select(p => aa.ToFrameSpace(p).Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()).ToArray();
-                    var rightJ = FastAntennaSearchAlgorithm.ConvexHulls[PointLabels.RightFlagellumBase].Select(p => aa.ToFrameSpace(p).Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()).ToArray();
-                    var leftJ = FastAntennaSearchAlgorithm.ConvexHulls[PointLabels.LeftFlagellumBase].Select(p => aa.ToFrameSpace(p).Moved(BestHead.Origin.X, BestHead.Origin.Y).ToPointF()).ToArray();
+                    var headBoundary = FastAntennaSearchAlgorithm.ConvexHullsPrior[PointLabels.Head].Select(p => aa.ToHeadSpace(p).Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()).ToArray();
+                    var mouthBoundary = FastAntennaSearchAlgorithm.ConvexHullsPrior[PointLabels.Mandibles].Select(p => aa.ToHeadSpace(p).Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()).ToArray();
+                    var left = FastAntennaSearchAlgorithm.ConvexHullsPrior[PointLabels.LeftFlagellumTip].Select(p => aa.ToHeadSpace(p).Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()).ToArray();
+                    var right = FastAntennaSearchAlgorithm.ConvexHullsPrior[PointLabels.RightFlagellumTip].Select(p => aa.ToHeadSpace(p).Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()).ToArray();
+                    var rightJ = FastAntennaSearchAlgorithm.ConvexHullsPrior[PointLabels.RightFlagellumBase].Select(p => aa.ToHeadSpace(p).Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()).ToArray();
+                    var leftJ = FastAntennaSearchAlgorithm.ConvexHullsPrior[PointLabels.LeftFlagellumBase].Select(p => aa.ToHeadSpace(p).Moved(AppSettings.Default.Origin.X, AppSettings.Default.Origin.Y).ToPointF()).ToArray();
                 
 
 
@@ -163,35 +173,33 @@ namespace SwarmSight.HeadPartsTracking
                 }
                 g.DrawPolygon(black, new[]
                 {
-                    BestHead.Origin.ToPointF(),
-                    BestHead.Origin.Moved(BestHead.Dimensions.X, 0).ToPointF(),
-                    BestHead.Origin.Moved(BestHead.Dimensions.X, BestHead.Dimensions.Y).ToPointF(),
-                    BestHead.Origin.Moved(0, BestHead.Dimensions.Y).ToPointF()
+                    AppSettings.Default.Origin.ToPointF(),
+                    AppSettings.Default.Origin.Moved(AppSettings.Default.HeadW, 0).ToPointF(),
+                    AppSettings.Default.Origin.Moved(AppSettings.Default.HeadW, AppSettings.Default.HeadH).ToPointF(),
+                    AppSettings.Default.Origin.Moved(0, AppSettings.Default.HeadH).ToPointF()
                 });
             }
-
-            //Show the prev frame
-            if(pastFrames.Count > 1)
-                rawFrame = pastFrames.ElementAt(1);
 
             return result;
         }
 
-        public void Reset()
-        {
-            if (_prevFrame != null)
-            {
-                _prevFrame.Dispose();
-                //_prevFrame = null;
-            }
-        }
-
         private List<Point3D> leftTips3D = new List<Point3D>();
         private FastAntennaSearchAlgorithm ll = new FastAntennaSearchAlgorithm();
-        public AntenaPoints FastFindAnetana(ref Frame rawFrame, Point origin, Point dims, double angle, double scaleX, double scaleY)
+        public AntenaPoints FastFindAnetana(ref Frame rawFrame, Point origin, Point dims, double angle, double scaleX, double scaleY, double scapeDist)
         {
-            var rawClone = rawFrame.Clone();
             var antenaPoints = (AntenaPoints)null;
+
+            //Discard duplicate frames
+            if (pastFrames.Count == 0 || rawFrame.IsDifferentFrom(pastFrames.Last()))
+                pastFrames.Enqueue(rawFrame.Clone());
+
+            //Remove old frames
+            if (pastFrames.Count > pastFramesNeeded)
+            {
+                var trash = pastFrames.Dequeue();
+                trash.Dispose();
+                trash = null;
+            }
 
             if (pastFrames.Count >= pastFramesNeeded)
             {
@@ -200,56 +208,24 @@ namespace SwarmSight.HeadPartsTracking
                 aa.ScaleY = scaleY;
                 aa.HeadOffset = origin;
                 aa.HeadDims = dims;
+                aa.ScapeDistanceAtScale1 = scapeDist;
                 aa.EvalExpected = true;
 
                 antenaPoints = aa.Search(new FrameCollection()
                 {
-                    Current = rawClone,
-                    Prev1 = pastFrames.Last.Value,
-                    Prev2 = pastFrames.First.Value
+                    Current = pastFrames.ElementAt(2),
+                    Prev1 = pastFrames.ElementAt(1),
+                    Prev2 = pastFrames.ElementAt(0)
                 });
-
-                //3d points
-                ////var leftSide = new Rect(34, 107, 166, 166);
-                //ll.HeadAngle = angle;
-                //ll.ScaleX = 166.0 / 332.0;
-                //ll.ScaleY = 166.0 / 332.0;
-                //ll.HeadOffset = new Point(34, 107);
-                //ll.HeadDims = new Point(166,166);
-                //ll.MotionModelThreshold = 35;
-                ////ll.TopViewLeft = antenaPoints.LFT;
-
-                //var leftPoints = ll.Search(new FrameCollection()
-                //{
-                //    Current = rawClone,
-                //    Prev1 = pastFrames.Last.Value,
-                //    Prev2 = pastFrames.First.Value
-                //});
-
-                //var TLcomb = PointExtensions.CombineMirrorPoints(antenaPoints.LFT, leftPoints.LFT, 10, 10);
-
-                //leftTips3D.Add(TLcomb);
             }
-
-            //if (leftTips3D.Count % 500 == 0 && leftTips3D.Count > 0)
-            //    File.WriteAllLines(@"Y:\downloads\beevids\leftTip3D.csv", leftTips3D.Select(p => string.Join(",", new[] { p.X, p.Y, p.Z })));
-
-            pastFrames.AddLast(rawClone);
-
-            if (pastFrames.Count > pastFramesNeeded)
-            {
-                var oldestFrame = pastFrames.First;
-                oldestFrame.Value.Dispose();
-                pastFrames.Remove(oldestFrame);
-                oldestFrame.Value = null;
-            }
+            
 
             return antenaPoints;
         }
 
         private void DecorateAntena(Frame rawFrame, Point origin, Frame combo)
         {
-            combo.ColorPixels(aa.TargetPoints.Select(p => aa.ToFrameSpace(p)).ToList(), Color.Blue);
+            combo.ColorPixels(aa.TargetPoints.Select(p => aa.ToHeadSpace(p)).ToList(), Color.Blue);
 
 
             //Draw prior space
@@ -257,35 +233,35 @@ namespace SwarmSight.HeadPartsTracking
             {
                 //Prior origin and axes
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-200, 0)),
-                    aa.ToFrameSpace(new System.Windows.Point(200, 0)));
+                    aa.ToHeadSpace(new System.Windows.Point(-200, 0)),
+                    aa.ToHeadSpace(new System.Windows.Point(200, 0)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-200, -50)),
-                    aa.ToFrameSpace(new System.Windows.Point(200, -50)));
+                    aa.ToHeadSpace(new System.Windows.Point(-200, -50)),
+                    aa.ToHeadSpace(new System.Windows.Point(200, -50)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-200, 50)),
-                    aa.ToFrameSpace(new System.Windows.Point(200, 50)));
+                    aa.ToHeadSpace(new System.Windows.Point(-200, 50)),
+                    aa.ToHeadSpace(new System.Windows.Point(200, 50)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(0, -200)),
-                    aa.ToFrameSpace(new System.Windows.Point(0, 200)));
+                    aa.ToHeadSpace(new System.Windows.Point(0, -200)),
+                    aa.ToHeadSpace(new System.Windows.Point(0, 200)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(50, -200)),
-                    aa.ToFrameSpace(new System.Windows.Point(50, 200)));
+                    aa.ToHeadSpace(new System.Windows.Point(50, -200)),
+                    aa.ToHeadSpace(new System.Windows.Point(50, 200)));
 
                 g.DrawLine(new Pen(Color.Red, 1),
-                    aa.ToFrameSpace(new System.Windows.Point(-50, -200)),
-                    aa.ToFrameSpace(new System.Windows.Point(-50, 200)));
+                    aa.ToHeadSpace(new System.Windows.Point(-50, -200)),
+                    aa.ToHeadSpace(new System.Windows.Point(-50, 200)));
 
                 //All the hulls
-                foreach (var hull in FastAntennaSearchAlgorithm.ConvexHulls.Keys)
+                foreach (var hull in FastAntennaSearchAlgorithm.ConvexHullsPrior.Keys)
                 {
                     var hullPts = FastAntennaSearchAlgorithm
-                        .ConvexHulls[hull]
-                        .Select(v => aa.ToFrameSpace(v))
+                        .ConvexHullsPrior[hull]
+                        .Select(v => aa.ToHeadSpace(v))
                         .ToArray();
 
                     if (hullPts.Length > 2)
@@ -295,6 +271,7 @@ namespace SwarmSight.HeadPartsTracking
 
             rawFrame.DrawFrame(combo, origin.X, origin.Y, alpha: 0.4, threshold: 0);
         }
+
 
 
         //public object FindAnetana(Frame rawFrame)

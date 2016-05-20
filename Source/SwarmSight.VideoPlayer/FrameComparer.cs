@@ -18,9 +18,11 @@ namespace SwarmSight.VideoPlayer
         public FrameRenderer Renderer;
         public EventHandler<FrameComparisonArgs> FrameCompared;
         public EventHandler<EventArgs> Stopped;
-
+        
         public bool IsPaused;
+
         private Thread _bufferMonitor;
+        private bool _canPlayNext = true; //used for playing one frame at a time
 
         public FrameComparer(VideoDecoder decoder, FrameRenderer renderer)
         {
@@ -101,7 +103,8 @@ namespace SwarmSight.VideoPlayer
                 if (Decoder.IsBufferReady &&
                     Decoder.FramesInBuffer &&
                     Decoder.FrameBuffer.First != null &&
-                    Decoder.FrameBuffer.First.Value.IsDecoded)
+                    Decoder.FrameBuffer.First.Value.IsDecoded &&
+                    _canPlayNext)
                 {
                     var currentFrame = Decoder.FrameBuffer.First.Value;
 
@@ -123,7 +126,7 @@ namespace SwarmSight.VideoPlayer
                     //Add frame to rendering queue
                     Renderer.Queue.AddLast(new ComparedFrame()
                     {
-                        Frame = currentFrame,
+                        Frame = compareResult.Frame,
                         ComparerResults = compareResult,
                     });
                 }
