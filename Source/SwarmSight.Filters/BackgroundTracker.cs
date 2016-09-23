@@ -13,26 +13,25 @@ namespace SwarmSight.Filters
         public Frame Model;
         public int Size;
 
-        protected Queue<Frame> frames;
+        protected FrameBuffer frames;
 
         public Background(int size)
         {
-            frames = new Queue<Frame>(size);
             Size = size;
         }
 
         public void Append(Frame frame)
         {
+            if(frames == null)
+                frames = new FrameBuffer(Size, frame.Width, frame.Height);
+
             //Check if over-sized
             if (frames.Count == Size)
             {
-                var discard = frames.Dequeue();
-
                 //Remove the frame values from the model
-                AddToModel(discard, -1);
+                AddToModel(frames.First, -1);
 
-                discard.Dispose();
-                discard = null;
+                frames.RemoveFirst();
             }
 
             frames.Enqueue(frame);
@@ -99,9 +98,9 @@ namespace SwarmSight.Filters
 
         }
         
-        private int[,,,] histograms = null;
+        private int[][][][] histograms = null;
         private int frameCount = 0;
-        private double[,,] medianBinOffset;
+        private double[][][] medianBinOffset;
 
         protected override unsafe void AddToModel(Frame frame, int sign)
         {
@@ -111,14 +110,14 @@ namespace SwarmSight.Filters
             if (Model == null)
             {
                 Model = new Frame(width, height, frame.PixelFormat, false);
-                histograms = new int[height, width, 3, 256];
-                medianBinOffset = new double[height, width, 3];
+                histograms = FrameFilterExtensions.CreateJaggedArray<int[][][][]>(height, width, 3, 256);
+                medianBinOffset = FrameFilterExtensions.CreateJaggedArray<double[][][]>(height, width, 3);
 
                 //Start at -0.5 -> to make the first frame the median
-                for (int i = 0; i < medianBinOffset.GetLength(0); i++)
-                    for (int j = 0; j < medianBinOffset.GetLength(1); j++)
-                        for (int c = 0; c < medianBinOffset.GetLength(2); c++)
-                            medianBinOffset[i, j, c] = -0.5;
+                for (int i = 0; i < medianBinOffset.Length; i++)
+                    for (int j = 0; j < medianBinOffset[i].Length; j++)
+                        for (int c = 0; c < medianBinOffset[i][j].Length; c++)
+                            medianBinOffset[i][j][c] = -0.5;
             }
 
             var modelFirstPx = Model.FirstPixelPointer;
@@ -141,6 +140,8 @@ namespace SwarmSight.Filters
             {
                 var modelRowStart = modelFirstPx + y * modelStride;
                 var newFrameRowStart = newFrameFirstPx + y * newFrameStride;
+                var histY = histograms[y];
+                var medianBinOffsetY = medianBinOffset[y];
 
                 for (var x = width - 1; x >= 0 ; x--)
                 {
@@ -148,20 +149,31 @@ namespace SwarmSight.Filters
                     var modelPxAddr = modelRowStart + x3;
                     var newFramePxAddr = newFrameRowStart + x3;
 
+                    var newFramePxIntVal = *(int*)newFramePxAddr;
+                    var modelPxIntVal = *(int*)modelPxAddr;
+                    var histYX = histY[x];
+                    var medianBinOffsetYX = medianBinOffsetY[x];
+
                     //For every color channel, update their medians, by 
                     //updating the locations of the halfway points
                     for (var c = 2; c >= 0; c--)
                     {
+                        var cshift = 8 * c;
+                        var histYXC = histYX[c];
+
                         //Get the new color value
-                        var newColorValue = *(newFramePxAddr + c);
+                        //var newColorValue = newFramePxAddr[c];
+                        var newColorValue = (newFramePxIntVal >> cshift) & 0xff;
 
                         //Update the histogram
-                        histograms[y, x, c, newColorValue] += multiplier;
+                        histYXC[newColorValue] += multiplier;
 
                         //Update the halfway-point
-                        var currBin = *(modelPxAddr + c); //The model contains the medians
+                        //var currBin = modelPxAddr[c]; //The model contains the medians
+                        var currBin = (modelPxIntVal >> cshift) & 0xff;
+
                         var halfwayMovedBy = (newColorValue < currBin ? -0.5 : 0.5)*multiplier;
-                        var newOffset = medianBinOffset[y,x,c] + halfwayMovedBy;
+                        var newOffset = medianBinOffsetYX[c] + halfwayMovedBy;
                         
 
                         //No move if added to existing median bin
@@ -170,7 +182,7 @@ namespace SwarmSight.Filters
                             //NOTE: Treating offset value of BinCount-0.5 as between Bin and Bin+1;
 
                             //If added to after or current, and no longer in the current bin, go to the next one
-                            if (halfwayMovedBy > 0 && newOffset > histograms[y, x, c, currBin] - 0.5)
+                            if (halfwayMovedBy > 0 && newOffset > histYXC[currBin] - 0.5)
                             {
                                 newOffset = 0;
 
@@ -179,9 +191,9 @@ namespace SwarmSight.Filters
                                 {
                                     currBin++;
                                 }
-                                while (histograms[y, x, c, currBin] == 0);
+                                while (histYXC[currBin] == 0);
 
-                                *(modelPxAddr + c) = currBin;
+                                *(modelPxAddr + c) = (byte)currBin;
                             }
 
                             //If added to befor, and no longer in the current bin, go to the previous one
@@ -193,24 +205,20 @@ namespace SwarmSight.Filters
                                 do
                                 {
                                     currBin--;
-                                    binCount = histograms[y, x, c, currBin];
+                                    binCount = histYXC[currBin];
                                 }
                                 while (binCount == 0);
                                 
                                 newOffset = binCount - 0.5;
 
-                                *(modelPxAddr + c) = currBin;
+                                *(modelPxAddr + c) = (byte)currBin;
                             }
                         }
 
-                        medianBinOffset[y, x, c] = newOffset;
+                        medianBinOffsetYX[c] = newOffset;
                     }
                 }
             });
-
-            //frameCount++;
-            //if (frameCount <= Size  || frameCount % Size == 0)
-            //    UpdateModel();
         }
         
 

@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SwarmSight.VideoPlayer</RootNamespace>
     <AssemblyName>SwarmSight.VideoPlayer</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -53,10 +54,16 @@
   <ItemGroup>
     <Compile Include="BitmapManipulator.cs" />
     <Compile Include="ComparedFrame.cs" />
-    <Compile Include="FrameBuffer.cs" />
     <Compile Include="FrameComparer.cs" />
     <Compile Include="FrameComparerResults.cs" />
     <Compile Include="FrameRenderer.cs" />
+    <Compile Include="Pipeline\ProcessorWorker.cs" />
+    <Compile Include="Pipeline\PipelineSupervisor.cs" />
+    <Compile Include="Pipeline\PipelineWorker.cs" />
+    <Compile Include="Pipeline\RendererWorker.cs" />
+    <Compile Include="Pipeline\VideoPipeline.cs" />
+    <Compile Include="Pipeline\VideoSupervisor.cs" />
+    <Compile Include="Pipeline\WorkState.cs" />
     <Compile Include="VideoDecoder.cs" />
     <Compile Include="EventClasses.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -79,6 +86,7 @@
       <Name>SwarmSight.Hardware</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,0 +1,16 @@
+﻿<UserControl x:Class="SwarmSight.UserControls.SectorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SwarmSight.UserControls"
+             mc:Ignorable="d" 
+             d:DesignHeight="120" d:DesignWidth="120">
+    <Grid Background="White" Opacity="0.5">
+        <Image x:Name="image" Margin="10,0" Width="100" Height="100" VerticalAlignment="Bottom"/>
+        <Label x:Name="label" Content="Dominant Sectors" HorizontalAlignment="Center" Margin="8,-4,8,0" VerticalAlignment="Top" Height="24"/>
+        <Label x:Name="rightDomSec" Content="2" HorizontalAlignment="Right" Height="26" VerticalAlignment="Bottom"/>
+        <Label x:Name="leftDomSec" Content="4" HorizontalAlignment="Left" Width="16" Height="26" VerticalAlignment="Bottom"/>
+
+    </Grid>
+</UserControl>

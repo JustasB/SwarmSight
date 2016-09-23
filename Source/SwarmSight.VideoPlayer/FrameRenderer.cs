@@ -11,8 +11,8 @@ namespace Classes
 {
     public class FrameRenderer
     {
+        public VideoDecoder Decoder;
         public EventHandler<OnFrameReady> FrameReady;
-        public FrameBuffer<ComparedFrame> Queue;
         public int ShadeRadius = 1;
         public bool ShowMotion = true;
 
@@ -22,7 +22,6 @@ namespace Classes
         public FrameRenderer()
         {
             _shader = new PixelShader();
-            Queue = new FrameBuffer<ComparedFrame>();
         }
 
         public void Start()
@@ -51,55 +50,20 @@ namespace Classes
             }
         }
 
-        public void ClearBuffer()
-        {
-            //Clear the queue
-            foreach (var frame in Queue)
-            {
-                frame.Frame.Dispose();
-            }
-
-            Queue.Clear();
-        }
-
         private void RenderFrames()
         {
             while (true)
             {
                 try
                 {
-                    if (Queue.Count > 0)
+                    if (Decoder.FrameBuffer.Count > 0 && Decoder.FrameBuffer.First.IsProcessed)
                     {
-                        //If more than one frame in queue, skip the earlier ones
-                        //while (Queue.Count > 1)
-                        //{
-                        //    var skipFrame = Queue.First;
-                        //    skipFrame.Value.Frame.Dispose();
-                        //    Queue.Remove(skipFrame);
-                        //}
-
-                        var comparedFrame = Queue.First;
-
-                        //Shade if motion is visible
-                        if (ShowMotion)
-                        {
-                            if (comparedFrame == null)
-                                continue;
-
-                            if (comparedFrame.Value.ComparerResults != null)
-                                _shader.Shade
-                                    (
-                                        comparedFrame.Value.Frame,
-                                        comparedFrame.Value.ComparerResults.ChangedPixels,
-                                        ShadeRadius
-                                    );
-                        }
+                        var comparedFrame = Decoder.FrameBuffer.First;
 
                         if (FrameReady != null)
-                            FrameReady(this, new OnFrameReady() {Frame = comparedFrame.Value.Frame});
+                            FrameReady(this, new OnFrameReady() {Frame = comparedFrame});
 
-                        comparedFrame.Value.Frame.Dispose();
-                        Queue.Remove(comparedFrame);
+                        Decoder.FrameBuffer.RemoveFirst();
                     }
                     else
                     {

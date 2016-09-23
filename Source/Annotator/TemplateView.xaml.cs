@@ -12,22 +12,22 @@ namespace SwarmSight
     {
         public Dictionary<string, string> TemplatePaths = new Dictionary<string, string>()
         {
-            { "Left Mandible Base", "Assets/LeftMandibleBase.jpg" },
-            { "Left Mandible Tip", "Assets/LeftMandibleTip.jpg" },
+            //{ "Left Mandible Base", "Assets/LeftMandibleBase.jpg" },
+            //{ "Left Mandible Tip", "Assets/LeftMandibleTip.jpg" },
 
-            { "Right Mandible Base", "Assets/RightMandibleBase.jpg" },
-            { "Right Mandible Tip", "Assets/RightMandibleTip.jpg" },
+            //{ "Right Mandible Base", "Assets/RightMandibleBase.jpg" },
+            //{ "Right Mandible Tip", "Assets/RightMandibleTip.jpg" },
 
-            { "Dorsal Edge of the Right Eye", "Assets/RightEyeEdge.jpg" },
-            { "Dorsal Edge of the Left Eye", "Assets/LeftEyeEdge.jpg" },
+            //{ "Dorsal Edge of the Right Eye", "Assets/RightEyeEdge.jpg" },
+            //{ "Dorsal Edge of the Left Eye", "Assets/LeftEyeEdge.jpg" },
 
             { "Left Flagellum Tip", "Assets/LeftTip.jpg" },
-            { "Left Flagellum Base", "Assets/LeftJoint.jpg" },
-            { "Left Scape", "Assets/LeftBase.jpg" },
+            //{ "Left Flagellum Base", "Assets/LeftJoint.jpg" },
+            //{ "Left Scape", "Assets/LeftBase.jpg" },
 
             { "Right Flagellum Tip", "Assets/RightTip.jpg" },
-            { "Right Flagellum Base", "Assets/RightJoint.jpg" },
-            { "Right Scape", "Assets/RightBase.jpg" },
+            //{ "Right Flagellum Base", "Assets/RightJoint.jpg" },
+            //{ "Right Scape", "Assets/RightBase.jpg" },
 
             { "Tip of Proboscis", "Assets/Proboscis.jpg" },
         };

@@ -49,30 +49,6 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("113")]
-        public int HeadW {
-            get {
-                return ((int)(this["HeadW"]));
-            }
-            set {
-                this["HeadW"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("113")]
-        public int HeadH {
-            get {
-                return ((int)(this["HeadH"]));
-            }
-            set {
-                this["HeadH"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public double Quality {
             get {
@@ -157,7 +133,7 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("60")]
+        [global::System.Configuration.DefaultSettingValueAttribute("24")]
         public double TipCrawlerRadius {
             get {
                 return ((double)(this["TipCrawlerRadius"]));
@@ -241,7 +217,7 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        [global::System.Configuration.DefaultSettingValueAttribute("6.3")]
         public double ScapeDistanceAtScale1 {
             get {
                 return ((double)(this["ScapeDistanceAtScale1"]));
@@ -320,6 +296,102 @@ namespace Settings {
             }
             set {
                 this["ShowSectors"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100, 100")]
+        public global::System.Drawing.Point TreatmentSensor {
+            get {
+                return ((global::System.Drawing.Point)(this["TreatmentSensor"]));
+            }
+            set {
+                this["TreatmentSensor"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ExclusionZones {
+            get {
+                return ((string)(this["ExclusionZones"]));
+            }
+            set {
+                this["ExclusionZones"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int FastThreshold {
+            get {
+                return ((int)(this["FastThreshold"]));
+            }
+            set {
+                this["FastThreshold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int SlowThreshold {
+            get {
+                return ((int)(this["SlowThreshold"]));
+            }
+            set {
+                this["SlowThreshold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("40")]
+        public int StationaryThreshold {
+            get {
+                return ((int)(this["StationaryThreshold"]));
+            }
+            set {
+                this["StationaryThreshold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VideoLabel {
+            get {
+                return ((string)(this["VideoLabel"]));
+            }
+            set {
+                this["VideoLabel"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AddExclusionMsgSeen {
+            get {
+                return ((bool)(this["AddExclusionMsgSeen"]));
+            }
+            set {
+                this["AddExclusionMsgSeen"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VideoLabelColumn {
+            get {
+                return ((string)(this["VideoLabelColumn"]));
+            }
+            set {
+                this["VideoLabelColumn"] = value;
             }
         }
     }

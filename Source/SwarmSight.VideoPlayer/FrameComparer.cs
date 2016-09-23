@@ -58,7 +58,6 @@ namespace SwarmSight.VideoPlayer
 
             //Cleanup buffers
             Decoder.ClearBuffer();
-            Renderer.ClearBuffer();
         }
 
         public void SeekTo(double percentLocation)
@@ -100,35 +99,34 @@ namespace SwarmSight.VideoPlayer
         {
             while (true)
             {
-                if (Decoder.IsBufferReady &&
-                    Decoder.FramesInBuffer &&
-                    Decoder.FrameBuffer.First != null &&
-                    Decoder.FrameBuffer.First.Value.IsDecoded &&
-                    _canPlayNext)
+                bool readyToCompare = false;
+
+                if(Decoder.FrameDecoder != null && Decoder.FrameBuffer != null)
+                    lock (Decoder.FrameBuffer)
+                    {
+                        readyToCompare = Decoder.IsBufferReady &&
+                            Decoder.FramesInBuffer &&
+                            Decoder.FrameBuffer.First != null &&
+                            Decoder.FrameBuffer.First.IsDecoded &&
+                            _canPlayNext;
+                    }
+
+                if (readyToCompare)
                 {
-                    var currentFrame = Decoder.FrameBuffer.First.Value;
+                    var currentFrame = Decoder.FrameBuffer.First;
 
                     if (!currentFrame.IsDecoded)
                         continue;
 
-                    var compareResult = (FrameComparerResults) Processor.OnProcessing(currentFrame);
-                        
-                    //Notify of comparison results
-                    if (FrameCompared != null)
-                        FrameCompared(this, new FrameComparisonArgs() {Results = compareResult});
+                    //Processor.OnProcessing(currentFrame);
                     
                     currentFrame.Watch.Stop();
 
-                    //Retain location
+                    //Retain location of last processed frame
                     MostRecentFrameIndex = currentFrame.FrameIndex;
-                    Decoder.FrameBuffer.Remove(currentFrame);
 
                     //Add frame to rendering queue
-                    Renderer.Queue.AddLast(new ComparedFrame()
-                    {
-                        Frame = compareResult.Frame,
-                        ComparerResults = compareResult,
-                    });
+                    currentFrame.IsProcessed = true;
                 }
                 else if (Decoder.AtEndOfVideo)
                 {

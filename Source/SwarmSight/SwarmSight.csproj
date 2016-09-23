@@ -9,14 +9,15 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SwarmSight</RootNamespace>
     <AssemblyName>SwarmSight</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>Y:\Documents\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\</PublishUrl>
+    <ApplicationReSight>1</ApplicationReSight>
+    <PublishUrl>Y:\Documents\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\Tracker\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
@@ -29,7 +30,7 @@
     <ProductName>SwarmSight</ProductName>
     <PublisherName>Justas Birgiolas</PublisherName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationReSight>1</ApplicationReSight>
+    <ApplicationRevision>11</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -69,6 +70,9 @@
   <PropertyGroup>
     <SignManifests>false</SignManifests>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>SwarmSight.WindowManager</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="OxyPlot">
       <HintPath>..\SwarmSight.Stats\OxyPlot.dll</HintPath>
@@ -79,32 +83,39 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
+    <Compile Include="Helpers\ExclusionZoneManager.cs" />
+    <Compile Include="UserControls\AntennaSensor.xaml.cs">
+      <DependentUpon>AntennaSensor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\ExclusionZone.xaml.cs">
+      <DependentUpon>ExclusionZone.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\FilterSlider.xaml.cs">
+      <DependentUpon>FilterSlider.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="WindowManager.xaml.cs">
+      <DependentUpon>WindowManager.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="BatchList.xaml.cs">
+      <DependentUpon>BatchList.xaml</DependentUpon>
     </Compile>
     <Compile Include="Helpers\MarginSetterHelper.cs" />
-    <Compile Include="ParameterSetter.xaml.cs">
-      <DependentUpon>ParameterSetter.xaml</DependentUpon>
-    </Compile>
     <Compile Include="UserControls\ComparisonChart.xaml.cs">
       <DependentUpon>ComparisonChart.xaml</DependentUpon>
     </Compile>
     <Compile Include="UserControls\ComparisonTable.xaml.cs">
       <DependentUpon>ComparisonTable.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UserControls\ReceptiveField.xaml.cs">
-      <DependentUpon>ReceptiveField.xaml</DependentUpon>
+    <Compile Include="UserControls\ModelView.xaml.cs">
+      <DependentUpon>ModelView.xaml</DependentUpon>
     </Compile>
     <Compile Include="UserControls\RegionOfInterest.xaml.cs">
       <DependentUpon>RegionOfInterest.xaml</DependentUpon>
@@ -112,22 +123,29 @@
     <Compile Include="UserControls\ResizeHandle.xaml.cs">
       <DependentUpon>ResizeHandle.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UserControls\VideoActivityChart.xaml.cs">
-      <DependentUpon>VideoActivityChart.xaml</DependentUpon>
-    </Compile>
-    <ApplicationDefinition Include="App.xaml">
+    <ApplicationDefinition Include="WindowManager.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
-    <Page Include="MainWindow.xaml">
+    <Compile Include="UserControls\SectorView.xaml.cs">
+      <DependentUpon>SectorView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\TreatmentSensor.xaml.cs">
+      <DependentUpon>TreatmentSensor.xaml</DependentUpon>
+    </Compile>
+    <Page Include="BatchList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ProcessorWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
+    <Compile Include="ProcessorWindow.xaml.cs">
+      <DependentUpon>ProcessorWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="ParameterSetter.xaml">
+    <Page Include="UserControls\AntennaSensor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -139,7 +157,15 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UserControls\ReceptiveField.xaml">
+    <Page Include="UserControls\ExclusionZone.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\FilterSlider.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\ModelView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -151,7 +177,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UserControls\VideoActivityChart.xaml">
+    <Page Include="UserControls\SectorView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\TreatmentSensor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -174,6 +204,15 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="Assets\Hulls\antenaPoints.xlsx" />
+    <None Include="Assets\Hulls\B1.csv" />
+    <None Include="Assets\Hulls\B2.csv" />
+    <None Include="Assets\Hulls\Bee1.csv" />
+    <Content Include="Assets\Hulls\convexHulls.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="Assets\Hulls\priorPoints.csv" />
+    <None Include="Assets\Hulls\PriorsAndHulls.R" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -229,10 +268,6 @@
     <ProjectReference Include="..\SwarmSight.Models\SwarmSight.HeadPartsTracking.csproj">
       <Project>{4092e9c4-b3fe-4c1a-9180-b07ba3210d02}</Project>
       <Name>SwarmSight.HeadPartsTracking</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SwarmSight.Stats\SwarmSight.Stats.csproj">
-      <Project>{d5640fc6-0344-43af-a30b-59f2c30d1a18}</Project>
-      <Name>SwarmSight.Stats</Name>
     </ProjectReference>
     <ProjectReference Include="..\SwarmSight.VideoPlayer\SwarmSight.VideoPlayer.csproj">
       <Project>{d9309e36-4008-4f68-b08f-9cc2cfbaa53a}</Project>

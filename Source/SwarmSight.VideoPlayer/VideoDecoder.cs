@@ -30,22 +30,35 @@ namespace SwarmSight.VideoPlayer
 
         private ConvertSettings _settings;
         private FFMpegConverter _filereader;
-        public FrameDecoder FrameDecoder;
+
         public VideoProcessorBase Processor;
+        public FrameDecoder FrameDecoder;
         private ConvertLiveMediaTask _readingTask;
         private Thread _readingThread;
+
+        public event EventHandler BufferInitialized;
 
         public bool FramesInBuffer
         {
             get
             {
-                return FrameDecoder != null &&
-                       FrameDecoder.FrameBuffer != null &&
-                       FrameDecoder.FrameBuffer.Count > 0;
+                if (FrameDecoder != null && FrameDecoder.FrameBuffer != null)
+                {
+                    lock(FrameDecoder.FrameBuffer)
+                    {
+                        return 
+                            FrameDecoder.FrameBuffer.Count > 0 &&
+                            FrameDecoder.FrameBuffer.First.IsDecoded;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
-        public FrameBuffer<Frame> FrameBuffer
+        public FrameBuffer FrameBuffer
         {
             get { return FrameDecoder.FrameBuffer; }
         }
@@ -58,6 +71,9 @@ namespace SwarmSight.VideoPlayer
         public void Open(string videoPath)
         {
             Stop();
+
+            if (VideoInfo != null && VideoPath == videoPath)
+                return;
 
             VideoPath = videoPath;
 
@@ -75,6 +91,9 @@ namespace SwarmSight.VideoPlayer
 
             _filereader = new FFMpegConverter();
 
+            if (FrameDecoder != null)
+                FrameDecoder.ClearBuffer();
+
             //Set the format of the output bitmap
             FrameDecoder = new FrameDecoder
             (
@@ -82,6 +101,9 @@ namespace SwarmSight.VideoPlayer
                 PlayerOutputHeight,
                 PixelFormat.Format24bppRgb
             );
+
+            if (BufferInitialized != null)
+                BufferInitialized(this, null);
 
             FrameDecoder.Processor = Processor;
             FrameDecoder.FrameReady += OnFrameReady;
@@ -185,9 +207,9 @@ namespace SwarmSight.VideoPlayer
             {
                 var result = FrameBuffer.First;
 
-                FrameBuffer.Remove(result);
+                FrameBuffer.RemoveFirst();
 
-                return result.Value;
+                return result;
             }
 
             return null;
@@ -244,6 +266,16 @@ namespace SwarmSight.VideoPlayer
         {
             if (FrameDecoder != null)
                 FrameDecoder.ClearBuffer();
+        }
+
+        public void ResetToBeginning()
+        {
+            ClearBuffer();
+            CurrentPercentage = 0;
+            CurrentFrame = 0;
+            CurrentTime = new TimeSpan();
+            IsPlaying = false;
+            IsBufferReady = false;
         }
 
         public void Dispose()

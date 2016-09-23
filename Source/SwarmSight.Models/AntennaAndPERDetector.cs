@@ -1,24 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-//using Accord.MachineLearning.VectorMachines;
+﻿using Classes;
+using Settings;
 using SwarmSight.Filters;
-using System.Text;
-using System.Linq;
-using System.Runtime.InteropServices;
-using SwarmSight.VideoPlayer;
 using SwarmSight.HeadPartsTracking.Algorithms;
 using SwarmSight.HeadPartsTracking.Models;
-//using AForge.Neuro;
-using Classes;
+using SwarmSight.VideoPlayer;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Text;
 using System.Windows.Media.Media3D;
-using Settings;
 
 namespace SwarmSight.HeadPartsTracking
 {
@@ -50,18 +41,30 @@ namespace SwarmSight.HeadPartsTracking
         }
 
         public StringBuilder sb = new StringBuilder("t, x, y" + Environment.NewLine);
-        Queue<Frame> pastFrames = new Queue<Frame>();
+        FrameBuffer pastFrames;
+        Frame resultFrame;
         private int pastFramesNeeded = 3;
         HeadSearchAlgorithm headFinder = new HeadSearchAlgorithm();
         FastAntennaSearchAlgorithm aa = new FastAntennaSearchAlgorithm();
         public Dictionary<int, AntenaPoints> frameData = new Dictionary<int, AntenaPoints>();
 
         //public List<string> dataFrame = new List<string>(); //for buzzer
-        public override object OnProcessing(Frame rawFrame)
+        public override void OnProcessing(Frame rawFrame)
         {
             var result = new FrameComparerResults();
 
-            
+            //var subd = rawFrame.SubClipped(201, 48, 233, 256);
+            //var larger = new Frame(233 + 10, 256 + 10, rawFrame.PixelFormat, false);
+            //larger.DrawFrame(subd, 5, 5, 1,0);
+
+            //larger.Bitmap.Save(@"Y:\Downloads\BeeVids\19Feb16-Start Hept Tests\B1-Feb19-2M-heptanal\" + rawFrame.FrameIndex + ".jpg", ImageFormat.Jpeg);
+
+            if (pastFrames == null)
+                pastFrames = new FrameBuffer(3, rawFrame.Width, rawFrame.Height);
+
+            if (resultFrame == null)
+                resultFrame = rawFrame.Clone();
+
             var antenaPoints = FastFindAnetana(
                 ref rawFrame,
                 new Point(AppSettings.Default.HeadX, AppSettings.Default.HeadY),
@@ -81,7 +84,7 @@ namespace SwarmSight.HeadPartsTracking
             //{
             //    using (var comb = new Frame(aa.DebugFrame.Width, aa.DebugFrame.Height + ll.DebugFrame.Height, aa.DebugFrame.PixelFormat, false))
             //    {
-            //        comb.DrawFrame(ll.DebugFrame, 0, 0, 1, 0);
+            //        comb.DrawFrame(ll.DebugFrame);
             //        comb.DrawFrame(aa.DebugFrame, 0, ll.DebugFrame.Height, 1, 0);
             //        comb.Bitmap.Save(@"c:\temp\frames\" + rawFrame.FrameIndex + ".jpg", ImageFormat.Jpeg);
             //    }
@@ -90,7 +93,8 @@ namespace SwarmSight.HeadPartsTracking
             //var antenaPoints = (AntenaPoints)null;
 
             //Show the prev frame
-            result.Frame = pastFrames.Count > 1 ? pastFrames.ElementAt(1).Clone() : rawFrame;
+            resultFrame.DrawFrame(pastFrames.Count > 1 ? pastFrames.GetNthAfterFirst(1) : rawFrame,0,0,1,0);
+            result.Frame = resultFrame;
 
             if (antenaPoints != null)
             {
@@ -113,10 +117,12 @@ namespace SwarmSight.HeadPartsTracking
                         headCtrY: AppSettings.Default.HeadY + AppSettings.Default.Dimensions.Y/2, 
                         headHeight: AppSettings.Default.Dimensions.Y,
                         headAngle: AppSettings.Default.HeadAngle, 
+                        color: Color.White,
                         isRight: sectors.Key == PointLabels.RightSectorData
                     );
                 }
             }
+
             using (var g = Graphics.FromImage(result.Frame.Bitmap))
             {
                 var yellow5 = new Pen(Color.Yellow, 3);
@@ -180,7 +186,9 @@ namespace SwarmSight.HeadPartsTracking
                 });
             }
 
-            return result;
+            rawFrame.DrawFrame(result.Frame);
+
+            return;
         }
 
         private List<Point3D> leftTips3D = new List<Point3D>();
@@ -190,16 +198,17 @@ namespace SwarmSight.HeadPartsTracking
             var antenaPoints = (AntenaPoints)null;
 
             //Discard duplicate frames
-            if (pastFrames.Count == 0 || rawFrame.IsDifferentFrom(pastFrames.Last()))
-                pastFrames.Enqueue(rawFrame.Clone());
-
-            //Remove old frames
-            if (pastFrames.Count > pastFramesNeeded)
+            if (pastFrames.Count == 0 || rawFrame.IsDifferentFrom(pastFrames.Last))
             {
-                var trash = pastFrames.Dequeue();
-                trash.Dispose();
-                trash = null;
+                //Remove old frames
+                if (pastFrames.Count >= pastFramesNeeded)
+                {
+                    pastFrames.RemoveFirst();
+                }
+
+                pastFrames.Enqueue(rawFrame);
             }
+            
 
             if (pastFrames.Count >= pastFramesNeeded)
             {
@@ -213,9 +222,9 @@ namespace SwarmSight.HeadPartsTracking
 
                 antenaPoints = aa.Search(new FrameCollection()
                 {
-                    Current = pastFrames.ElementAt(2),
-                    Prev1 = pastFrames.ElementAt(1),
-                    Prev2 = pastFrames.ElementAt(0)
+                    Current = pastFrames.GetNthAfterFirst(2),
+                    Prev1 = pastFrames.GetNthAfterFirst(1),
+                    Prev2 = pastFrames.GetNthAfterFirst(0)
                 });
             }
             

@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using System;
 using System.Diagnostics;
 
 namespace Settings {
-    
-    
+
+
     // This class allows you to handle specific events on the settings class:
     //  The SettingChanging event is raised before a setting's value is changed.
     //  The PropertyChanged event is raised after a setting's value is changed.
@@ -30,15 +32,14 @@ namespace Settings {
             timer.Stop();
         }
         
+        public string AsJSON()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
 
         public System.Drawing.Point Origin
         {
             get { return new System.Drawing.Point(HeadX,HeadY); }
-        }
-
-        public System.Drawing.Point Dimensions
-        {
-            get { return new System.Drawing.Point(HeadW, HeadH); }
         }
         
         /// <summary>
@@ -56,6 +57,18 @@ namespace Settings {
         
         private void SettingsSavingEventHandler(object sender, System.ComponentModel.CancelEventArgs e) {
             // Add code to handle the SettingsSaving event here.
+        }
+
+        public void LoadFromJSON(string paramsText)
+        {
+            JsonConvert.PopulateObject(paramsText, this,
+            new JsonSerializerSettings
+            {
+                Error = delegate (object sender, ErrorEventArgs args)
+                {
+                    args.ErrorContext.Handled = true;
+                },
+            });
         }
     }
 }

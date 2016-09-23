@@ -20,13 +20,11 @@ namespace SwarmSight.Filters
 {
     public unsafe static class FrameFilterExtensions
     {
-        public static void MarkSectors(this Frame target, double[] sectors, int headCtrX, int headCtrY, int headHeight, double headAngle, bool isRight = true)
+        public static void MarkSectors(this Frame target, double[] sectors, int headCtrX, int headCtrY, int headHeight, double headAngle, Color color, bool isRight = true)
         {
             var startingAngleRad = headAngle / 180.0 * PI;
             var sectorWidth = PI / sectors.Length;
             var radius = headHeight;
-            var penThick = new Pen(Color.Black, 3);
-            var penThin = new Pen(Color.LightGray, 1);
             var maxSectorValue = headCtrX * headHeight * 255 / sectors.Length;
             var maxBinValue = sectors.Max();
 
@@ -41,13 +39,10 @@ namespace SwarmSight.Filters
 
                     var endX = (float)(headCtrX + Sin(sectorAngle) * radius);
                     var endY = (float)(headCtrY - Cos(sectorAngle) * radius);
-
-                    //g.DrawLine(penThick, headCtrX, headCtrY, endX, endY);
-                    //g.DrawLine(penThin, headCtrX, headCtrY, endX, endY);
                     
                     if (s > 0 && (int)prevShade > 0)
                     {
-                        g.FillPolygon(new SolidBrush(Color.FromArgb((int)prevShade,255,255,255)), new[] 
+                        g.FillPolygon(new SolidBrush(Color.FromArgb((int)prevShade,color.R,color.G,color.B)), new[] 
                         {
                             new PointF(headCtrX, headCtrY),
                             prevEnd,
@@ -60,7 +55,7 @@ namespace SwarmSight.Filters
                     {
                         //Relative to max possible activation
                         //prevShade = Min(1, sectors[s] / maxSectorValue / 0.02)*255*0.5;
-                        prevShade = sectors[s] == maxBinValue ? 200 : 0;
+                        prevShade = sectors[s] / maxBinValue * 255;
                         prevEnd = new PointF(endX, endY);
                     }
                 }
@@ -844,7 +839,7 @@ namespace SwarmSight.Filters
             );
         }
 
-        public static List<Point> PointsOverThreshold(this Frame target, int threshold)
+        public static List<Point> PointsOverThreshold(this Frame target, int threshold, int channel = 0)
         {
             var result = new List<Point>();
 
@@ -857,6 +852,7 @@ namespace SwarmSight.Filters
             var xMax = width;
             var yMin = 0;
             var yMax = height;
+            var chan = channel;
 
             //Do each row in parallel
             Parallel.For(yMin, yMax, new ParallelOptions()
@@ -869,9 +865,9 @@ namespace SwarmSight.Filters
 
                 for (var x = xMin; x < xMax; x++)
                 {
-                    var offset = x * 3 + rowStart;
+                    var offset = x * 3 + rowStart + chan;
 
-                    if(firstPx[offset] > threshold) //B only
+                    if(firstPx[offset] > threshold)
                         rowResult.Add(new Point(x,y));
                 }
 
@@ -1046,12 +1042,14 @@ namespace SwarmSight.Filters
                     for (var x = xMin; x < xMax; x++)
                     {
                         var targetOffset = x * 3 + targetRowStart;
+                        
+                        var avgDist = (Math.Abs(targetPx0[targetOffset] - B) +
+                            Math.Abs(targetPx0[targetOffset + 1] - G) +
+                            Math.Abs(targetPx0[targetOffset + 2] - R)) / 3.0;
 
                         //Order is BGR. Paint px white if close to the color
-                        if (Math.Abs(targetPx0[targetOffset]   - B) <= distance &&
-                            Math.Abs(targetPx0[targetOffset+1] - G) <= distance &&
-                            Math.Abs(targetPx0[targetOffset+2] - R) <= distance)
-                                resultPx0[targetOffset] = resultPx0[targetOffset+1] = resultPx0[targetOffset+2] = 255;
+                        if (avgDist <= distance)
+                            resultPx0[targetOffset] = resultPx0[targetOffset+1] = resultPx0[targetOffset+2] = (byte)(255-avgDist);
 
                     }
                 });
@@ -1106,6 +1104,15 @@ namespace SwarmSight.Filters
             }
         }
 
+        /// <summary>
+        /// Draws the top frame on top of the bottom frame
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="source"></param>
+        public static void DrawFrame(this Frame bottom, Frame top)
+        {
+            bottom.DrawFrame(top, 0, 0, 1, 0);
+        }
         public static void DrawFrame(this Frame target, Frame source, int targetStartX, int targetStartY, double alpha = 1.0, int threshold = 3, int sourceStartX = 0, int sourceStartY = 0)
         {
             var tX = targetStartX;
@@ -1530,10 +1537,10 @@ namespace SwarmSight.Filters
             return result / (patternWidth * patternHeight * 1.0f);
         }
 
-        public static Frame ScaleHQ(this Frame target, int width, int height)
+        public static Frame ScaleHQ(this Frame target, int width, int height, Bitmap dest = null)
         {
             var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+            var destImage = dest ?? new Bitmap(width, height, PixelFormat.Format24bppRgb);
             var image = target.Bitmap;
 
             destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
@@ -1553,9 +1560,16 @@ namespace SwarmSight.Filters
                 }
             }
 
-            target.Dispose();
+            if (dest == null)
+            {
+                target.Dispose();
 
-            return new Frame(destImage, false);
+                return new Frame(destImage, false);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public static Frame AveragePixels(this Frame bitmapA, Frame bmp)
@@ -1934,6 +1948,28 @@ namespace SwarmSight.Filters
                 Math.Abs(firstPixel1[offset1 + 0] - firstPixel2[offset2 + 0]) +
                 Math.Abs(firstPixel1[offset1 + 1] - firstPixel2[offset2 + 1]) +
                 Math.Abs(firstPixel1[offset1 + 2] - firstPixel2[offset2 + 2]);
+        }
+
+        public static T CreateJaggedArray<T>(params int[] lengths)
+        {
+            return (T)InitializeJaggedArray(typeof(T).GetElementType(), 0, lengths);
+        }
+
+        public static object InitializeJaggedArray(Type type, int index, int[] lengths)
+        {
+            Array array = Array.CreateInstance(type, lengths[index]);
+            Type elementType = type.GetElementType();
+
+            if (elementType != null)
+            {
+                for (int i = 0; i < lengths[index]; i++)
+                {
+                    array.SetValue(
+                        InitializeJaggedArray(elementType, index + 1, lengths), i);
+                }
+            }
+
+            return array;
         }
     }
 }

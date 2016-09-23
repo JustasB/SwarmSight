@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight", "SwarmSight.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.VideoPlayer", "..\SwarmSight.VideoPlayer\SwarmSight.VideoPlayer.csproj", "{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.Stats", "..\SwarmSight.Stats\SwarmSight.Stats.csproj", "{D5640FC6-0344-43AF-A30B-59F2C30D1A18}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.Filters", "..\SwarmSight.Filters\SwarmSight.Filters.csproj", "{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{428C6DA1-C63C-45A4-8E7B-96301CAB0782}"
@@ -21,11 +19,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.Hardware", "..\S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmSight.HeadPartsTracking", "..\SwarmSight.Models\SwarmSight.HeadPartsTracking.csproj", "{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testing", "..\Testing\Testing.csproj", "{180E188E-7228-4954-A97F-358BCAEF7128}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Settings", "..\Settings\Settings.csproj", "{E977A188-C3CC-43FB-B4A4-775D307989E0}"
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -39,10 +38,6 @@ Global
 		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9309E36-4008-4F68-B08F-9CC2CFBAA53A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D5640FC6-0344-43AF-A30B-59F2C30D1A18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D5640FC6-0344-43AF-A30B-59F2C30D1A18}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D5640FC6-0344-43AF-A30B-59F2C30D1A18}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D5640FC6-0344-43AF-A30B-59F2C30D1A18}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB2B2220-9B5D-4BB2-B41C-7D19854FFA78}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -55,10 +50,6 @@ Global
 		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4092E9C4-B3FE-4C1A-9180-B07BA3210D02}.Release|Any CPU.Build.0 = Release|Any CPU
-		{180E188E-7228-4954-A97F-358BCAEF7128}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{180E188E-7228-4954-A97F-358BCAEF7128}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{180E188E-7228-4954-A97F-358BCAEF7128}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{180E188E-7228-4954-A97F-358BCAEF7128}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E977A188-C3CC-43FB-B4A4-775D307989E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E977A188-C3CC-43FB-B4A4-775D307989E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E977A188-C3CC-43FB-B4A4-775D307989E0}.Release|Any CPU.ActiveCfg = Release|Any CPU

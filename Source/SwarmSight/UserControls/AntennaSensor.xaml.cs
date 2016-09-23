@@ -1,6 +1,6 @@
-﻿//using SwarmSight.HeadPartsTracking.Algorithms;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,17 +17,18 @@ using System.Windows.Shapes;
 namespace SwarmSight.UserControls
 {
     /// <summary>
-    /// Interaction logic for ReceptiveField.xaml
+    /// Interaction logic for AtennaSensor.xaml
     /// </summary>
-    public partial class ReceptiveField : UserControl
+    public partial class AntennaSensor : UserControl
     {
-        public Point initialDims;
-        public ReceptiveField()
+        public double CanvasScale = 1.0;
+
+        public AntennaSensor()
         {
-            InitializeComponent();
-            initialDims = new Point(Width, Height);
+            InitializeComponent();            
         }
 
+        public event EventHandler<EventArgs> MouseDown;
         public event EventHandler<EventArgs> Moved;
         public event EventHandler<EventArgs> Scaled;
         public event EventHandler<EventArgs> Rotated;
@@ -41,9 +42,17 @@ namespace SwarmSight.UserControls
             {
                 var x = value.X - gridHead.Margin.Left + Canvas.Margin.Left;
                 var y = value.Y - gridHead.Margin.Top + Canvas.Margin.Top;
-                
+
                 Margin = MarginWithinBounds(x, y);
             }
+        }
+
+        private Point DimsWithinBounds(double w, double h)
+        {
+            w = Math.Max(50, Math.Min(Canvas.ActualWidth, w));
+            h = Math.Max(50, Math.Min(Canvas.ActualHeight, h));
+
+            return new Point(w,h);
         }
 
         private Thickness MarginWithinBounds(double x, double y)
@@ -54,16 +63,21 @@ namespace SwarmSight.UserControls
             return new Thickness(x, y, 0, 0);
         }
 
-        public double Angle
+        public void ChangeCanvasScale(double newCanvasScale)
         {
-            get { return gridTransform.Angle; }
-            set { gridTransform.Angle = value; }
+            if (Canvas == null)
+                return;
+
+            //xy changes
+            Position = new Point(Position.X / CanvasScale * newCanvasScale, Position.Y / CanvasScale * newCanvasScale);
+
+            //dimentions change
+            Dimensions = new Point(Dimensions.X / CanvasScale * newCanvasScale, Dimensions.Y / CanvasScale * newCanvasScale);
         }
-        public Point Scale
-        {
-            get { return new Point(gridScale.ScaleX, gridScale.ScaleY); }
-            set { gridScale.ScaleX = value.X; gridScale.ScaleY = value.Y; }
-        }
+
+        public double Angle { get; set; }
+        public double Scale { get; private set; }
+
         public Point Dimensions
         {
             get { return new Point(gridHead.ActualWidth, gridHead.ActualHeight); }
@@ -72,52 +86,64 @@ namespace SwarmSight.UserControls
                 Width = value.X + gridHead.Margin.Left + gridHead.Margin.Right;
                 Height = value.Y + gridHead.Margin.Top + gridHead.Margin.Bottom;
 
-                Width = Math.Max(50, Math.Min(Canvas.ActualWidth- gridHead.Margin.Left*2, Width));
-                Height = Math.Max(50, Math.Min(Canvas.ActualHeight- gridHead.Margin.Left*2, Height));
+                Width = Math.Max(50, Math.Min(Canvas.ActualWidth - gridHead.Margin.Left * 2, Width));
+                Height = Math.Max(50, Math.Min(Canvas.ActualHeight - gridHead.Margin.Top * 2, Height));
             }
         }
 
         public Point mouseOffset;
         public bool mouseCaptured = false;
+        public string changeType = "";
         public double startAngle = 0;
-        public Thickness startPos;
+        public Point startPos;
         public Point startDims;
-        public Point startScale;
         internal Image Canvas;
 
         private void OnMouseDown(object sender, MouseButtonEventArgs e)
         {
             Mouse.Capture((UIElement)sender);
             mouseCaptured = true;
-            startPos = Margin;
-            startAngle = gridTransform.Angle;
-            startScale = new Point(gridScale.ScaleX, gridScale.ScaleY);
-            startDims = new Point(Width, Height);
+            changeType = "";
+            startPos = Position;
+            startAngle = Angle;
+            startDims = Dimensions;
             mouseOffset = Mouse.GetPosition(Canvas);
+
+            if (MouseDown != null)
+                MouseDown(this, null);
         }
 
         private void OnMouseUp(object sender, MouseButtonEventArgs e)
         {
             Mouse.Capture(null);
             mouseCaptured = false;
+            changeType = "";
         }
 
         private void SCALE_move(object sender, MouseEventArgs e)
         {
-            if (mouseCaptured)
+            if (mouseCaptured && (changeType == "" || changeType == "scale"))
             {
+                changeType = "scale";
+
                 var pos = Mouse.GetPosition(Canvas);
-                gridScale.ScaleY = Math.Min(5, Math.Max(0.1, startScale.Y + (pos.Y - mouseOffset.Y) / 100));
-                gridScale.ScaleX = Math.Min(5, Math.Max(0.1, startScale.X + (pos.X - mouseOffset.X) / 100));
                 
-                var maxScale = Math.Max(gridScale.ScaleX, gridScale.ScaleY);
-                
-                Width = initialDims.X * maxScale;
-                Height = initialDims.Y * maxScale;
+                var xMoved = pos.X - mouseOffset.X;
+                var yMoved = pos.Y - mouseOffset.Y;
 
-                var dimDiff = new Point(Width - startDims.X, Height - startDims.Y);
+                var maxMoved = Math.Max(xMoved, yMoved);
 
-                Margin = new Thickness(startPos.Left - dimDiff.X / 2.0, startPos.Top - dimDiff.Y / 2.0, 0, 0);
+                Position = new Point(
+                    startPos.X - maxMoved,
+                    startPos.Y - maxMoved
+                );
+
+                Dimensions = new Point(
+                    startDims.X + 2*maxMoved,
+                    startDims.Y + 2*maxMoved
+                );
+
+                Scale = Dimensions.X / CanvasScale / 100.0;
 
                 if (Scaled != null)
                     Scaled(this, e);
@@ -126,10 +152,13 @@ namespace SwarmSight.UserControls
 
         private void ROTATE_move(object sender, MouseEventArgs e)
         {
-            if (mouseCaptured)
+            if (mouseCaptured && (changeType == "" || changeType == "rotate"))
             {
+                changeType = "rotate";
+                
                 var pos = Mouse.GetPosition(Canvas);
-                gridTransform.Angle = startAngle + pos.X - mouseOffset.X;
+
+                Angle = startAngle + pos.X - mouseOffset.X;
 
                 if (Rotated != null)
                     Rotated(this, e);
@@ -138,20 +167,22 @@ namespace SwarmSight.UserControls
 
         private void TRANSLATE_move(object sender, MouseEventArgs e)
         {
-            if (mouseCaptured)
+            if (mouseCaptured && (changeType == "" || changeType == "translate"))
             {
+                changeType = "translate";
+
                 var pos = Mouse.GetPosition(Canvas);
 
-                var x = startPos.Left + pos.X - mouseOffset.X;
-                var y = startPos.Top + pos.Y - mouseOffset.Y;
+                var x = pos.X - mouseOffset.X;
+                var y = pos.Y - mouseOffset.Y;
 
-                Margin = MarginWithinBounds(x, y);
-                
+                Position = new Point(startPos.X + x, startPos.Y + y);
+
                 if (Moved != null)
                     Moved(this, e);
             }
         }
-        
+
 
         private void imgLeftBase_MouseMove(object sender, MouseEventArgs e)
         {
@@ -162,5 +193,6 @@ namespace SwarmSight.UserControls
         {
 
         }
+
     }
 }

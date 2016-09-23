@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using SwarmSight.Hardware;
 using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace SwarmSight.Filters
 {
@@ -24,6 +25,9 @@ namespace SwarmSight.Filters
         public double FramePercentage { get; set; }
         public TimeSpan FrameTime { get; set; }
         public bool IsDecoded { get; set; }
+        public bool IsProcessed { get; set; }
+        public bool IsReadyForRender { get; set; }
+        public object ProcessorResult { get; set; }
         public Stopwatch Watch;
 
         public int PixelBytesLength
@@ -51,8 +55,50 @@ namespace SwarmSight.Filters
                 return new Bitmap(Width, Height, Stride, PixelFormat, firstPixelAddress);
             }
         }
+        
+        /// <summary>
+        /// Takes double array arranged in BGR colors and forms a square image out of it
+        /// </summary>
+        /// <param name="eigenvector"></param>
+        public Frame(double[] eigenvector)
+        {
+            var width = (int)Math.Sqrt(eigenvector.Length / 3);
+            var height = width;
+            var format = PixelFormat.Format24bppRgb;
 
-        public Frame(int width, int height, PixelFormat format, bool storeOnGPU) 
+            var stride = ComputeStride(width, format);
+            var bytes = new byte[stride * height];
+            var colors = new byte[3];
+
+            Initialize(width, height, stride, format, bytes, false);
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var offset = x * 3 + y * width * 3;
+
+                    for(var c = 0; c < 3; c++)
+                        colors[c] = (byte)eigenvector[offset+c];
+
+                    SetColorBytesBGR(x, y, colors);
+                } 
+            }
+        }
+
+        public void Reset()
+        {
+            IsDecoded = false;
+            IsProcessed = false;
+            ProcessorResult = null;
+            IsReadyForRender = false;
+            FrameIndex = 0;
+            Watch = null;
+            FrameTime = new TimeSpan();
+            FramePercentage = 0;
+        }
+
+        public Frame(int width, int height, PixelFormat format = PixelFormat.Format24bppRgb, bool storeOnGPU = false) 
         {
             if (!storeOnGPU)
             {
@@ -70,6 +116,7 @@ namespace SwarmSight.Filters
         {
             Initialize(width, height, stride, format, bytes, storeOnGPU);
         }
+
 
         public Frame(string bitmapPath, bool storeOnGPU) : this(Image.FromFile(bitmapPath) as Bitmap, storeOnGPU)
         {
@@ -224,6 +271,16 @@ namespace SwarmSight.Filters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetColorBytesBGR(int x, int y, byte[] bgr)
+        {
+            var offset = y * Stride + x * 3;
+
+            FirstPixelPointer[offset] = bgr[0];
+            FirstPixelPointer[offset + 1] = bgr[1];
+            FirstPixelPointer[offset + 2] = bgr[2];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Color GetColor(int x, int y)
         {
             var offset = y * Stride + x * 3;
@@ -240,7 +297,7 @@ namespace SwarmSight.Filters
         {
             var offset = point.Y*Stride + point.X*3;
 
-            return Color.FromArgb(
+           return Color.FromArgb(
                 FirstPixelPointer[offset + 2],
                 FirstPixelPointer[offset + 1],
                 FirstPixelPointer[offset    ]

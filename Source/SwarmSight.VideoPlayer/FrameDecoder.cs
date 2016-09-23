@@ -17,13 +17,14 @@ namespace SwarmSight.VideoPlayer
         public event EventHandler<OnFrameReady> FrameReady;
         public int FrameBufferCapacity = 30; //Max frames to decode ahead
         public int MinimumWorkingFrames = 1; //Don't start processing until this many frames have been decoded
-        public FrameBuffer<Frame> FrameBuffer = new FrameBuffer<Frame>();
+        public FrameBuffer FrameBuffer;
 
         public bool FramesInBufferMoreThanMinimum
         {
             get { return FrameBuffer.Count > MinimumWorkingFrames; }
         }
-        
+
+        private Frame currentFrame;
         private byte[] bmpBuffer;
         private int bufferOffset;
         private int roomInBuffer = 0;
@@ -36,6 +37,8 @@ namespace SwarmSight.VideoPlayer
 
         public FrameDecoder(int width, int height, PixelFormat pxFormat)
         {
+            FrameBuffer = new FrameBuffer(FrameBufferCapacity, width, height);
+
             this.width = width;
             this.height = height;
             this.pxFormat = pxFormat;
@@ -50,15 +53,25 @@ namespace SwarmSight.VideoPlayer
             while (bytesLeftToCopy > 0)
             {
                 //Each frame gets its own image buffer
-                if (bmpBuffer == null)
+                if (roomInBuffer <= 0)
                 {
+                    //If buffer's full, wait till it drops to mostly empty
+                    if (FrameBuffer.Count >= FrameBufferCapacity)
+                        while (FrameBuffer.Count > MinimumWorkingFrames)
+                            Thread.Sleep(5);
+
                     var bmpBufferLength = height*stride;
                     watch = Stopwatch.StartNew();
 
                     //if (false)//GPU.UseGPU)
                     //    bmpBuffer = GPU.Current.Allocate<byte>(bmpBufferLength);
                     //else
-                    bmpBuffer = new byte[bmpBufferLength];
+
+                    FrameBuffer.MakeLastAvailable();
+                    currentFrame = FrameBuffer.Last;
+                    currentFrame.Reset();
+                    currentFrame.Watch = watch;
+                    bmpBuffer = currentFrame.PixelBytes;
 
                     roomInBuffer = bmpBufferLength;
                     bufferOffset = 0;
@@ -77,26 +90,13 @@ namespace SwarmSight.VideoPlayer
 
                 if (roomInBuffer > 0)
                     return;
-
-                //Buffer is full, image is ready. Retain the bitmap data
-                var frame = new Frame(width, height, stride, pxFormat, bmpBuffer, false /*GPU.UseGPU*/) {Watch = watch};
-
-                //Release the image buffer (after it has been stored above)
-                bmpBuffer = null;
-
-                //If buffer's full, wait till it drops to mostly empty
-                if (FrameBuffer.Count >= FrameBufferCapacity)
-                    while (FrameBuffer.Count > MinimumWorkingFrames)
-                        Thread.Sleep(5);
-
-                //Once there is room, add frames
+                
+                //Frame is filled, continue on to next frame
                 try
                 {
                     if (Processor != null)
-                        frame = Processor.OnAfterDecoding(frame);
-
-                    FrameBuffer.AddLast(frame);
-
+                        currentFrame = Processor.OnAfterDecoding(currentFrame);
+                        
                     frameIndex++;
                 }
                 catch (ThreadAbortException)
@@ -104,7 +104,7 @@ namespace SwarmSight.VideoPlayer
                 }
 
                 if (FrameReady != null)
-                    FrameReady(this, new OnFrameReady() {Frame = frame});
+                    FrameReady(this, new OnFrameReady() {Frame = currentFrame});
 
                 if (bytesLeftToCopy > 0)
                 {
@@ -115,11 +115,6 @@ namespace SwarmSight.VideoPlayer
 
         public void ClearBuffer()
         {
-            foreach (var frame in FrameBuffer)
-            {
-                frame.Dispose();
-            }
-
             FrameBuffer.Clear();
         }
 

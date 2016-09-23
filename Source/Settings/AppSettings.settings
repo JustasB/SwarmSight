@@ -8,12 +8,6 @@
     <Setting Name="HeadY" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">200</Value>
     </Setting>
-    <Setting Name="HeadW" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">113</Value>
-    </Setting>
-    <Setting Name="HeadH" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">113</Value>
-    </Setting>
     <Setting Name="Quality" Type="System.Double" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
@@ -36,7 +30,7 @@
       <Value Profile="(Default)">2</Value>
     </Setting>
     <Setting Name="TipCrawlerRadius" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">60</Value>
+      <Value Profile="(Default)">24</Value>
     </Setting>
     <Setting Name="ShowModel" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -57,7 +51,7 @@
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="ScapeDistanceAtScale1" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">5</Value>
+      <Value Profile="(Default)">6.3</Value>
     </Setting>
     <Setting Name="BackgroundThreshold" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">10</Value>
@@ -76,6 +70,30 @@
     </Setting>
     <Setting Name="ShowSectors" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="TreatmentSensor" Type="System.Drawing.Point" Scope="User">
+      <Value Profile="(Default)">100, 100</Value>
+    </Setting>
+    <Setting Name="ExclusionZones" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="FastThreshold" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="SlowThreshold" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="StationaryThreshold" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">40</Value>
+    </Setting>
+    <Setting Name="VideoLabel" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AddExclusionMsgSeen" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="VideoLabelColumn" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

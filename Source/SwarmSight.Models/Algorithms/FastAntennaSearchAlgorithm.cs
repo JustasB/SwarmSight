@@ -23,6 +23,7 @@ using static SwarmSight.HeadPartsTracking.Algorithms.PointExtensions;
 using MoreLinq;
 using Settings;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace SwarmSight.HeadPartsTracking.Algorithms
 {
@@ -368,8 +369,9 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
             return result;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsInPolygon(int testX, int testY, List<DPoint> polygon)
+        public static bool IsInConvexPolygon(int testX, int testY, List<DPoint> polygon)
         {
             //Cannot be part of empty polygon
             if (polygon.Count == 0)
@@ -420,8 +422,45 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             //If no change in direction, then on same side of all segments, and thus inside
             return true;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsInPolygon(this DPoint testPoint, List<DPoint> polygon)
+        public static bool IsPointInPolygon(int x, int y, Point[] polygon)
+        {
+            var p = new Point(x, y);
+
+            double minX = polygon[0].X;
+            double maxX = polygon[0].X;
+            double minY = polygon[0].Y;
+            double maxY = polygon[0].Y;
+            for (int i = 1; i < polygon.Length; i++)
+            {
+                Point q = polygon[i];
+                minX = Math.Min(q.X, minX);
+                maxX = Math.Max(q.X, maxX);
+                minY = Math.Min(q.Y, minY);
+                maxY = Math.Max(q.Y, maxY);
+            }
+
+            if (p.X < minX || p.X > maxX || p.Y < minY || p.Y > maxY)
+            {
+                return false;
+            }
+
+            // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+            bool inside = false;
+            for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++)
+            {
+                if ((polygon[i].Y > p.Y) != (polygon[j].Y > p.Y) &&
+                     p.X < (polygon[j].X - polygon[i].X) * (p.Y - polygon[i].Y) / (polygon[j].Y - polygon[i].Y) + polygon[i].X)
+                {
+                    inside = !inside;
+                }
+            }
+
+            return inside;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInConvexPolygon(DPoint testPoint, List<DPoint> polygon)
         {
             //Cannot be part of empty polygon
             if (polygon.Count == 0)
@@ -674,25 +713,6 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         Left,
         Right
     }
-    public enum PointLabels
-    {
-        RightScape,
-        RightFlagellumBase,
-        RightFlagellumTip,
-        RightSectorData,
-        RightSector,
-
-        LeftScape,
-        LeftFlagellumBase,
-        LeftFlagellumTip,
-        LeftSectorData,
-        LeftSector,
-
-        Mandibles,
-        Head
-
-
-    }
 
     public class FastAntennaSearchAlgorithm : GeneticAlgoBase<AntenaPoints>
     {
@@ -865,10 +885,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             {
                 AntennaPoints.Clear();
 
-                if(Target.Prev1.FrameIndex == 40)
-                {
 
-                }
 
                 var leftPoints = GetTip
                 (
@@ -884,8 +901,10 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     RBpoints
                 );
 
-                //Update background
+                
                 headClip.FrameIndex = Target.Prev1.FrameIndex;
+
+                //Update background
                 background.Append(headClip);
 
                 //Set the return value
@@ -977,24 +996,17 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
                     Debug.WriteLine(outString);
 
-                    if (DebugFrame != null)
-                        DebugFrame.Dispose();
+                    if (DebugFrame == null)
+                        DebugFrame = headClip.Clone();
 
-                    DebugFrame = new Frame(headClip.Width, headClip.Height, headClip.PixelFormat, false);
-                    DebugFrame.DrawFrame(headClip, 0, 0, 1, 0);
+                    DebugFrame.DrawFrame(headClip);
                     //DebugFrame.DrawFrame(model, headClip.Width, 0, 1, 0);
                     //DebugFrame.DrawFrame(background.Model, headClip.Width*2, 0, 1, 0);
 
                     //if (saveFrame)
-                    {
-                        DebugFrame.Bitmap.Save(@"c:\temp\frames\" + maxError.Rounded().ToString("D4") + " - " + Target.Prev1.FrameIndex + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
-                    }
-
-                    if (DebugFrame != null)
-                    {
-                        DebugFrame.Dispose();
-                        DebugFrame = null;
-                    }
+                    //{
+                    //    DebugFrame.Bitmap.Save(@"c:\temp\frames\" + maxError.Rounded().ToString("D4") + " - " + Target.Prev1.FrameIndex + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                    //}
 
                 }
             }
@@ -1057,6 +1069,9 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
         public Dictionary<PointLabels, DPoint> PrevTips = new Dictionary<PointLabels, DPoint>();
         public Dictionary<PointLabels, double[]> PrevSectors = new Dictionary<PointLabels, double[]>();
 
+        public bool?[][] hullCache = null;
+        public Frame antPtsDebug;
+
         private unsafe List<Tuple<DPoint, double>> AntPts(Frame headClip, Frame motion, PointLabels tipLabel, PointLabels baseLabel)
         {
             var result = new List<Tuple<DPoint, double>>(100);
@@ -1095,6 +1110,16 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             var mandiblesHull = ConvexHullsFrame[PointLabels.Mandibles];
             var jointHull = ConvexHullsFrame[baseLabel];
 
+            //set up [x][y] cache
+            if (hullCache == null)
+            {
+                hullCache = new bool?[width][];
+                for (int x = 0; x < width; x++)
+                {
+                    hullCache[x] = new bool?[height];
+                }
+            }
+
             Parallel.For(0, height, new ParallelOptions
             {
                 //MaxDegreeOfParallelism = 1
@@ -1102,9 +1127,9 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             y =>
             {
                 var rowStartOffset = y * stride;
-                //These possibky could be initialized faster
-                var rowBgHistBinPts = Enumerable.Range(0, 256).Select(i => new List<DPoint>()).ToArray();
-                var rowMotionHistBinPts = Enumerable.Range(0, 256).Select(i => new List<DPoint>()).ToArray();
+                
+                var rowBgHistBinPts = GetNewColorBin();
+                var rowMotionHistBinPts = GetNewColorBin();
                 var rowBgHistTot = 0;
                 var rowMotionHistTot = 0;
 
@@ -1116,11 +1141,19 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
 
                     if (dx * dx + dy * dy <= headRadiusSquared)
                         continue;
-                    
-                    //These could be pre-computed and cached, invalidated when the size, scale, or angle is changed
-                    if (!IsInPolygon(x, y, tipHull) ||
-                        IsInPolygon(x, y, mandiblesHull) ||
-                        IsInPolygon(x, y, jointHull))
+
+                    var hullValue = hullCache[x][y];
+                    if (hullValue == null)
+                    {
+                        hullValue =
+                            !IsInConvexPolygon(x, y, tipHull) ||
+                            IsInConvexPolygon(x, y, mandiblesHull) ||
+                            IsInConvexPolygon(x, y, jointHull);
+
+                        hullCache[x][y] = hullValue;
+                    }
+
+                    if (hullValue.Value)
                         continue;
 
                     //Passed location tests, now test for color distances
@@ -1206,7 +1239,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 var histSum = 0.0;
                 var histBin = 255;
 
-                var debug = headClip.Clone();
+                //var debug = headClip.Clone();
                 var stopCount = (int)(ptsWithinHull * 0.04);
 
                 //Collect the points from the histogram tail until reached X% of possible hull points
@@ -1225,19 +1258,12 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     if (binCount > 0)
                     {
                         var col = Math.Min(histBin * histBin, 255); //Square the distance for emphasis
-                        debug.ColorPixels(binPoints, Color.FromArgb(col, col, col));
+                        //debug.ColorPixels(binPoints, Color.FromArgb(col, col, col));
                     }
 
                     histBin--;
                 }
                 while (histBin > 0 && histSum < stopCount);
-
-                var bmp = debug.Bitmap;
-                var uncertainty = Math.Min(
-                    result.StdDev(p => p.Item1.X), 
-                    result.StdDev(p => p.Item1.Y)) / headClip.Width;
-
-
             }
 
             //Fast motion component
@@ -1247,7 +1273,7 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 var histSum = 0.0;
                 var histBin = 255;
 
-                var debug = headClip.Clone();
+                //var debug = headClip.Clone();
                 var stopCount = (int)(ptsWithinHull * 0.04);
 
                 //Collect the points from the histogram tail until reached X% of possible hull points
@@ -1266,32 +1292,34 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                     if (binCount > 0)
                     {
                         var col = Math.Min(histBin * histBin, 255); //Square the distance for emphasis
-                        debug.ColorPixels(binPoints, Color.FromArgb(col, col, col));
+                        //debug.ColorPixels(binPoints, Color.FromArgb(col, col, col));
                     }
 
                     histBin--;
                 }
                 while (histBin > 0 && histSum < stopCount);
 
-                var bmp = debug.Bitmap;
-                var t = motionResult;
-                var uncertainty = Math.Min(
-                    motionResult.StdDev(p => p.Item1.X),
-                    motionResult.StdDev(p => p.Item1.Y)) / headClip.Width;
-
-                if (motionResult.First().Item2 < 10)
-                {
-
-                }
-
-                result.AddRange(motionResult);
+                //result.AddRange(motionResult);
             }
             
 
             return result;
         }
 
+        public List<DPoint>[] GetNewColorBin()
+        {
+            var result = new List<DPoint>[256];
+
+            for (int i = 0; i < 256; i++)
+            {
+                result[i] = new List<DPoint>();
+            }
+
+            return result;
+        }
+
         public List<DPoint> AntennaPoints = new List<DPoint>();
+        private Frame t;
 
         private Dictionary<PointLabels,DPoint> GetTip(Frame headClip, Frame motionClip, List<System.Drawing.Point> modelPts, Point origin, PointLabels tipLabel, PointLabels baseLabel, LinkedList<Point> tipBuffer, LinkedList<Point> baseBuffer)
         {
@@ -1304,7 +1332,11 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
             //var rawAntPts = rawAnt.Select(p => p.Item1).ToList();
             //var moAntPts = moAnt.Select(p => p.Item1).ToList();
 
-            var t = headClip.Clone();
+            if(t == null)
+                t = headClip.Clone();
+
+            t.DrawFrame(headClip);
+
             //t.ColorPixels(rawAntPts, Color.White);
             //t.ColorPixels(moAntPts, Color.White);
 
@@ -1323,9 +1355,12 @@ namespace SwarmSight.HeadPartsTracking.Algorithms
                 //Pool top ones
                 var topPts = rawAnt.OrderByDescending(p => p.Item2).Take(10).ToList();
                 //var maxPooled = ;
-                var med = rawAnt.MinBy(p => p.Item1.Distance(new DPoint(
-                    topPts.Average(pt => pt.Item1.X).Rounded(),
-                    topPts.Average(pt => pt.Item1.Y).Rounded()))).Item1;
+                var topCentroid = new DPoint(
+                            topPts.Average(pt => pt.Item1.X).Rounded(),
+                            topPts.Average(pt => pt.Item1.Y).Rounded()
+                        );
+
+                var med = rawAnt.MinBy(p => p.Item1.Distance(topCentroid)).Item1;
 
                 //Square-Weighted centroid
                 //var sumW = rawAnt.Sum(p => p.Item2 * p.Item2);
