@@ -20,6 +20,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Diagnostics;
 
 namespace SwarmSight.HeadPartsTracking
 {
@@ -265,8 +266,7 @@ namespace SwarmSight.HeadPartsTracking
             Results[previousFrame.FrameIndex] = prevResult;
 
             previousFrame.ProcessorResult = prevResult;
-            previousFrame.IsReadyForRender = true;
-
+            previousFrame.IsReadyForRender = true;            
 
             //Update the previous frame
             previousFrame = currentFrame;
@@ -312,6 +312,7 @@ namespace SwarmSight.HeadPartsTracking
                     Draw(procResult?.Left?.DetectedPoints);
                     Draw(procResult?.Right?.DetectedPoints);
                     Draw(procResult?.Proboscis?.DetectedPoints);
+                    
                 }
 
                 //Hulls

@@ -70,7 +70,10 @@ namespace SwarmSight.VideoPlayer.Pipeline
 
         public void AdvancePosition()
         {
-            QueuePosition = Queue.GetNextPosition(QueuePosition);
+            lock(Queue)
+            {
+                QueuePosition = Queue.GetNextPosition(QueuePosition);
+            }
         }
 
         public void StopWorking()
