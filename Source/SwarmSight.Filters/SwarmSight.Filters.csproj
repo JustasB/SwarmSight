@@ -56,6 +56,7 @@
     <Compile Include="FrameFilterExtensions.cs" />
     <Compile Include="HSLcolor.cs" />
     <Compile Include="PixelShader.cs" />
+    <Compile Include="PointExtensions.cs" />
     <Compile Include="PointHistogram.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Regression.cs" />

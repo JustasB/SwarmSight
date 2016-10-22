@@ -5,13 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SwarmSight"
         xmlns:UserControls="clr-namespace:SwarmSight.UserControls" x:Class="SwarmSight.BatchList"
-        mc:Ignorable="d" Height="371" Width="658" MinWidth="600"
-        Title="Batch Processing">
+        mc:Ignorable="d" Height="281.737" Width="674.737" MinWidth="670"
+        Title="Batch Processing" Icon="SwarmSight.ico">
+    
     <Grid>
+        <Grid.Resources>
+            <Style x:Key="ColumnElementStyle" TargetType="TextBlock">
+                <Setter Property="Padding" Value="3,3,3,3" />
+            </Style>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="36" x:Name="topRow"/>
             <RowDefinition x:Name="middleRow"/>
-            <RowDefinition x:Name="bottomRow" Height="45"/>
+            <RowDefinition x:Name="bottomRow" Height="45" />
         </Grid.RowDefinitions>
         <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="1" AutoGenerateColumns="False" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" GridLinesVisibility="None" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" FontSize="14.667">
             <DataGrid.Resources>
@@ -20,12 +26,13 @@
                 </Style>
             </DataGrid.Resources>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="" CanUserSort="False" Binding="{Binding ID}" CanUserReorder="False" IsReadOnly="True" CanUserResize="False"/>
-                <DataGridTextColumn Header="Status" CanUserSort="False" Binding="{Binding Status}" CanUserReorder="False" IsReadOnly="True" CanUserResize="False" Width="80"/>
+                <DataGridTextColumn ElementStyle="{StaticResource ColumnElementStyle}" Header="" CanUserSort="False" Binding="{Binding ID}" CanUserReorder="False" IsReadOnly="True" CanUserResize="False"/>
+                <DataGridTextColumn ElementStyle="{StaticResource ColumnElementStyle}" Header="Status" CanUserSort="False" Binding="{Binding Status}" CanUserReorder="False" IsReadOnly="True" CanUserResize="False" Width="80"/>
                 <DataGridTextColumn Header="Video File" CanUserSort="False" Width="*" Binding="{Binding File}" CanUserReorder="False" IsReadOnly="True" CanUserResize="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="3" />
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
@@ -33,6 +40,8 @@
                     <DataGridHyperlinkColumn.ElementStyle>
                         <Style TargetType="TextBlock" >
                             <EventSetter  Event="Hyperlink.Click" Handler="ShowDetails_Click"  />
+                            <Setter Property="Padding" Value="3" />
+                            <Setter Property="Tag" Value="{Binding Path=ID}" />
                         </Style>
                     </DataGridHyperlinkColumn.ElementStyle>
                 </DataGridHyperlinkColumn>
@@ -40,6 +49,7 @@
                     <DataGridHyperlinkColumn.ElementStyle>
                         <Style TargetType="TextBlock" >
                             <EventSetter  Event="Hyperlink.Click" Handler="RemoveOne_Click"  />
+                            <Setter Property="Padding" Value="3" />
                         </Style>
                     </DataGridHyperlinkColumn.ElementStyle>
                 </DataGridHyperlinkColumn>

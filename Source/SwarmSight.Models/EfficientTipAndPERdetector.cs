@@ -203,13 +203,19 @@ namespace SwarmSight.HeadPartsTracking
 
         public override void OnProcessing(Frame frame)
         {
+            if(frame.FramePercentage > 1)
+            {
+                frame.IsReadyForRender = true;
+                return;
+            }
+
             var result = new TipAndPERResult();
             currentFrame = frame;
 
             Init();
 
             //Treatment Sensor - read brightness from the target point before the rest of the frame is discarded
-            result.TreatmentSensorValue = (int)Round(currentFrame.GetColor(AppSettings.Default.TreatmentSensor).GetBrightness() * 100, 0);
+            result.TreatmentSensorValue = (int)Round(currentFrame.GetColor(AppSettings.Default.TreatmentSensorX, AppSettings.Default.TreatmentSensorY).GetBrightness() * 100, 0);
             currentFrame.ProcessorResult = result;
 
             EnqueueStandardHeadClip();
@@ -266,10 +272,14 @@ namespace SwarmSight.HeadPartsTracking
             Results[previousFrame.FrameIndex] = prevResult;
 
             previousFrame.ProcessorResult = prevResult;
-            previousFrame.IsReadyForRender = true;            
+            previousFrame.IsReadyForRender = true;    
 
             //Update the previous frame
             previousFrame = currentFrame;
+
+            //Last frame is not processed - no more frames ahead
+            if (currentFrame.FramePercentage >= 1.0)
+                currentFrame.IsReadyForRender = true;
         }
 
         public void Annotate(Frame target)

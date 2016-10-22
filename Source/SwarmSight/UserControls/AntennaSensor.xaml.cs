@@ -28,7 +28,7 @@ namespace SwarmSight.UserControls
             InitializeComponent();            
         }
 
-        public event EventHandler<EventArgs> MouseDown;
+        public new event EventHandler<EventArgs> MouseDown;
         public event EventHandler<EventArgs> Moved;
         public event EventHandler<EventArgs> Scaled;
         public event EventHandler<EventArgs> Rotated;

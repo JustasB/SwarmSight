@@ -14,6 +14,7 @@ namespace SwarmSight.VideoPlayer
     {
         public VideoSupervisor Supervisor;
         public event EventHandler<OnFrameReady> FrameReady;
+        public event Action OnReachedEndOfVideo;
         public event EventHandler Stopped;
 
         public VideoInfo VideoInfo
@@ -41,6 +42,13 @@ namespace SwarmSight.VideoPlayer
 
             Supervisor.WorkFinished += Supervisor_WorkFinished;
             Supervisor.Renderer.FrameReady += Renderer_FrameReady;
+            Supervisor.OnReachedEndOfWorkload += Supervisor_OnReachedEndOfVideo;
+        }
+
+        private void Supervisor_OnReachedEndOfVideo()
+        {
+            if (OnReachedEndOfVideo != null)
+                OnReachedEndOfVideo();
         }
 
         private void Supervisor_WorkFinished(object sender, EventArgs e)
@@ -84,11 +92,6 @@ namespace SwarmSight.VideoPlayer
         public void RunOneFrame()
         {
             Supervisor.RunOneFrame();
-        }
-
-        public bool IsAtEndOfVideo()
-        {
-            return Supervisor.Processor.VD.AtEndOfVideo;
         }
     }
 }

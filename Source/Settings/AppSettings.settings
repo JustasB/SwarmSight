@@ -45,7 +45,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="HeadScale" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">1</Value>
+      <Value Profile="(Default)">2</Value>
     </Setting>
     <Setting Name="HeadAngle" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0</Value>
@@ -71,8 +71,8 @@
     <Setting Name="ShowSectors" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="TreatmentSensor" Type="System.Drawing.Point" Scope="User">
-      <Value Profile="(Default)">100, 100</Value>
+    <Setting Name="TreatmentSensorX" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="ExclusionZones" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
@@ -87,13 +87,16 @@
       <Value Profile="(Default)">40</Value>
     </Setting>
     <Setting Name="VideoLabel" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">CustomColumn</Value>
     </Setting>
     <Setting Name="AddExclusionMsgSeen" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="VideoLabelColumn" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="TreatmentSensorY" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
     </Setting>
   </Settings>
 </SettingsFile>

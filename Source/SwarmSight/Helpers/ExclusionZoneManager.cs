@@ -1,4 +1,5 @@
 ﻿using Settings;
+using SwarmSight.Filters;
 using SwarmSight.HeadPartsTracking.Algorithms;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace SwarmSight.Helpers
 
         public void AddClicked()
         {
-            window.Stop();
+            window.Controller.Stop();
 
             if (Changed != null)
                 Changed(this, null);
@@ -79,7 +80,7 @@ namespace SwarmSight.Helpers
         private void SaveToSettings()
         {
             AppSettings.Default.ExclusionZones =
-                string.Join("|", exclusionZones.Select(z => string.Join(";", z.Points.Select(p => { p.Offset(-10,-10); var pv = window.ToVideoCoordinates(p); return pv.X + "," + pv.Y; }))));
+                string.Join("|", exclusionZones.Select(z => string.Join(";", z.Points.Select(p => { p.Offset(-10,-10); var pv = window.Controller.ToVideoCoordinates(p); return pv.X + "," + pv.Y; }))));
 
             AppSettings.Default.SaveAsync();
         }
@@ -151,7 +152,7 @@ namespace SwarmSight.Helpers
         
         public void RemoveClicked()
         {
-            window.Stop();
+            window.Controller.Stop();
 
             MessageBox.Show("Click on an exclusion zone polygon while pressing 'SHIFT' to remove it.");
         }
@@ -160,7 +161,7 @@ namespace SwarmSight.Helpers
         {
             if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             {
-                window.Stop();
+                window.Controller.Stop();
 
                 if (Changed != null)
                     Changed(this, null);
@@ -179,7 +180,7 @@ namespace SwarmSight.Helpers
 
         public void LoadFromSettings()
         {
-            if (window?.Pipeline?.VideoInfo == null)
+            if (window?.Controller?.Pipeline?.VideoInfo == null)
                 return;
                 
             //Remove existing polys
@@ -206,7 +207,7 @@ namespace SwarmSight.Helpers
                 {
                     var xy = point.Split(',');
                     var p = new System.Drawing.Point(int.Parse(xy[0]), int.Parse(xy[1]));
-                    var canvasp = window.ToCanvasCoordinates(p);
+                    var canvasp = window.Controller.ToCanvasCoordinates(p);
                     canvasp.Offset(10,10);
 
                     poly.Points.Add(canvasp);

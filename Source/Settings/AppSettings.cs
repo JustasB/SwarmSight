@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 
 namespace Settings {
 
@@ -70,5 +71,49 @@ namespace Settings {
                 },
             });
         }
+
+        public double MaxHeadScale;
+        public int MaxHeadX;
+        public int MaxHeadY;
+        public int MaxTreatX;
+        public int MaxTreatY;
+
+        public void Validate(Point dimensions)
+        {            
+            var minDim = Math.Min(dimensions.X, dimensions.Y);
+            var headDim = (int)(HeadScale * 100);
+
+            MaxHeadScale = Math.Round(minDim / 100.0, 1)-0.1;
+
+            MaxHeadX = dimensions.X - headDim;
+            MaxHeadY = dimensions.Y - headDim;
+
+            MaxTreatX = dimensions.X;
+            MaxTreatY = dimensions.Y;
+
+
+
+            //Validate scale
+            HeadScale = Math.Max(0.1, Math.Min(MaxHeadScale, HeadScale));
+
+            //Validate angle
+            HeadAngle = HeadAngle % 360.0;
+
+            //Head XY
+            HeadX = Math.Max(0, Math.Min(MaxHeadX, HeadX));
+            HeadY = Math.Max(0, Math.Min(MaxHeadY, HeadY));
+
+            //Treat XY
+            TreatmentSensorX = Math.Max(0, Math.Min(MaxTreatX, TreatmentSensorX));
+            TreatmentSensorY = Math.Max(0, Math.Min(MaxTreatY, TreatmentSensorY));
+
+            SaveAsync();
+        }
+
+        public int ValidVideoCoord(int val, int smallDim, int largeDim)
+        {
+            return Math.Max(0, Math.Min(largeDim - smallDim, val));
+        }
+
     }
 }

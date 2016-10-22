@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,6 +15,8 @@ namespace SwarmSight.VideoPlayer
         public int TotalFrames;
         public int Height;
         public int Width;
+
+        public Point Dimensions { get { return new Point(Width, Height); } }
 
         public VideoInfo(string videoPath)
         {
@@ -56,7 +59,7 @@ namespace SwarmSight.VideoPlayer
             {
             }
 
-            TotalFrames = (int) (Duration.TotalSeconds*FPS);
+            TotalFrames = (int) Math.Ceiling(Duration.TotalSeconds*FPS)-1;
         }
 
         private string Runffprobe(string videoPath)

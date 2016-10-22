@@ -193,7 +193,7 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
         public double HeadScale {
             get {
                 return ((double)(this["HeadScale"]));
@@ -301,13 +301,13 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("100, 100")]
-        public global::System.Drawing.Point TreatmentSensor {
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int TreatmentSensorX {
             get {
-                return ((global::System.Drawing.Point)(this["TreatmentSensor"]));
+                return ((int)(this["TreatmentSensorX"]));
             }
             set {
-                this["TreatmentSensor"] = value;
+                this["TreatmentSensorX"] = value;
             }
         }
         
@@ -361,7 +361,7 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("CustomColumn")]
         public string VideoLabel {
             get {
                 return ((string)(this["VideoLabel"]));
@@ -392,6 +392,18 @@ namespace Settings {
             }
             set {
                 this["VideoLabelColumn"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int TreatmentSensorY {
+            get {
+                return ((int)(this["TreatmentSensorY"]));
+            }
+            set {
+                this["TreatmentSensorY"] = value;
             }
         }
     }

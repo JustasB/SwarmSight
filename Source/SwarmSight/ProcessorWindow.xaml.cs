@@ -19,6 +19,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Frame = SwarmSight.Filters.Frame;
 using Point = System.Windows.Point;
+using DPoint = System.Drawing.Point;
 
 namespace SwarmSight
 {
@@ -27,15 +28,6 @@ namespace SwarmSight
     /// </summary>
     public partial class ProcessorWindow
     {
-        private const string PlaySymbol = "4";
-        private const string PauseSymbol = ";";
-
-        private double _fullSizeWidth;
-        private Stopwatch _fpsStopwatch = new Stopwatch();
-
-        public VideoPipeline Pipeline;
-        private VideoProcessorBase _processor;// = new AntennaAndPERDetector();
-
         private WindowManager WindowManager
         {
             get
@@ -44,11 +36,79 @@ namespace SwarmSight
             }
         }
 
+        public EfficientTipAndPERdetector Processor;
+        public VideoPlayerController Controller;
+
         public ProcessorWindow()
         {
             AppSettings.Default.Upgrade();
             
             InitializeComponent();
+
+            Controller = new VideoPlayerController
+            {
+                btnBrowse = btnBrowse,
+                btnPlayPause = btnPlayPause,
+                btnSave = btnSaveActivity,
+                btnStop = btnStop,
+                btnStepFrame = btnStepFrame,
+                Canvas = videoCanvas,
+                lblTime = lblTime,
+                lblFPS = lblFPS,
+                sliderTime = sliderTime,
+                txtFileName = txtFileName,
+                Quality = AppSettings.Default.Quality,
+            };
+
+            Controller.OnFinishSetupPlayer += OnFinishSetupPlayer;
+            Controller.OnOpen += OnOpen;
+            Controller.OnReset += InitDetector;
+            Controller.OnShowFrame += OnShowFrame;
+            Controller.OnRefreshMostRecentFrame += OnRefreshMostRecentFrame;
+            Controller.OnAfterStopped += () => Activate();
+            Controller.Init();
+
+            sliderX.Label = "X:";
+            sliderX.SettingsKey = "HeadX";
+            sliderX.IsEnabled = false;
+            sliderX.LoadFromSettings();
+            sliderX.OnChanged += SyncAntennaSensor;
+            sliderX.OnBeginChange += Controller.Stop;
+
+            sliderY.Label = "Y:";
+            sliderY.SettingsKey = "HeadY";
+            sliderY.IsEnabled = false;
+            sliderY.LoadFromSettings();
+            sliderY.OnChanged += SyncAntennaSensor;
+            sliderY.OnBeginChange += Controller.Stop;
+
+            sliderScale.Label = "Scale:";
+            sliderScale.SettingsKey = "HeadScale";
+            sliderScale.IsValueInt = false;
+            sliderScale.IsEnabled = false;
+            sliderScale.LoadFromSettings();
+            sliderScale.OnChanged += SyncAntennaSensor;
+            sliderScale.OnBeginChange += Controller.Stop;
+
+            sliderAngle.Label = "Angle:";
+            sliderAngle.SettingsKey = "HeadAngle";
+            sliderAngle.IsValueInt = false;
+            sliderAngle.IsEnabled = false;
+            sliderAngle.LoadFromSettings();
+            sliderAngle.OnChanged += SyncAntennaSensor;
+            sliderAngle.OnBeginChange += Controller.Stop;
+
+            sliderTreatX.Label = "X:";
+            sliderTreatX.SettingsKey = "TreatmentSensorX";
+            sliderTreatX.IsEnabled = false;
+            sliderTreatX.LoadFromSettings();
+            sliderTreatX.OnChanged += SyncTreatmentSensor;
+
+            sliderTreatY.Label = "Y:";
+            sliderTreatY.SettingsKey = "TreatmentSensorY";
+            sliderTreatY.IsEnabled = false;
+            sliderTreatY.LoadFromSettings();
+            sliderTreatY.OnChanged += SyncTreatmentSensor;
 
             sliderFast.Label = "Fast Motion Threshold:";
             sliderFast.SettingsKey = "FastThreshold";
@@ -62,10 +122,6 @@ namespace SwarmSight
             sliderStationary.SettingsKey = "StationaryThreshold";
             sliderStationary.LoadFromSettings();
 
-            _fullSizeWidth = Width;
-
-            SetupPlayer();
-
             SizeChanged += (sender, e) =>
             {
                 SetupCanvas();
@@ -77,23 +133,31 @@ namespace SwarmSight
 
             Closing += (sender, args) =>
             {
-                Stop();
+                Controller.Stop();
                 Hide();
                 WindowManager.ExitIfLastWindow();
             };
 
-            WindowManager.Exit += (sender, args) => Stop();
+            WindowManager.Exit += (sender, args) => Controller.Stop();
         }
 
+        private void OnFinishSetupPlayer()
+        {
+            InitDetector();
+
+            ShowHideModelViews(hide: true);
+        }
 
         public double CanvasScale = 1.0;
         private void SetupCanvas()
         {
-            if (Pipeline.VideoInfo == null)
+            if (Controller.Pipeline.VideoInfo == null)
                 return;
 
-            CanvasScale = videoCanvas.ActualWidth / Pipeline.VideoInfo.Width;
-            canvasRow.Height = new GridLength(Pipeline.VideoInfo.Height * CanvasScale + videoCanvas.Margin.Top);
+            CanvasScale = videoCanvas.ActualWidth / Controller.Pipeline.VideoInfo.Width;
+            canvasRow.Height = new GridLength(Controller.Pipeline.VideoInfo.Height * CanvasScale + videoCanvas.Margin.Top);
+
+            scrollViewer.Height = canvasRow.Height.Value + 30;
 
             Height = double.NaN;
             SizeToContent = SizeToContent.Height;
@@ -104,17 +168,17 @@ namespace SwarmSight
             antennaSensor.Canvas = videoCanvas;
             antennaSensor.CanvasScale = CanvasScale;
             antennaSensor.Dimensions = new Point(AppSettings.Default.HeadScale * 100, AppSettings.Default.HeadScale * 100);
-            antennaSensor.Position = ToCanvasCoordinates(AppSettings.Default.Origin);
+            antennaSensor.Position = Controller.ToCanvasCoordinates(AppSettings.Default.Origin);
             antennaSensor.Angle = AppSettings.Default.HeadAngle;
 
             antennaSensor.MouseDown += (s, e) =>
             {
-                Pause();
+                Controller.Pause();
             };
 
             antennaSensor.Moved += (s, e) =>
             {
-                var loc = ToVideoCoordinates(antennaSensor.Position);
+                var loc = Controller.ToVideoCoordinates(antennaSensor.Position);
 
                 AppSettings.Default.HeadX = loc.X;
                 AppSettings.Default.HeadY = loc.Y;
@@ -122,15 +186,15 @@ namespace SwarmSight
 
                 LoadFromSettings();
 
-                RefreshMostRecentFrame();
+                Controller.RefreshMostRecentFrame();
 
-                Stop();
+                Controller.Stop();
             };
 
             antennaSensor.Scaled += (s, e) =>
             {
-                var loc = ToVideoCoordinates(antennaSensor.Position);
-                var dims = ToVideoCoordinates(antennaSensor.Dimensions);
+                var loc = Controller.ToVideoCoordinates(antennaSensor.Position);
+                var dims = Controller.ToVideoCoordinates(antennaSensor.Dimensions);
 
                 AppSettings.Default.HeadX = loc.X;
                 AppSettings.Default.HeadY = loc.Y;
@@ -139,9 +203,9 @@ namespace SwarmSight
 
                 LoadFromSettings();
 
-                RefreshMostRecentFrame();
+                Controller.RefreshMostRecentFrame();
 
-                Stop();
+                Controller.Stop();
             };
 
             antennaSensor.Rotated += (s, e) =>
@@ -151,9 +215,9 @@ namespace SwarmSight
 
                 LoadFromSettings();
 
-                RefreshMostRecentFrame();
+                Controller.RefreshMostRecentFrame();
 
-                Stop();
+                Controller.Stop();
             };
         }
 
@@ -164,20 +228,21 @@ namespace SwarmSight
 
             exclusionManager.Changed += (s, e) =>
             {
-                Stop();
+                Controller.Stop();
             };
         }
 
         private void SetupTreatmentSensor()
         {
             treatmentSensor.Canvas = videoCanvas;
-            treatmentSensor.Position = ToCanvasCoordinates(AppSettings.Default.TreatmentSensor);
+            treatmentSensor.Position = Controller.ToCanvasCoordinates(new DPoint(AppSettings.Default.TreatmentSensorX, AppSettings.Default.TreatmentSensorY));
             
             treatmentSensor.Moved += (s, e) =>
             {
-                var loc = ToVideoCoordinates(treatmentSensor.Position);
+                var loc = Controller.ToVideoCoordinates(treatmentSensor.Position);
 
-                AppSettings.Default.TreatmentSensor = loc;
+                AppSettings.Default.TreatmentSensorX = loc.X;
+                AppSettings.Default.TreatmentSensorY = loc.Y;
                 AppSettings.Default.SaveAsync();
 
                 LoadFromSettings();
@@ -186,17 +251,36 @@ namespace SwarmSight
 
         private void LoadFromSettings()
         {
+            ValidateSettings();
+
             var headPos = new System.Drawing.Point(AppSettings.Default.HeadX, AppSettings.Default.HeadY);
             var dim = AppSettings.Default.HeadScale * 100 * CanvasScale;
 
-            txtHeadX.Text = headPos.X.ToString();
-            txtHeadY.Text = headPos.Y.ToString();
+            sliderX.Max = AppSettings.Default.MaxHeadX;
+            sliderX.IsEnabled = true;
+            sliderX.LoadFromSettings();
 
-            txtHeadScale.Text = AppSettings.Default.HeadScale.ToString();
-            txtHeadAngle.Text = AppSettings.Default.HeadAngle.ToString();
+            sliderY.Max = AppSettings.Default.MaxHeadY;
+            sliderY.LoadFromSettings();
+            sliderY.IsEnabled = true;
 
-            txtTreatmentX.Text = AppSettings.Default.TreatmentSensor.X.ToString();
-            txtTreatmentY.Text = AppSettings.Default.TreatmentSensor.Y.ToString();
+            sliderScale.Max = AppSettings.Default.MaxHeadScale;
+            sliderScale.Min = 0.1;
+            sliderScale.LoadFromSettings();
+            sliderScale.IsEnabled = true;
+
+            sliderAngle.Max = 360;
+            sliderAngle.Min = -360;
+            sliderAngle.LoadFromSettings();
+            sliderAngle.IsEnabled = true;
+
+            sliderTreatX.Max = AppSettings.Default.MaxTreatX;
+            sliderTreatX.LoadFromSettings();
+            sliderTreatX.IsEnabled = true;
+
+            sliderTreatY.Max = AppSettings.Default.MaxTreatY;
+            sliderTreatY.LoadFromSettings();
+            sliderTreatY.IsEnabled = true;
 
             chkShowFilterPoints.IsChecked = AppSettings.Default.ShowModel;
             txtVideoLabel.Text = AppSettings.Default.VideoLabel;
@@ -204,60 +288,38 @@ namespace SwarmSight
 
         }
 
+        private void ValidateSettings()
+        {
+            AppSettings.Default.Validate(Controller.Pipeline.VideoInfo.Dimensions);
+        }
+
         private void SyncAntennaSensor()
         {
             var headPos = new System.Drawing.Point(AppSettings.Default.HeadX, AppSettings.Default.HeadY);
             var dim = AppSettings.Default.HeadScale * 100 * CanvasScale;
             
-            if (Pipeline?.VideoInfo != null)
+            if (Controller?.Pipeline?.VideoInfo != null)
             {
-                antennaSensor.Position = ToCanvasCoordinates(headPos);
+                antennaSensor.Position = Controller.ToCanvasCoordinates(headPos);
                 antennaSensor.Dimensions = new Point(dim, dim);
             }
+
+            Controller.RefreshMostRecentFrame();
         }
 
         private void SyncTreatmentSensor()
         {
-            var pos = AppSettings.Default.TreatmentSensor;
+            var pos = new System.Drawing.Point(AppSettings.Default.TreatmentSensorX, AppSettings.Default.TreatmentSensorY);
             
-            if (Pipeline?.VideoInfo != null)
+            if (Controller?.Pipeline?.VideoInfo != null)
             {
-                treatmentSensor.Position = ToCanvasCoordinates(pos);
+                treatmentSensor.Position = Controller.ToCanvasCoordinates(pos);
             }
         }
 
         private void SyncExclusionZones()
         {
             exclusionManager.LoadFromSettings();
-        }
-
-
-        public System.Drawing.Point ToVideoCoordinates(Point source)
-        {
-            return new System.Drawing.Point(
-                ((int)(Pipeline.VideoInfo.Width * AppSettings.Default.Quality) *  source.X / videoCanvas.ActualWidth).Rounded(),
-                ((int)(Pipeline.VideoInfo.Height * AppSettings.Default.Quality) * source.Y / videoCanvas.ActualHeight).Rounded()
-            );
-        }
-
-        public Point ToCanvasCoordinates(System.Drawing.Point source)
-        {
-            var x = videoCanvas.ActualWidth * source.X / (int)(Pipeline.VideoInfo.Width * AppSettings.Default.Quality);
-            var y = videoCanvas.ActualHeight * source.Y / (int)(Pipeline.VideoInfo.Height * AppSettings.Default.Quality);
-            
-            return new Point(x,y);
-        }
-
-
-        private void SetupPlayer()
-        {
-            Pipeline = new VideoPipeline();
-            Pipeline.FrameReady += OnFrameReadyToRender;
-            Pipeline.Stopped += OnStopped;
-
-            InitDetector();
-
-            ShowHideModelViews(hide: true);
         }
 
         private void ShowHideModelViews(bool hide)
@@ -268,7 +330,7 @@ namespace SwarmSight
             antennaSensor.Visibility = 
             lblFPS.Visibility = 
             btnAddExclusion.Visibility = 
-                hide ? Visibility.Hidden : Visibility.Visible;
+                hide ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public void LoadParamsFromJSON(string newParams)
@@ -276,17 +338,9 @@ namespace SwarmSight
             AppSettings.Default.LoadFromJSON(newParams);
         }
 
-        private bool Open()
+        private void OnOpen()
         {
-            var videoFile = txtFileName.Text;
-
-            if (!System.IO.File.Exists(videoFile))
-            {
-                MessageBox.Show("Please select a valid video file");
-                return false;
-            }
-
-            Pipeline.Open(videoFile);
+            ValidateSettings();
 
             SetupCanvas();
             SetupAntennaSensor();
@@ -299,291 +353,42 @@ namespace SwarmSight
             SyncExclusionZones();
 
             ShowHideModelViews(hide: false);
-
-            Stop();
-
-            return true;
-        }
-
-        public void Play(bool oneFrame = false)
+        }        
+        
+        private void OnShowFrame(Frame frame)
         {
-            if (Pipeline.Supervisor.State == VideoPlayer.Pipeline.WorkState.Working)
+            if (frame.ProcessorResult != null)
             {
-                Pause();
-            }
-            else
-            {
-                if (!File.Exists(txtFileName.Text))
-                {
-                    MessageBox.Show("Please select a video file.");
-                    return;
-                }
+                var frameResult = (EfficientTipAndPERdetector.TipAndPERResult)frame.ProcessorResult;
 
-                //Clear canvas buffer
-                canvasBuffer = null;
-                
-                //Adjust for any quality changes, before starting again
-                Pipeline.Supervisor.Processor.VD.PlayerOutputWidth = (int)(Pipeline.VideoInfo.Width * AppSettings.Default.Quality); //204;//
-                Pipeline.Supervisor.Processor.VD.PlayerOutputHeight = (int)(Pipeline.VideoInfo.Height * AppSettings.Default.Quality); //152;//
+                treatmentSensor.SensorValue = frameResult.TreatmentSensorValue.ToString();
 
-                if (oneFrame)
-                    Pipeline.RunOneFrame();
-                else
-                    Pipeline.Start();
-
-                if(!oneFrame)
-                    btnPlayPause.Content = PauseSymbol;
+                modelView.Show(frameResult);
+                sectorView.Show(frameResult);
             }
         }
 
-        private void Pause()
+        private void OnRefreshMostRecentFrame(Frame frame)
         {
-            if (Pipeline.Supervisor.State == VideoPlayer.Pipeline.WorkState.Working)
-            {
-                btnPlayPause.Content = PlaySymbol;
-                Pipeline.Pause();
-            }
+            Processor.Annotate(frame);
         }
-
-        public void Stop()
-        {
-            if (Pipeline.Supervisor.State == VideoPlayer.Pipeline.WorkState.Stopped)
-                return;
-
-            Pipeline.Stop();
-            Reset();
-        }
-
-        private void SeekTo(double percentLocation)
-        {
-            if (Pipeline == null || Pipeline.VideoInfo == null)
-                return;
-
-            Pipeline.Seek(percentLocation);
-
-            lblTime.Content = TimeSpan.FromMilliseconds(Pipeline.VideoInfo.Duration.TotalMilliseconds*percentLocation).ToString();
-        }
-
-        private void OnStopped(object sender, EventArgs eventArgs)
-        {
-            //var rows = ((AntennaAndPERDetector)_processor).dataFrame;
-
-            //File.WriteAllLines(filesToProcess[currentFileIndex] + "_antennaBins_"+ DateTime.Now.ToString("yyyyMMdd-HHmm") +".csv", rows);
-
-
-            if (Application.Current == null)
-                return;
-
-            Reset();
-
-            try
-            {
-                Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    Activate();
-                }));
-            }
-            catch { }
-        }
-
-        public static LinkedList<DateTime> fpsHist = new LinkedList<DateTime>();
-        private static bool isDrawing = false;
-        private static WriteableBitmap canvasBuffer;
-        private static DateTime prevFrameTime = DateTime.Now;
-        private static Frame mostRecentFrame;
-        private void ShowFrame(Frame frame)
-        {
-            if (isDrawing)
-                return;
-
-            if (Application.Current == null)
-                return;
-
-            Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                if (Application.Current == null)
-                    return;
-
-                isDrawing = true;
-
-                //Create WriteableBitmap the first time
-                if (canvasBuffer == null)
-                {
-                    canvasBuffer = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
-                    videoCanvas.Source = canvasBuffer;
-
-                    mostRecentFrame = frame.Clone();
-                }
-
-                //Limit frame rate shown
-                var maxFps = 10;
-                if ((DateTime.Now - prevFrameTime).TotalMilliseconds >= 1000.0 / maxFps)
-                {
-                    //Save the most recent frame
-                    mostRecentFrame.DrawFrame(frame);
-                    mostRecentFrame.ProcessorResult = frame.ProcessorResult;
-                    mostRecentFrame.FrameIndex = frame.FrameIndex;
-
-                    RefreshMostRecentFrame();
-
-                    if (frame.ProcessorResult != null)
-                    {
-                        var frameResult = (EfficientTipAndPERdetector.TipAndPERResult)frame.ProcessorResult;
-
-                        treatmentSensor.SensorValue = frameResult.TreatmentSensorValue.ToString();
-
-                        modelView.Show(frameResult);
-                        sectorView.Show(frameResult);
-                    }
-                    
-                    prevFrameTime = DateTime.Now;
-                }
-
-                _sliderValueChangedByCode = true;
-                sliderTime.Value = frame.FramePercentage*1000;
-                lblTime.Content = frame.FrameTime.ToString();
-
-                //Compute FPS
-                var now = DateTime.Now;
-                fpsHist.AddLast(now);
-                lblFPS.Content = string.Format("FPS: {0:n1}", fpsHist.Count / 1.0);
-
-                while ((now - fpsHist.First()).TotalMilliseconds > 1000)
-                {
-                    fpsHist.RemoveFirst();
-                }
-
-                isDrawing = false;
-            }));
-        }
-
-        private Frame tempFrame;
-        private void RefreshMostRecentFrame()
-        {
-            if (mostRecentFrame == null)
-                return;
-
-            //Prepare the temp frame for annotations
-            if (tempFrame == null)
-                tempFrame = mostRecentFrame.Clone();
-            else
-                tempFrame.DrawFrame(mostRecentFrame);
-
-            tempFrame.FrameIndex = mostRecentFrame.FrameIndex;
-            tempFrame.ProcessorResult = mostRecentFrame.ProcessorResult;
-            (_processor as EfficientTipAndPERdetector).Annotate(tempFrame);
-            tempFrame.CopyToWriteableBitmap(canvasBuffer);
-        }
-
-        private void OnFrameReadyToRender(object sender, OnFrameReady e)
-        {
-            ShowFrame(e.Frame);
-        }
-
-        private void Reset()
-        {
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    btnPlayPause.Content = PlaySymbol;
-
-                    _sliderValueChangedByCode = true;
-                    sliderTime.Value = 0;
-
-                    InitDetector();
-                });
-            }
-            catch { }
-        }
-
+        
         private void InitDetector()
         {
             //Preserve existing frame results if resetting
             Dictionary<int, EfficientTipAndPERdetector.TipAndPERResult> prevData = null;
 
-            if (_processor != null)
+            if (Processor != null)
             {
-                prevData = ((EfficientTipAndPERdetector)_processor).Results;
+                prevData = Processor.Results;
             }
 
-            Pipeline.VideoProcessor = _processor = new EfficientTipAndPERdetector();
+            Controller.Pipeline.VideoProcessor = Processor = new EfficientTipAndPERdetector();
 
             if (prevData != null)
-                ((EfficientTipAndPERdetector)_processor).Results = prevData;
+                Processor.Results = prevData;
         }
-
-        private void txtFileName_LostFocus(object sender, RoutedEventArgs e)
-        {
-            LoadFile();
-        }
-
-        public void LoadFile(bool oneFrame = true)
-        {
-            Stop();
-            Reset();
-            Open();
-            Play(oneFrame);
-        }
-
-        private void OnBrowseClicked(object sender, RoutedEventArgs e)
-        {
-            var ofd = new Microsoft.Win32.OpenFileDialog();
-            ofd.Filter = WindowManager.VideoFileFilter;
-            var result = ofd.ShowDialog();
-
-            if (result == false)
-                return;
-
-            txtFileName.Text = ofd.FileName;
-
-            Stop();
-            Reset();
-            Open();
-            Play(oneFrame: true);
-        }
-
-        private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-
-        }
-
-        private void OnPlayClicked(object sender, RoutedEventArgs e)
-        {
-            Play();
-        }
-
-        private void OnStopClicked(object sender, RoutedEventArgs e)
-        {
-            Stop();
-        }
-
-
-        private void sliderTime_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            //Pause if slider is clicked
-            if (Pipeline.Supervisor.State == VideoPlayer.Pipeline.WorkState.Working)
-                Pause();
-        }
-
-        private void sliderTime_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            sliderTime_MouseDown(sender, e);
-        }
-
-        private bool _sliderValueChangedByCode;
-
-        private void timeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_sliderValueChangedByCode)
-            {
-                _sliderValueChangedByCode = false;
-                return;
-            }
-
-            SeekTo(e.NewValue/1000.0);
-        }
-
+        
         private void btnSaveActivity_Click(object sender, RoutedEventArgs e)
         {
             new Thread(SaveCSV) {IsBackground = true}.Start(txtFileName.Text);
@@ -599,7 +404,6 @@ namespace SwarmSight
                 MessageBox.Show("Make sure the number of commas (',') is the same in both the column label and column value field.");
                 return;
             }
-            
 
             var fileInfo = new FileInfo(videoFileName.ToString());
 
@@ -617,7 +421,7 @@ namespace SwarmSight
                     //"SectorData"
                 );
 
-                var data = ((EfficientTipAndPERdetector)_processor).Results;
+                var data = Processor.Results;
 
                 if (data == null)
                     return;
@@ -708,11 +512,6 @@ namespace SwarmSight
             AppSettings.Default.SaveAsync();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if(Pipeline.Supervisor.State != VideoPlayer.Pipeline.WorkState.Working)
-                Play(oneFrame: true);
-        }
         
         private void btnShowBatchList_Click(object sender, RoutedEventArgs e)
         {
@@ -725,110 +524,6 @@ namespace SwarmSight
             WindowManager.BatchWindow.SaveParams(AppSettings.Default);
             WindowManager.ShowBatchWindow();
             Hide();
-        }
-
-        private void txtHeadX_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-            if (Pipeline?.VideoInfo == null)
-                return;
-
-            int newVal = 0;
-
-            if (int.TryParse(((TextBox)sender).Text, out newVal) && newVal >= 0)
-            {
-                AppSettings.Default.HeadX = newVal;
-                RefreshMostRecentFrame();
-                SyncAntennaSensor();
-            }
-
-            Stop();
-        }
-
-        private void txtHeadY_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-            if (Pipeline?.VideoInfo == null)
-                return;
-
-            int newVal = 0;
-
-            if (int.TryParse(((TextBox)sender).Text, out newVal) && newVal >= 0)
-            {
-                AppSettings.Default.HeadY = newVal;
-                RefreshMostRecentFrame();
-                SyncAntennaSensor();
-            }
-
-            Stop();
-        }
-
-        private void txtHeadScale_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-            if (Pipeline?.VideoInfo == null)
-                return;
-
-            double newVal = 0;
-
-            if (double.TryParse(((TextBox)sender).Text, out newVal) && newVal >= 0.1 && newVal <= 5)
-            {
-                AppSettings.Default.HeadScale = newVal;
-                RefreshMostRecentFrame();
-                SyncAntennaSensor();
-            }
-
-            Stop();
-        }
-
-        private void txtHeadAngle_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-            if (Pipeline?.VideoInfo == null)
-                return;
-
-            int newVal = 0;
-
-            if (int.TryParse(((TextBox)sender).Text, out newVal))
-            {
-                AppSettings.Default.HeadAngle = newVal;
-                RefreshMostRecentFrame();
-                SyncAntennaSensor();
-            }
-
-            Stop();
-        }
-
-        private void txtTreatmentY_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-            if (Pipeline?.VideoInfo == null)
-                return;
-                
-            int y = 0;
-
-            if (int.TryParse(txtTreatmentY?.Text, out y) && y >= 0)
-            {
-                AppSettings.Default.TreatmentSensor = new System.Drawing.Point(AppSettings.Default.TreatmentSensor.X, y);
-                LoadFromSettings();
-                SyncTreatmentSensor();
-            }
-        }
-
-        private void txtTreatmentX_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-            if (Pipeline?.VideoInfo == null)
-                return;
-
-            int x = 0;
-
-            if (int.TryParse(txtTreatmentX?.Text, out x) && x >= 0)
-            {
-                AppSettings.Default.TreatmentSensor = new System.Drawing.Point(x, AppSettings.Default.TreatmentSensor.Y);
-                LoadFromSettings();
-                SyncTreatmentSensor();
-            }
         }
 
         ExclusionZoneManager exclusionManager = new ExclusionZoneManager();

@@ -52,25 +52,34 @@
         <Label Content="Adjust tracking settings" HorizontalAlignment="Right" Margin="0,145,67,0"
                VerticalAlignment="Top" FontWeight="Bold" Grid.Row="1" />
 
-        <ScrollViewer HorizontalAlignment="Right" Margin="0,10,10,0" Width="180" Grid.Column="1" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="scrollViewer" HorizontalAlignment="Right" Margin="0,10,10,0" Width="180" Grid.Column="1" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Height="428">
         <StackPanel >
             <Label Content="Tracking Settings" Margin="0,0,0,0" VerticalAlignment="Top"
                 HorizontalContentAlignment="Center" FontWeight="Bold" />
-            <Expander x:Name="expander0" Header="Video Files" IsExpanded="True">
-                <Grid>
-                    <StackPanel Orientation="Vertical">
-                        <Label Content="Video File:" />
-                        <StackPanel Orientation="Horizontal">
-                            <TextBox x:Name="txtFileName" LostFocus="txtFileName_LostFocus" Width="133px" Height="22px" ToolTip="The path of the video file you want to analyse" MaxLines="1" />
-                            <Button Content="Browse" Click="OnBrowseClicked" ToolTip="Click to find the video file you want to analyze" />
+                <Expander x:Name="expander0" Header="Video Files" IsExpanded="True">
+                    <Grid>
+                        <StackPanel Orientation="Vertical">
+                            <Label Content="Video File:" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="txtFileName" Width="133px" Height="22px" ToolTip="The path of the video file you want to analyse" MaxLines="1" />
+                                <Button x:Name="btnBrowse" Content="Browse" ToolTip="Click to find the video file you want to analyze" />
+                            </StackPanel>
+                            <Button x:Name="btnBatchList" Content="Batch Processing" VerticalAlignment="Top" Height="23" Click="btnShowBatchList_Click" ToolTip="Show window to process multiple files" Margin="0,5"/>
+                            <Button x:Name="btnSaveBatchParams" Content="Save Parameters to Batch"
+            	VerticalAlignment="Top" Height="23" Click="btnSaveBatchParams_Click"
+            	Margin="5,5,5,0" Visibility="Collapsed">
+                                <Button.Background>
+                                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+                                        <GradientStop Color="#FFF3F3F3" Offset="0"/>
+                                        <GradientStop Color="#FFEBEBEB" Offset="1"/>
+                                        <GradientStop Color="#FFE8FF00" Offset="0.502"/>
+                                    </LinearGradientBrush>
+                                </Button.Background>
+                            </Button>
                         </StackPanel>
-                    </StackPanel>
-                </Grid>
-            </Expander>
-            <Button x:Name="btnBatchList" Content="Batch Processing"
-            	VerticalAlignment="Top" Height="23" Click="btnShowBatchList_Click"
-            	Margin="5,10" ToolTip="Show window to process multiple files"/>
-            <Expander x:Name="expander01" Header="Manual Validation" IsExpanded="False">
+                    </Grid>
+                </Expander>
+                <Expander Visibility="Collapsed" x:Name="expander01" Header="Manual Validation" IsExpanded="False">
                 <Grid>
                     <StackPanel Orientation="Vertical">
                         <CheckBox Content="Compare to Manual Data" Margin="0,10,0,0" Click="CheckBox_Click" />
@@ -84,36 +93,21 @@
                     </StackPanel>
                 </Grid>
             </Expander>
-            <Expander x:Name="expander21" Header="Antenna Sensor" IsExpanded="True">
-                <Grid>
-                    <Label Content="X:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="24,0,0,0"/>
-                    <TextBox x:Name="txtHeadX"  Text="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="44,2,0,0" Width="37" TextChanged="txtHeadX_TextChanged"/>
-
-                    <Label Content="Y:" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,43,0"/>
-                    <TextBox x:Name="txtHeadY"  Text="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,0,0" Width="42" TextChanged="txtHeadY_TextChanged"/>
-
-
-                    <Label Content="Scale:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,25,0,0"/>
-                    <TextBox x:Name="txtHeadScale"  Text="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="44,29,0,0" Width="37" TextChanged="txtHeadScale_TextChanged"/>
-
-                    <Label Content="Angle:" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,27,43,0"/>
-                    <TextBox x:Name="txtHeadAngle"  Text="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,29,0,0" Width="42" TextChanged="txtHeadAngle_TextChanged"/>
-
-                    <Button x:Name="btnAddExclusion" VerticalAlignment="Top" Content="Add Exclusion Zone" Margin="5,56,5,5" Click="btnAddExclusion_Click" Visibility="Hidden"/>
-                    <Button x:Name="btnRemoveExclusion" VerticalAlignment="Top" Content="Remove an Exclusion Zone..." Margin="5,83,5,5" Click="btnRemoveExclusion_Click" Visibility="Hidden"/>
-
-                </Grid>
+            <Expander x:Name="expander21" Header="Antenna Sensor" IsExpanded="False">
+                <StackPanel>
+                    <userControls:FilterSlider x:Name="sliderX"/>
+                    <userControls:FilterSlider x:Name="sliderY"/>
+                    <userControls:FilterSlider x:Name="sliderScale"/>
+                    <userControls:FilterSlider x:Name="sliderAngle"/>
+                    <Button x:Name="btnAddExclusion" VerticalAlignment="Top" Content="Add Exclusion Zone" Margin="0,5,0,0" Click="btnAddExclusion_Click" Visibility="Collapsed"/>
+                    <Button x:Name="btnRemoveExclusion" VerticalAlignment="Top" Content="Remove an Exclusion Zone..." Margin="0,5,0,0" Click="btnRemoveExclusion_Click" Visibility="Collapsed"/>
+                </StackPanel>
             </Expander>
-            <Expander x:Name="expander22" Header="Treatment Sensor" IsExpanded="True" >
-                <Grid>
-
-                    <Label Content="X:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="24,0,0,0"/>
-                    <TextBox x:Name="txtTreatmentX"  Text="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="44,2,0,0" Width="37" TextChanged="txtTreatmentX_TextChanged"/>
-
-                    <Label Content="Y:" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,43,0"/>
-                    <TextBox x:Name="txtTreatmentY"  Text="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,0,0" Width="42" TextChanged="txtTreatmentY_TextChanged"/>
-
-                </Grid>
+            <Expander x:Name="expander22" Header="Treatment Sensor" IsExpanded="False" >
+                <StackPanel>
+                    <userControls:FilterSlider x:Name="sliderTreatX" />
+                    <userControls:FilterSlider x:Name="sliderTreatY" />
+                </StackPanel>
             </Expander>
             <Expander x:Name="expFilters" Header="Filters" IsExpanded="False" >
                 <Grid VerticalAlignment="Top">
@@ -123,7 +117,7 @@
                     <CheckBox x:Name="chkShowFilterPoints" Content="Show Detected Points" VerticalAlignment="Top" HorizontalAlignment="Center" Padding="5,0,0,0" Margin="0,184,0,0" Click="chkShowFilterPoints_Click"/>
                 </Grid>
             </Expander>
-            <Expander x:Name="expSave" Header="Save" IsExpanded="True" >
+            <Expander x:Name="expSave" Header="Save" IsExpanded="False" >
                 <Grid VerticalAlignment="Top">
                     <Label Content="Video Label:" />
                         <Label Content="Video Label:" />
@@ -133,23 +127,10 @@
                         <TextBox x:Name="txtVideoLabelColumn" VerticalAlignment="Top" Margin="68,26,5,0" TextChanged="txtVideoLabelColumn_TextChanged"/>
                         <Button x:Name="btnSaveActivity" Content="Save Tracking Data"
             	VerticalAlignment="Top" Height="23" Click="btnSaveActivity_Click"
-            	ToolTip="Saves the changed pixels for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video." Margin="5,85,5,-30" />
+            	ToolTip="Saves the changed pixels for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video." Margin="5,85,5,5" />
 
                     </Grid>
             </Expander>
-                
-            <Button x:Name="btnSaveBatchParams" Content="Save Parameters to Batch"
-            	VerticalAlignment="Top" Height="23" Click="btnSaveBatchParams_Click"
-            	Margin="5,10,5,0" Visibility="Hidden">
-                <Button.Background>
-                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
-                        <GradientStop Color="#FFF3F3F3" Offset="0"/>
-                        <GradientStop Color="#FFEBEBEB" Offset="1"/>
-                        <GradientStop Color="#FFE8FF00" Offset="0.502"/>
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
-
         </StackPanel>
         </ScrollViewer>
         <Grid x:Name="videoGrid" VerticalAlignment="Top">
@@ -168,17 +149,17 @@
             <StackPanel Height="18" Margin="10,0,0,10" VerticalAlignment="Bottom" Orientation="Horizontal"
                     HorizontalAlignment="Left" Grid.Row="1">
                 <Button x:Name="btnPlayPause" Content="4" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="41"
-                    FontFamily="Webdings" Height="18" Click="OnPlayClicked" Opacity="0.8"
+                    FontFamily="Webdings" Height="18" Opacity="0.8"
                     ToolTip="Play/Pause video playback" />
-                <Button Content="&lt;" HorizontalAlignment="Left" VerticalAlignment="Top" Width="38" FontFamily="Webdings"
-                    Height="18" Click="OnStopClicked" Opacity="0.8" ToolTip="Stop playing video" />
-                <Button Content="8" HorizontalAlignment="Left" VerticalAlignment="Top" Width="38" FontFamily="Webdings"
-                    Height="18" Opacity="0.8" ToolTip="Step One Frame" Click="Button_Click" Visibility="Hidden" />
+                <Button x:Name="btnStop" Content="&lt;" HorizontalAlignment="Left" VerticalAlignment="Top" Width="38" FontFamily="Webdings"
+                    Height="18" Opacity="0.8" ToolTip="Stop playing video" />
+                <Button x:Name="btnStepFrame" Content="8" HorizontalAlignment="Left" VerticalAlignment="Top" Width="38" FontFamily="Webdings"
+                    Height="18" Opacity="0.8" ToolTip="Step One Frame" Visibility="Hidden" />
             </StackPanel>
 
-            <Slider x:Name="sliderTime" Margin="132,0,70,6" VerticalAlignment="Bottom" ValueChanged="timeSlider_ValueChanged" Maximum="1000" LargeChange="10" SmallChange="1"
+            <Slider x:Name="sliderTime" Margin="132,0,70,6" VerticalAlignment="Bottom" Maximum="1000" LargeChange="10" SmallChange="1"
                 TickFrequency="100" ToolTip="Slide to the desired location in the video"
-                MouseDown="sliderTime_MouseDown" PreviewMouseDown="sliderTime_PreviewMouseDown" Grid.Row="1" />
+                 Grid.Row="1" />
 
             <Label x:Name="lblTime" Content="00:00:00" HorizontalAlignment="Right" Margin="0,0,10,5"
                VerticalAlignment="Bottom" Width="55" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"

@@ -70,7 +70,7 @@ namespace SwarmSight
         {
             var fileBrowser = new OpenFileDialog();
             fileBrowser.Multiselect = true;
-            fileBrowser.Filter = WindowManager.VideoFileFilter;
+            fileBrowser.Filter = Constants.VideoFileFilter;
 
 
 
@@ -130,6 +130,7 @@ namespace SwarmSight
             }
 
             dataGrid.DataContext = Items;
+            dataGrid.SelectAll();
 
             btnRemove.Visibility = btnSet.Visibility = btnStart.Visibility = Visibility.Visible;
         }
@@ -181,10 +182,15 @@ namespace SwarmSight
         private void ExpandWindow()
         {
             topRow.Height = new GridLength(0);
-            Height = 370;
+            
+
             ResizeMode = ResizeMode.CanResize;
             middleRow.Height = GridLength.Auto;
             bottomRow.Height = new GridLength(45);
+
+
+            Height = double.NaN;
+            SizeToContent = SizeToContent.Height;
         }
 
         private bool dontStop = true;
@@ -205,17 +211,21 @@ namespace SwarmSight
 
             dontStop = true;
             var working = false;
+            var reachedEndOfVideo = false;
             BatchItem currentItem = null;
+            WindowManager.ProcessorWindow.Controller.Pipeline.OnReachedEndOfVideo += () => reachedEndOfVideo = true;
 
             //While there is work to do
-            while(dontStop && (working || Items.Any(i => i.Status == BatchItemStatus.NotStarted)))
+            while (dontStop && (working || Items.Any(i => i.Status == BatchItemStatus.NotStarted)))
             {
                 if(!working)
                 {
-                    currentItem = Items.First(i => i.Status == BatchItemStatus.NotStarted);
-                    
+                    currentItem = Items.First(i => i.Status == BatchItemStatus.NotStarted);                    
+
                     WindowManager.ProcessorWindow.LoadParamsFromJSON(currentItem.ParamsText);
-                    
+
+                    reachedEndOfVideo = false;                    
+
                     currentItem.TimeStarted = DateTime.Now;
                     currentItem.Status = BatchItemStatus.Working;
 
@@ -232,7 +242,7 @@ namespace SwarmSight
                 else //working
                 {
                     //Check if finished
-                    if(WindowManager.ProcessorWindow.Pipeline.IsAtEndOfVideo())
+                    if(reachedEndOfVideo)
                     {
                         currentItem.Status = BatchItemStatus.Finished;
                         WindowManager.ProcessorWindow.SaveCSV(currentItem.File);
@@ -279,32 +289,22 @@ namespace SwarmSight
             else
                 currentItem.Status = BatchItemStatus.NotStarted;
 
-            //monitors the processor for being done
-            //check for is at tend of file, close the window, start the next unprocessed file, wait
-
-            //what if user pauses, or stops? then it just sits and waits. user did this so obviously nothing will happen.
-            //How does stopping work? should stop the current video, don't save, but be able to resume
-            //Resuming the batch? check wich ones are not doen status, and do those
-            //Mocidying settings after it was processed? on saving settings, reset the state to not done
-            //what if there is an error? should set state to error, go onto the next file
-            //end of batch? show a popup showing the batch is done
-            //estimate/FPS update - record start and stop times for the item, at the end, divide by num frames,
-            //User reaslizes that this file is not going well. they could:
-                //pause and adjust params, stop and start from scratch
-                //SKIP the video?
-                //let it continue, but note it and discard the file later
-
-            
+            Dispatcher.Invoke(new Action(() => 
+            {
+                dataGrid.ItemsSource = null;
+                dataGrid.ItemsSource = Items;
+            }));
         }
 
         private void Stop_Clicked(object sender, RoutedEventArgs e)
         {
-            
+            WindowManager.ProcessorWindow.Controller.Pipeline.Stop();
             dontStop = false;
         }
 
         private void ShowDetails_Click(object sender, RoutedEventArgs e)
         {
+            dataGrid.SelectedItem = Items.First(i => i.ID == ((int)((TextBlock)sender).Tag));
             AddEditParams();
         }
 
@@ -319,6 +319,8 @@ namespace SwarmSight
 
             if (selected.Count == 0)
                 return;
+                
+            selected.ForEach(i => Items.First(i2 => i2.ID == i.ID).Status = BatchItemStatus.NotStarted);
 
             var first = selected[0];
 
@@ -340,8 +342,10 @@ namespace SwarmSight
 
             var selected = GetSelectedItems();
 
-            foreach (var item in selected)
+            foreach (var selItem in selected)
             {
+                var item = Items.First(i => i.ID == selItem.ID);
+
                 item.ParamsText = paramsText;
                 item.ParamsSet = "Set";
             }

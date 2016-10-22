@@ -66,10 +66,16 @@ namespace SwarmSight.VideoPlayer.Pipeline
             Processor.VD.Open(path);
         }
 
-        public override bool IsAtEndOfWorkLoad()
+        public override bool IsAtEndOfWorkload()
         {
-            return 
-                Processor.VD.AtEndOfVideo && Processor.VD.FrameBuffer.Count == 0 
+            return
+                Processor.VD.AtEndOfVideo && Processor.VD.FrameBuffer.Count == 0;
+        }
+
+        public override bool IsDoneWorking()
+        {
+            return
+                IsAtEndOfWorkload()
                 || Workers.All(w => w.State == PipelineWorker.WorkerState.Stopped)
             ;
         }

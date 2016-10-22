@@ -9,14 +9,18 @@ namespace SwarmSight.VideoPlayer.Pipeline
 {
     public abstract class PipelineSupervisor
     {
-        public WorkState State;
+        public event Action OnReachedEndOfWorkload;
         public event EventHandler WorkFinished;
+
+        public WorkState State;
+
         public Thread EndOfWorkMonitor;
         public Thread EndOfOneItemMonitor;
         public bool ContinueEndOfWorLoadMonitoring;
         public PipelineWorker[] Workers;
 
-        public abstract bool IsAtEndOfWorkLoad();
+        public abstract bool IsAtEndOfWorkload();
+        public abstract bool IsDoneWorking();
 
         public void StartWorking(bool oneFrame = false)
         {
@@ -70,6 +74,9 @@ namespace SwarmSight.VideoPlayer.Pipeline
                 Workers[w].StopWorking();
             }
 
+            while (Workers.Any(w => w.State == PipelineWorker.WorkerState.Working))
+                Thread.Sleep(100);
+
             State = WorkState.Stopped;
         }
 
@@ -79,14 +86,17 @@ namespace SwarmSight.VideoPlayer.Pipeline
 
             EndOfWorkMonitor = new Thread(() =>
             {
-                while (ContinueEndOfWorLoadMonitoring && !IsAtEndOfWorkLoad())
+                while (ContinueEndOfWorLoadMonitoring && !IsDoneWorking())
                     Thread.Sleep(10);
 
-                if (IsAtEndOfWorkLoad())
+                if (IsDoneWorking())
                     StopWorking();
 
                 while (Workers.Any(w => w.State != PipelineWorker.WorkerState.Stopped))
                     Thread.Sleep(10);
+
+                if (IsAtEndOfWorkload() && OnReachedEndOfWorkload != null)
+                    OnReachedEndOfWorkload();
 
                 if (WorkFinished != null)
                     WorkFinished(this, null);

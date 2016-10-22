@@ -5,9 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SwarmSight.UserControls"
              mc:Ignorable="d" VerticalAlignment="Top" >
-    <Grid>
-        <Slider x:Name="slider" Margin="5,27,5,0" VerticalAlignment="Top" Minimum="1" Maximum="255" Value="10" SmallChange="1" TickFrequency="15" MouseUp="slider_MouseUp" PreviewMouseUp="slider_PreviewMouseUp" MouseMove="slider_MouseMove"/>
-        <StackPanel HorizontalAlignment="Left" Height="100" Margin="10,66,0,0" VerticalAlignment="Top" Width="100"/>
+    <Grid MinHeight="50" MinWidth="80">
+        <Slider x:Name="slider" Margin="5,27,5,0" VerticalAlignment="Top" Minimum="1" Maximum="255" Value="10" SmallChange="1" TickFrequency="15" MouseUp="slider_MouseUp" PreviewMouseUp="slider_PreviewMouseUp" MouseMove="slider_MouseMove" MouseDown="slider_MouseDown" PreviewMouseDown="slider_PreviewMouseDown"/>
         <Label x:Name="lblValue" Content="-" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,5,0"/>
         <Label x:Name="lblTitle" Content="Property:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,0,0,0"/>
     </Grid>
