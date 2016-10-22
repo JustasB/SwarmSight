@@ -2,7 +2,7 @@
 using Settings;
 using SwarmSight.Filters;
 using SwarmSight.HeadPartsTracking;
-using SwarmSight.HeadPartsTracking.Algorithms;
+
 using SwarmSight.Helpers;
 using SwarmSight.VideoPlayer;
 using System;

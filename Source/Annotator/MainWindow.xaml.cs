@@ -17,7 +17,7 @@ using System.Threading;
 using System.Windows.Media.Imaging;
 using Point = System.Drawing.Point;
 using SwarmSight.Filters;
-using SwarmSight.HeadPartsTracking.Algorithms;
+
 using SwarmSight;
 using SwarmSight.Annotator;
 

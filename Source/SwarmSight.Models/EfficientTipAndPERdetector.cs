@@ -13,7 +13,7 @@ using Color = System.Drawing.Color;
 using Settings;
 using System.IO;
 using System.Windows;
-using SwarmSight.HeadPartsTracking.Algorithms;
+
 using MoreLinq;
 using static System.Math;
 using System.Runtime.CompilerServices;

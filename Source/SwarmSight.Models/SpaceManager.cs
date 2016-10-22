@@ -1,5 +1,5 @@
 ﻿using SwarmSight.Filters;
-using SwarmSight.HeadPartsTracking.Algorithms;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
