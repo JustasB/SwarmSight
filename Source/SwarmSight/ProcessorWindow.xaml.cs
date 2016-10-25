@@ -407,7 +407,7 @@ namespace SwarmSight
 
             var fileInfo = new FileInfo(videoFileName.ToString());
 
-            using (var writer = new StreamWriter(fileInfo.FullName + "_Tracker_" + Environment.UserName + "_" + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + ".csv", false))
+            using (var writer = new StreamWriter(fileInfo.FullName + "_Tracker_" + Controller.GetCSVfileEnding(), false))
             {
                 writer.WriteLine
                 (

@@ -13,21 +13,33 @@ namespace SwarmSight.Motion.Processor
 {
     public class MotionProcessor : VideoProcessorBase
     {
+        private PixelShader shader = new PixelShader();
         private FrameBuffer buffer;
         private int framesNeeded = 2;
         public int Threshold = 30;
 
-        private double LeftBoundPCT;
-        private double RightBoundPCT;
-        private double TopBoundPCT;
-        private double BottomBoundPCT;
+        public double LeftBoundPCT;
+        public double RightBoundPCT = 1;
+        public double TopBoundPCT;
+        public double BottomBoundPCT = 1;
+
+        public bool ShowMotion = true;
+        public int ShadeRadius = 1;
 
         public override void OnProcessing(Frame current)
         {
             if(buffer == null || !current.SameSizeAs(buffer.First))
                 buffer = new FrameBuffer(framesNeeded, current.Width, current.Height);
 
-            var result = new FrameComparerResults();
+            var result = new MotionProcessorResult();
+
+            //Check for duplicate frames, and assume previous result for them
+            if(buffer.Count > 0 && !current.IsDifferentFrom(buffer.First))
+            {
+                current.ProcessorResult = (MotionProcessorResult) buffer.First.ProcessorResult;
+                current.IsReadyForRender = true;
+                return;
+            }
 
             if (buffer.Count == framesNeeded)
             {
@@ -59,6 +71,8 @@ namespace SwarmSight.Motion.Processor
             }
 
             current.ProcessorResult = result;
+
+            current.IsReadyForRender = true;
         }
 
         public void SetBounds(double leftPercent, double topPercent, double rightPercent, double bottomPercent)
@@ -67,6 +81,14 @@ namespace SwarmSight.Motion.Processor
             RightBoundPCT = rightPercent;
             TopBoundPCT = topPercent;
             BottomBoundPCT = bottomPercent;
+        }
+
+        public void Annotate(Frame frame)
+        {
+            var result = (MotionProcessorResult)frame.ProcessorResult;
+
+            if(result != null)
+                shader.Shade(frame, result.ChangedPixels, ShadeRadius);
         }
     }
 

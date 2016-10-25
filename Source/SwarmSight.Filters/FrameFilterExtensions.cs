@@ -139,7 +139,7 @@ namespace SwarmSight.Filters
             // Reserve the back buffer for updates.
             writeableBitmap.Lock();
 
-            var targetFirstPx = (long) writeableBitmap.BackBuffer;
+            var targetFirstPx = (byte*)writeableBitmap.BackBuffer;
             var targetStride = writeableBitmap.BackBufferStride;
             var sourceFirstPx = source.FirstPixelPointer;
             var sourceStride = source.Stride;
@@ -148,18 +148,11 @@ namespace SwarmSight.Filters
             {
                 for (var x = 0; x < source.Width; x++)
                 {
-                    // Get a pointer to the back buffer.
-                    var pBackBuffer = targetFirstPx + y*targetStride + x*3;
+                    var offset = sourceStride * y + x*3;
 
-                    var sourceOffset = sourceStride * y + x*3;
-
-                    // Compute the pixel's color.v
-                    var newValue = sourceFirstPx[sourceOffset+2] << 16; // R
-                    newValue |=    sourceFirstPx[sourceOffset+1] << 8;  // G
-                    newValue |=    sourceFirstPx[sourceOffset  ] << 0;  // B
-
-                    // Assign the color data to the pixel.
-                    *((int*) pBackBuffer) = newValue;
+                    targetFirstPx[offset] = sourceFirstPx[offset];
+                    targetFirstPx[offset+1] = sourceFirstPx[offset+1];
+                    targetFirstPx[offset+2] = sourceFirstPx[offset+2];
                 }
             });
 

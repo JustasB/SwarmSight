@@ -33,6 +33,8 @@ namespace SwarmSight
         private VideoDecoder _decoder;
         public static int ResumeFrame = 0;
         public FrameIterator iterator = null;
+        public WriteableBitmap canvasImage;
+
         public MainWindow()
         {
             Current = this;
@@ -301,6 +303,7 @@ namespace SwarmSight
                             nextFrame = _decoder.PlayNextFrame();
                         }
                     }
+
                     if (currentFrame != null)
                         currentFrame.Dispose();
 
@@ -433,19 +436,13 @@ namespace SwarmSight
             }
 
 
-            using (var memory = new MemoryStream())
+            if(canvasImage == null)
             {
-                frame.Bitmap.Save(memory, ImageFormat.Bmp);
-                memory.Position = 0;
-
-                var bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                
-                videoCanvas.Source = bitmapImage;
+                canvasImage = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
+                videoCanvas.Source = canvasImage;
             }
+
+            frame.CopyToWriteableBitmap(canvasImage);
 
             videoCanvas_MouseMove(this, null);
 

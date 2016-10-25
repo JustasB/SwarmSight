@@ -28,7 +28,7 @@ namespace SwarmSight
         public Label lblTime;
         public Label lblFPS;
         public Button btnSave;
-        public VideoProcessorBase _processor;
+        public VideoProcessorBase Processor;
 
         public VideoPipeline Pipeline;
         public double Quality = 1.0;
@@ -42,6 +42,8 @@ namespace SwarmSight
         public event Action<Filters.Frame> OnShowFrame;
         public event Action<Filters.Frame> OnRefreshMostRecentFrame;
         public event Action OnAfterStopped;
+        public event Action OnStartPlaying;
+        public event Action<Filters.Frame> OnProcessed;
 
         public void Init()
         {
@@ -116,8 +118,8 @@ namespace SwarmSight
                     return;
                 }
 
-                //Clear canvas buffer
-                canvasBuffer = null;
+                if (OnStartPlaying != null)
+                    OnStartPlaying();
 
                 //Adjust for any quality changes, before starting again
                 Pipeline.Supervisor.Processor.VD.PlayerOutputWidth = (int)(Pipeline.VideoInfo.Width * Quality);
@@ -181,6 +183,9 @@ namespace SwarmSight
         
         private void OnFrameReadyToRender(object sender, OnFrameReady e)
         {
+            if (OnProcessed != null)
+                OnProcessed(e.Frame);
+
             ShowFrame(e.Frame);
         }
 
@@ -223,7 +228,7 @@ namespace SwarmSight
                 isDrawing = true;
 
                 //Create WriteableBitmap the first time
-                if (canvasBuffer == null)
+                if (canvasBuffer == null || canvasBuffer.Height != frame.Height || canvasBuffer.Width != frame.Width)
                 {
                     canvasBuffer = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
                     Canvas.Source = canvasBuffer;
@@ -238,11 +243,11 @@ namespace SwarmSight
                     mostRecentFrame.DrawFrame(frame);
                     mostRecentFrame.ProcessorResult = frame.ProcessorResult;
                     mostRecentFrame.FrameIndex = frame.FrameIndex;
-
-                    RefreshMostRecentFrame();
-
+                    
                     if (OnShowFrame != null)
                         OnShowFrame(frame);
+
+                    RefreshMostRecentFrame();
 
                     prevFrameTime = DateTime.Now;
                 }
@@ -272,7 +277,7 @@ namespace SwarmSight
                 return;
 
             //Prepare the temp frame for annotations
-            if (tempFrame == null)
+            if (tempFrame == null || !tempFrame.SameSizeAs(mostRecentFrame))
                 tempFrame = mostRecentFrame.Clone();
             else
                 tempFrame.DrawFrame(mostRecentFrame);
@@ -293,6 +298,8 @@ namespace SwarmSight
         
         private void OnBrowseClicked(object sender, RoutedEventArgs e)
         {
+            Stop();
+
             var ofd = new Microsoft.Win32.OpenFileDialog();
             ofd.Filter = Constants.VideoFileFilter;
             var result = ofd.ShowDialog();
@@ -362,5 +369,9 @@ namespace SwarmSight
             return new Point(x, y);
         }
 
+        public string GetCSVfileEnding()
+        {
+            return Environment.UserName + "_" + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + ".csv";
+        }
     }
 }

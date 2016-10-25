@@ -29,6 +29,6 @@ namespace Classes
 
     public class FrameComparisonArgs : EventArgs
     {
-        public FrameComparerResults Results;
+        public MotionProcessorResult Results;
     }
 }

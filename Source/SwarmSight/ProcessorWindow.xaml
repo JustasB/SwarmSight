@@ -127,7 +127,7 @@
                         <TextBox x:Name="txtVideoLabelColumn" VerticalAlignment="Top" Margin="68,26,5,0" TextChanged="txtVideoLabelColumn_TextChanged"/>
                         <Button x:Name="btnSaveActivity" Content="Save Tracking Data"
             	VerticalAlignment="Top" Height="23" Click="btnSaveActivity_Click"
-            	ToolTip="Saves the changed pixels for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video." Margin="5,85,5,5" />
+            	ToolTip="Saves the antenna position data for each frame to a Comma Separated Values (.CSV) file. The CSV file is placed in the same folder as the video." Margin="5,85,5,5" />
 
                     </Grid>
             </Expander>
@@ -142,7 +142,7 @@
             <Image Grid.Row="0" x:Name="videoCanvas" Margin="10,10,10,0" Stretch="Fill" Source="Assets/transparent.png"/>
 
             <Label x:Name="lblFPS" Content="FPS: -" Margin="10,0,0,120" VerticalAlignment="Bottom" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
-               ToolTip="The rendering speed at frames per second" Background="#7FFFFFFF" Foreground="Black" HorizontalAlignment="Left" Width="60" Grid.Row="0" Height="26" />
+               ToolTip="The processing speed at frames per second" Background="#7FFFFFFF" Foreground="Black" HorizontalAlignment="Left" Width="60" Grid.Row="0" Height="26" />
             <userControls:ModelView x:Name="modelView" HorizontalAlignment="Left" Margin="10,0,0,0" Width="120" Height="120" VerticalAlignment="Bottom" Grid.Row="0"/>
             <userControls:SectorView x:Name="sectorView" HorizontalAlignment="Right" Margin="0,0,10,0" Width="120" Height="120" VerticalAlignment="Bottom" Grid.Row="0" />
 

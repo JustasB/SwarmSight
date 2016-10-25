@@ -9,7 +9,7 @@ using SwarmSight.Filters;
 
 namespace Classes
 {
-    public class FrameComparerResults
+    public class MotionProcessorResult
     {
         public int Threshold { get; set; }
         public int ChangedPixelsCount { get; set; }
@@ -18,7 +18,7 @@ namespace Classes
         public List<Point> ChangedPixels { get; set; }
         public Frame Frame { get; set; }
 
-        public FrameComparerResults()
+        public MotionProcessorResult()
         {
             ChangedPixels = new List<Point>();
         }
