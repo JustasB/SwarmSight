@@ -97,7 +97,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>Km8pM7g+fKW7pr7HpIpS+i9+LqiL+9Y+8oaoJWupmlE=</dsig:DigestValue>
+        <dsig:DigestValue>h6bQgfuM5x2mi9/XDCGyOlMqQTfbdwjLJJYf29XnmDM=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -109,7 +109,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>J8ZUcqxouVC2a1FM2IS9pbyuEekaTIZow8aoZlqa/X4=</dsig:DigestValue>
+        <dsig:DigestValue>z3sQJFnzry1tS2/DEKM3H5ECMsWYA+Hhi44Bs4MQIS4=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -145,7 +145,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>oK2GmaN52BFFc2H6oM7Np8rvS3LgFGfWfiigQBK26/s=</dsig:DigestValue>
+        <dsig:DigestValue>28U/+PsugV0G6jh4w4NDxdwv0SVpVPVGRKj1SpjDvI4=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -169,10 +169,19 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>YNfcPIw3dnjc9B146BpcxxtY4+VlMXQtCrSeTIKdyXE=</dsig:DigestValue>
+        <dsig:DigestValue>K+OVLFldqJnCviiDGBQCC6RIA0jVucopNwq+52jErqc=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
+  <file name="ffprobe.exe" size="28688896">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>h2LXbeqJJB+pR94EDwGFtb61pinkXIzX+VeEPc7Cfpc=</dsig:DigestValue>
+    </hash>
+  </file>
   <file name="SwarmSight.exe.config" size="161">
     <hash>
       <dsig:Transforms>

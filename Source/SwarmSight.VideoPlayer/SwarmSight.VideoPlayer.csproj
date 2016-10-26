@@ -73,6 +73,9 @@
     <Compile Include="VideoProcessorBase.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ffprobe.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="NReco.VideoConverter.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

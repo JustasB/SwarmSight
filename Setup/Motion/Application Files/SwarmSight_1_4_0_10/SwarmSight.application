@@ -14,14 +14,14 @@
     <framework targetVersion="4.5" profile="Full" supportedRuntime="4.0.30319" />
   </compatibleFrameworks>
   <dependency>
-    <dependentAssembly dependencyType="install" codebase="Application Files\SwarmSight_1_4_0_10\SwarmSight.exe.manifest" size="11216">
+    <dependentAssembly dependencyType="install" codebase="Application Files\SwarmSight_1_4_0_10\SwarmSight.exe.manifest" size="11609">
       <assemblyIdentity name="SwarmSight.exe" version="1.4.0.10" publicKeyToken="0000000000000000" language="en" processorArchitecture="msil" type="win32" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>02CyKARW5l6KluLSnz4ZnT5X5YfWLhNiTJ0fDlljU14=</dsig:DigestValue>
+        <dsig:DigestValue>gbsJq306JDn+Mi4ifKSjRg4tVkZbiQ0U+WqGc9BPqAk=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
