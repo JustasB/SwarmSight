@@ -27,7 +27,6 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
     <InstallUrl>https://raw.githubusercontent.com/JustasB/SwarmSight/master/Setup/Motion/</InstallUrl>
-    <UpdateUrl>https://raw.githubusercontent.com/JustasB/SwarmSight/master/Setup/Motion/</UpdateUrl>
     <SupportUrl>https://github.com/JustasB/SwarmSight</SupportUrl>
     <ErrorReportUrl>https://github.com/JustasB/SwarmSight/Issues</ErrorReportUrl>
     <TargetCulture>en</TargetCulture>
@@ -35,7 +34,7 @@
     <PublisherName>SwarmSight</PublisherName>
     <WebPage>publish.htm</WebPage>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>14</ApplicationRevision>
+    <ApplicationRevision>15</ApplicationRevision>
     <ApplicationVersion>1.4.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
