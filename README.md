@@ -27,11 +27,13 @@ To compare two videos, load the saved video motion data, select the frames to co
 
 ![SwarmSight Statistics](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Stats.JPG)
 
-#Download, Unzip, & Install
+#Download & Install
 
-1. [Download the ZIP file](https://github.com/justasb/SwarmSight/raw/master/Download/SwarmSight.zip)
-2. Unzip the downloaded file
-3. Install by clicking setup.exe
+1. Download the latest [SwarmSight Motion Analysis.application](https://cdn.rawgit.com/JustasB/SwarmSight/dc49240819577b2da592037b58b322ce1f179abc/Setup/MotionAnalysis/SwarmSight Motion Analysis.application) installer
+2. Open the installer in Windows OS, and follow the steps on screen
+3. The installer will download, install, create shortcuts, and launch the app
+
+The app can be launched from Start Menu > SwarmSight > SwarmSight Motion Analysis.
 
 #Educational Materials and Examples
 
@@ -51,3 +53,8 @@ If you run into problems, please [report them as issues](https://github.com/just
 ##Legal
 
 You may use the app for any purpose (commercial or otherwise) and can modify, copy, and redistribute it as long as you cite me, Justas Birgiolas, as the developer. The app comes with no warranty. 
+
+The software uses the following previous work:
+ - Icon, modified from: https://commons.wikimedia.org/wiki/File:Eye_of_Horus.svg
+ - ffmpeg: https://www.ffmpeg.org/
+ - NReco.VideoConverter: https://www.nrecosite.com/video_converter_net.aspx
