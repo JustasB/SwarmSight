@@ -19,3 +19,4 @@
 *.manifest binary
 *.application binary
 *.deploy binary
+*.exe.config binary

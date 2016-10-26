@@ -28,9 +28,11 @@
     <MapFileExtensions>false</MapFileExtensions>
     <InstallUrl>https://cdn.rawgit.com/JustasB/SwarmSight/master/Setup/Motion/</InstallUrl>
     <UpdateUrl>https://cdn.rawgit.com/JustasB/SwarmSight/master/Setup/Motion/</UpdateUrl>
+    <SupportUrl>https://github.com/JustasB/SwarmSight</SupportUrl>
+    <ErrorReportUrl>https://github.com/JustasB/SwarmSight/Issues</ErrorReportUrl>
     <TargetCulture>en</TargetCulture>
-    <ProductName>SwarmSight</ProductName>
-    <PublisherName>Justas Birgiolas</PublisherName>
+    <ProductName>SwarmSight Motion Analysis</ProductName>
+    <PublisherName>SwarmSight</PublisherName>
     <WebPage>publish.htm</WebPage>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <ApplicationRevision>8</ApplicationRevision>
