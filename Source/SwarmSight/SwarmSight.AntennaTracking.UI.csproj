@@ -29,10 +29,10 @@
     <MapFileExtensions>false</MapFileExtensions>
     <InstallUrl>https://raw.githubusercontent.com/JustasB/SwarmSight/master/Setup/AntennaTracking/</InstallUrl>
     <ErrorReportUrl>https://github.com/JustasB/SwarmSight/Issues</ErrorReportUrl>
-    <ProductName>Swarm Sight Antenna Tracking</ProductName>
+    <ProductName>SwarmSight Antenna Tracking</ProductName>
     <PublisherName>SwarmSight</PublisherName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>13</ApplicationRevision>
+    <ApplicationRevision>16</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -75,6 +75,13 @@
   <PropertyGroup>
     <StartupObject>SwarmSight.WindowManager</StartupObject>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>SwarmSight.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup />
+  <PropertyGroup>
+    <NoWin32Manifest>true</NoWin32Manifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="OxyPlot">
       <HintPath>..\SwarmSight.Stats\OxyPlot.dll</HintPath>
@@ -110,12 +117,6 @@
       <DependentUpon>BatchList.xaml</DependentUpon>
     </Compile>
     <Compile Include="Helpers\MarginSetterHelper.cs" />
-    <Compile Include="UserControls\ComparisonChart.xaml.cs">
-      <DependentUpon>ComparisonChart.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UserControls\ComparisonTable.xaml.cs">
-      <DependentUpon>ComparisonTable.xaml</DependentUpon>
-    </Compile>
     <Compile Include="UserControls\ModelView.xaml.cs">
       <DependentUpon>ModelView.xaml</DependentUpon>
     </Compile>
@@ -148,14 +149,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="UserControls\AntennaSensor.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UserControls\ComparisonChart.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UserControls\ComparisonTable.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -252,11 +245,21 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Assets\Averaged Head.png" />
-    <Resource Include="Assets\move.png" />
-    <Resource Include="Assets\resize.png" />
-    <Resource Include="Assets\Rotate.png" />
-    <Resource Include="Assets\transparent.png" />
+    <Content Include="Assets\Averaged Head.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\move.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\resize.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Rotate.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\transparent.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Settings\SwarmSight.AntennaTracking.Settings.csproj">

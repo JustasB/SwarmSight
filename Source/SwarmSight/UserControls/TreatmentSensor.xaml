@@ -13,7 +13,7 @@
         <Grid x:Name="ellipseGrid" Width="30" Height="30" Margin="17.5,32,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left">
             <Ellipse HorizontalAlignment="Left" Height="30" Stroke="Black" VerticalAlignment="Top" Width="30"/>
             <Ellipse x:Name="sensor" Fill="White" Margin="13.5" StrokeThickness="0.5" Height="3" Stroke="Black" Width="3" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-            <Image x:Name="imgMove" ToolTip="Click and drag to move" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="TRANSLATE_move" Source="/SwarmSight;component/Assets/transparent.png" Cursor="SizeAll"/>
+            <Image x:Name="imgMove" ToolTip="Click and drag to move" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="TRANSLATE_move" Source="/Assets/transparent.png" Cursor="SizeAll"/>
         </Grid>
         <Label Content="Treatment" VerticalAlignment="Top" Margin="0,-5,0,0" HorizontalAlignment="Center"/>
         <Label Content="Sensor" Margin="0,10,0,0" HorizontalAlignment="Center" VerticalAlignment="Top"/>

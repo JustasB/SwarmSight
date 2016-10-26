@@ -303,7 +303,7 @@ namespace SwarmSight
             {
                 writer.WriteLine("Frame, Changed Pixels");
 
-                Activity.ForEach(a => writer.WriteLine("{0}, {1}", a.X + 1, a.Y));
+                Activity.ForEach(a => writer.WriteLine("{0}, {1}", a.X, a.Y));
 
                 writer.Flush();
             }

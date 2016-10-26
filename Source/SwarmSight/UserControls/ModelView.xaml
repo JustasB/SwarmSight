@@ -8,7 +8,7 @@
              d:DesignHeight="120" d:DesignWidth="120">
     <Grid Background="#7FFFFFFF">
         <Grid Width="100" Height="100" Margin="10,20,10,0">
-            <Image x:Name="image" HorizontalAlignment="Center" Height="50"  VerticalAlignment="Center" Width="50" Source="/SwarmSight;component/Assets/Averaged Head.png" Margin="24,25,25,25"/>
+            <Image x:Name="image" HorizontalAlignment="Center" Height="50"  VerticalAlignment="Center" Width="50" Source="/Assets/Averaged Head.png" Margin="24,25,25,25"/>
             <Line
                 x:Name="leftLine"
                 X1="15" Y1="10"

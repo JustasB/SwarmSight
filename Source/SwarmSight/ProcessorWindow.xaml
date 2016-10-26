@@ -93,7 +93,7 @@
                     </StackPanel>
                 </Grid>
             </Expander>
-            <Expander x:Name="expander21" Header="Antenna Sensor" IsExpanded="False">
+                <Expander x:Name="expAntSens" Header="Antenna Sensor" IsExpanded="False">
                 <StackPanel>
                     <userControls:FilterSlider x:Name="sliderX"/>
                     <userControls:FilterSlider x:Name="sliderY"/>

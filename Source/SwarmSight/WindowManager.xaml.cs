@@ -90,8 +90,8 @@ namespace SwarmSight
         {
             double screenWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
             double screenHeight = System.Windows.SystemParameters.PrimaryScreenHeight;
-            double windowWidth = target.Width;
-            double windowHeight = target.Height;
+            double windowWidth = target.ActualWidth;
+            double windowHeight = target.ActualHeight;
             target.Left = (screenWidth / 2) - (windowWidth / 2);
             target.Top = (screenHeight / 2) - (windowHeight / 2);
         }

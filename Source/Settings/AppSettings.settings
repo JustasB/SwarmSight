@@ -87,13 +87,13 @@
       <Value Profile="(Default)">40</Value>
     </Setting>
     <Setting Name="VideoLabel" Type="System.String" Scope="User">
-      <Value Profile="(Default)">CustomColumn</Value>
+      <Value Profile="(Default)">None</Value>
     </Setting>
     <Setting Name="AddExclusionMsgSeen" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="VideoLabelColumn" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">CustomColumn</Value>
     </Setting>
     <Setting Name="TreatmentSensorY" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">100</Value>

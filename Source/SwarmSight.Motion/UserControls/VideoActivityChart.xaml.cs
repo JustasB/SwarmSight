@@ -152,14 +152,14 @@ namespace SwarmSight.UserControls
             if (result == false)
                 return;
 
-            txtFileName.Text = ofd.FileName;
+            txtFileNameCSV.Text = ofd.FileName;
 
             ReadValuesFromFile();
         }
 
         private void ReadValuesFromFile()
         {
-            if (!File.Exists(txtFileName.Text) || !txtFileName.Text.EndsWith(".csv"))
+            if (!File.Exists(txtFileNameCSV.Text) || !txtFileNameCSV.Text.EndsWith(".csv"))
             {
                 MessageBox.Show("Please select a valid CSV file");
                 return;
@@ -168,7 +168,7 @@ namespace SwarmSight.UserControls
             try
             {
                 var parsedActivity = File
-                    .ReadAllLines(txtFileName.Text)
+                    .ReadAllLines(txtFileNameCSV.Text)
                     .Skip(1) //Header
                     .Select(line =>
                         {
@@ -188,12 +188,17 @@ namespace SwarmSight.UserControls
             }
         }
 
-        private void txtFileName_KeyUp(object sender, KeyEventArgs e)
+        private void txtFileNameCSV_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
                 ReadValuesFromFile();
             }
+        }
+
+        private void txtFileNameCSV_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ReadValuesFromFile();
         }
     }
 }

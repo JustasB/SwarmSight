@@ -361,7 +361,7 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("CustomColumn")]
+        [global::System.Configuration.DefaultSettingValueAttribute("None")]
         public string VideoLabel {
             get {
                 return ((string)(this["VideoLabel"]));
@@ -385,7 +385,7 @@ namespace Settings {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("CustomColumn")]
         public string VideoLabelColumn {
             get {
                 return ((string)(this["VideoLabelColumn"]));

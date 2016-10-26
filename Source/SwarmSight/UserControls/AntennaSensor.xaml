@@ -16,8 +16,8 @@
                 <Ellipse Visibility="Hidden" x:Name="imgLeftBase" Fill="White" HorizontalAlignment="Center" Height="5" Margin="0,0,15,0" Stroke="Black" VerticalAlignment="Center" Width="5" StrokeThickness="0.5" ToolTip="Click and drag to reposition left antenna base" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="imgLeftBase_MouseMove"/>
                 <Ellipse Visibility="Hidden" x:Name="imgRightBase" Fill="White" HorizontalAlignment="Center" Height="5" Margin="15,0,0,0" Stroke="Black" VerticalAlignment="Center" Width="5" StrokeThickness="0.5" RenderTransformOrigin="8.04,0.39" ToolTip="Click and drag to reposition right antenna base" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="imgRightBase_MouseMove"/>
             </Grid>
-            <Image x:Name="imgRotate" HorizontalAlignment="Center" Height="15" VerticalAlignment="Top" Width="15" Source="/SwarmSight;component/Assets/Rotate.png" ToolTip="Click and drag to rotate" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="ROTATE_move" Margin="0,-15,0,0" Cursor="SizeWE"/>
-            <Image x:Name="imgScale" HorizontalAlignment="Right" Height="15" VerticalAlignment="Bottom" Source="/SwarmSight;component/Assets/resize.png" Margin="0,0,-9,-12" ToolTip="Click and drag to resize" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="SCALE_move" RenderTransformOrigin="0.5,0.5" Width="7" Cursor="SizeNWSE">
+            <Image x:Name="imgRotate" HorizontalAlignment="Center" Height="15" VerticalAlignment="Top" Width="15" Source="/Assets/Rotate.png" ToolTip="Click and drag to rotate" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="ROTATE_move" Margin="0,-15,0,0" Cursor="SizeWE"/>
+            <Image x:Name="imgScale" HorizontalAlignment="Right" Height="15" VerticalAlignment="Bottom" Source="/Assets/resize.png" Margin="0,0,-9,-12" ToolTip="Click and drag to resize" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="SCALE_move" RenderTransformOrigin="0.5,0.5" Width="7" Cursor="SizeNWSE">
                 <Image.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform/>

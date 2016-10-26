@@ -47,6 +47,10 @@ namespace SwarmSight
 
         public void Init()
         {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            Application.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
+            Application.Current.Exit += OnExiting;
+
             btnPlayPause.FontFamily = 
                 btnStop.FontFamily = 
                 btnStepFrame.FontFamily = 
@@ -66,6 +70,40 @@ namespace SwarmSight
             sliderTime.ValueChanged += timeSlider_ValueChanged;
 
             SetupPlayer();
+        }
+
+        private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            ShowErrorMessage(e.Exception);
+            e.Handled = true;
+        }
+
+        private void OnExiting(object sender, ExitEventArgs e)
+        {
+            Stop();
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var ex = e.ExceptionObject as Exception;
+
+            ShowErrorMessage(ex);
+        }
+
+        private static Exception prevEx;
+        private void ShowErrorMessage(Exception ex)
+        {
+            if (prevEx != null && ex.StackTrace == prevEx.StackTrace)
+                return;
+
+            prevEx = ex;
+
+            MessageBox.Show("Sorry, something went wrong... Below are the details of the problem:" +
+                    Environment.NewLine + Environment.NewLine +
+                    "Message: " + ex.Message +
+                    Environment.NewLine + Environment.NewLine +
+                    "Location: " + Environment.NewLine +
+                    ex.StackTrace);
         }
 
         public void SetupPlayer()

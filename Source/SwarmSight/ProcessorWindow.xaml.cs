@@ -353,6 +353,14 @@ namespace SwarmSight
             SyncExclusionZones();
 
             ShowHideModelViews(hide: false);
+
+            Dispatcher.InvokeAsync(() => {
+
+                Thread.Sleep(500);
+                WindowManager.CenterWindowOnScreen(this);
+
+            });
+            
         }        
         
         private void OnShowFrame(Frame frame)
