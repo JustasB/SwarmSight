@@ -7,3 +7,4 @@
  5. Once the video is finished, click "Save as CSV"
  6. The .CSV file with the frame-by-frame activity levels will be located in the same folder as the video
  7. Look at the Activity Buildup Analysis.xlsx file for an example of analyzing the activity data
+ 8. Look at the MS Powerpoint file for examples of what can be done with the motion data
