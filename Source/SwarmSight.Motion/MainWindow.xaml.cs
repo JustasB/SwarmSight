@@ -227,7 +227,7 @@ namespace SwarmSight
         {
             if (btnShowCompare.Content.ToString().Contains(">>"))
             {
-                Width = 1245;
+                Width = 1260;
                 btnShowCompare.Content = btnShowCompare.Content.ToString().Replace(">>", "<<");
             }
             else
