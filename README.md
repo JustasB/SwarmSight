@@ -1,5 +1,9 @@
 # SwarmSight
-SwarmSight is an open-source video motion analysis tool to assess the aggregate movement or activity levels of groups or swarms of animals. It is used by behavioral scientists to study the behavior of insects, birds, fish, and other animals. It's free, open-source, and runs on Windows.
+SwarmSight is an open-source video motion analysis tool to assess the aggregate movement or activity levels of groups or swarms of animals. It is used by behavioral scientists to study the behavior of insects, birds, fish, and other animals. It's free, open-source, and runs on Windows. 
+
+##Citation
+
+When using the software in your research, please cite the following publication: [J Birgiolas, CM Jernigan, BH Smith, SM Crook, SwarmSight: Measuring the temporal progression of animal group activity levels from natural-scene and laboratory videos, Behavior Research Methods, 1-12](http://link.springer.com/article/10.3758/s13428-016-0732-2)
 
 ##Analyze Video Motion
 
