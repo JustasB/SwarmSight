@@ -41,7 +41,7 @@
       <HintPath>..\SwarmSight.GPU\Cudafy.NET.dll</HintPath>
     </Reference>
     <Reference Include="MoreLinq, Version=1.4.18916.0, Culture=neutral, PublicKeyToken=384d532d7e88985d, processorArchitecture=MSIL">
-      <HintPath>..\SwarmSight\packages\morelinq.1.4.0\lib\net35\MoreLinq.dll</HintPath>
+      <HintPath>..\packages\morelinq.1.4.0\lib\net35\MoreLinq.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PresentationCore" />
@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\SwarmSight\packages\Accord.3.0.2\build\Accord.targets" Condition="Exists('..\SwarmSight\packages\Accord.3.0.2\build\Accord.targets')" />

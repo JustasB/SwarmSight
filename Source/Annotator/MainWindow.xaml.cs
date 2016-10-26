@@ -7,7 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Classes;
 using SwarmSight.VideoPlayer;
-using OxyPlot.Wpf;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
