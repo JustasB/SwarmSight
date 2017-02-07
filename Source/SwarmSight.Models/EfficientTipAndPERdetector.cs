@@ -21,6 +21,7 @@ using System.Threading;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace SwarmSight.HeadPartsTracking
 {
@@ -1135,10 +1136,20 @@ namespace SwarmSight.HeadPartsTracking
                 {
                     var column = line
                         .Split(',')
-                        .Select(col => { double parsed; return double.TryParse(col, out parsed) ? parsed : double.MinValue; })
+                        .Select(col => 
+                        { 
+                            double parsed; 
+
+                            return double.TryParse(col, out parsed) ?
+                                parsed : 
+                                double.MinValue; 
+
+                        })
                         .ToArray();
 
                     
+
+
                     if (column[cols["lftX"].i] != double.MinValue)
                     {
                         ConvexHullsPrior[PointLabels.LeftFlagellumTip].Add(new Point(column[cols["lftX"].i], column[cols["lftY"].i]));

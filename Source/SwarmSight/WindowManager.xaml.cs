@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -14,6 +15,9 @@ namespace SwarmSight
 
         public WindowManager()
         {
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
+            CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-US");
+
             Startup += (object sender, StartupEventArgs e) =>
             {
                 ShowProcessorWindow();

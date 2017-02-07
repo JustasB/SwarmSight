@@ -20,6 +20,7 @@ using System.Windows.Shapes;
 using Frame = SwarmSight.Filters.Frame;
 using Point = System.Windows.Point;
 using DPoint = System.Drawing.Point;
+using System.Deployment.Application;
 
 namespace SwarmSight
 {
@@ -44,6 +45,8 @@ namespace SwarmSight
             AppSettings.Default.Upgrade();
             
             InitializeComponent();
+
+            try { Title += ApplicationDeployment.CurrentDeployment.CurrentVersion; } catch { }
 
             Controller = new VideoPlayerController
             {

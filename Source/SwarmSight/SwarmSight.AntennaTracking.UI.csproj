@@ -27,12 +27,14 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <InstallUrl>https://raw.githubusercontent.com/JustasB/SwarmSight/master/Setup/AntennaTracking/</InstallUrl>
+    <InstallUrl>https://gitcdn.link/repo/JustasB/SwarmSight/master/Setup/AntennaTracking/</InstallUrl>
     <ErrorReportUrl>https://github.com/JustasB/SwarmSight/Issues</ErrorReportUrl>
+    <TargetCulture>en-US</TargetCulture>
     <ProductName>SwarmSight Antenna Tracking</ProductName>
     <PublisherName>SwarmSight</PublisherName>
+    <WebPage>publish.htm</WebPage>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>16</ApplicationRevision>
+    <ApplicationRevision>20</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -91,6 +93,7 @@
       <HintPath>..\SwarmSight.Stats\OxyPlot.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
