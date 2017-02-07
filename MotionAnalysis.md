@@ -26,7 +26,7 @@ To compare two videos, load the saved video motion data, select the frames to co
 
 #Download & Install
 
-1. Download the latest [SwarmSight Motion Analysis.application](https://cdn.rawgit.com/JustasB/SwarmSight/dc49240819577b2da592037b58b322ce1f179abc/Setup/MotionAnalysis/SwarmSight%20Motion%20Analysis.application) installer
+1. Download the latest [SwarmSight Motion Analysis installer](https://github.com/JustasB/SwarmSight/raw/master/Setup/MotionAnalysis/setup.exe)
 2. Open the installer in Windows OS, and follow the steps on screen
 3. The installer will download, install, create shortcuts, and launch the app
 
