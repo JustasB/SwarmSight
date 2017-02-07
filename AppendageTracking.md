@@ -13,7 +13,7 @@ The program computes the antenna and proboscis tip locations, and saves the data
 
 #Download & Install
 
-1. Download the latest [SwarmSight Antenna Tracking.application](https://cdn.rawgit.com/JustasB/SwarmSight/dc49240819577b2da592037b58b322ce1f179abc/Setup/AntennaTracking/SwarmSight%20Antenna%20Tracking.application) installer
+1. Download the latest [SwarmSight Antenna Tracking installer](https://github.com/JustasB/SwarmSight/raw/master/Setup/AntennaTracking/setup.exe) 
 2. Open the installer in Windows OS, and follow the steps on screen
 3. The installer will download, install, create shortcuts, and launch the app
 
