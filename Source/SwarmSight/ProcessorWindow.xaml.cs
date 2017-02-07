@@ -46,7 +46,7 @@ namespace SwarmSight
             
             InitializeComponent();
 
-            try { Title += ApplicationDeployment.CurrentDeployment.CurrentVersion; } catch { }
+            try { Title += " " + ApplicationDeployment.CurrentDeployment.CurrentVersion; } catch { }
 
             Controller = new VideoPlayerController
             {
