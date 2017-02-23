@@ -11,7 +11,7 @@ The user positions the Antenna Sensor widget, adjusts the filter, and exclusion 
 The program computes the antenna and proboscis tip locations, and saves the data into a .CSV file that can be opened with most statistical software packages.
 ![Result](Screenshots/output.jpg)
 
-#Download & Install
+# Download & Install
 
 1. Download the latest [SwarmSight Antenna Tracking installer](https://github.com/JustasB/SwarmSight/raw/master/Setup/AntennaTracking/setup.exe) 
 2. Open the installer in Windows OS, and follow the steps on screen
