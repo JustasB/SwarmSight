@@ -10,7 +10,7 @@ SwarmSight is an open-source video analysis tool with modules for:
 
 | [Motion Analysis](MotionAnalysis.md) | [Appendage Tracking](AppendageTracking.md) |
 |---------|---------|
-| [ <img scr="https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Main.JPG"> ](MotionAnalysis.md) | [ <img scr="https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/AntennaTracking.JPG"> ](AppendageTracking.md) |
+| [<img src="https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Main.JPG">](MotionAnalysis.md) | [<img src="https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/AntennaTracking.JPG">](AppendageTracking.md) |
 
 # Problems
 If you run into problems, please [report them as issues](https://github.com/justasb/SwarmSight/issues).
