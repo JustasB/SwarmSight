@@ -6,16 +6,16 @@ SwarmSight is an open-source video analysis tool with modules for:
  
  It is used by behavioral scientists to study the behavior of insects, birds, fish, and other animals. It's free, open-source, and runs on Windows. 
 
-#Modules
+# Modules
 
 | [Motion Analysis](MotionAnalysis.md) | [Appendage Tracking](AppendageTracking.md) |
 |---------|---------|
 | [![Main UI](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Main.JPG)](MotionAnalysis.md) | [![Main UI](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/AntennaTracking.JPG)](AppendageTracking.md) |
 
-#Problems
+# Problems
 If you run into problems, please [report them as issues](https://github.com/justasb/SwarmSight/issues).
 
-#Source
+# Source
 
 The app is written in C#. To make changes, you will need [.Net Framework](https://www.microsoft.com/net) and [Visual Studio (free)](https://www.visualstudio.com/products/visual-studio-community-vs).
 
@@ -23,7 +23,7 @@ Once you get the [source code](https://github.com/justasb/SwarmSight/tree/master
 
 If you run into problems, please [report them as issues](https://github.com/justasb/SwarmSight/issues).
 
-##Legal
+## Legal
 
 You may use the app for any purpose (commercial or otherwise) and can modify, copy, and redistribute it as long as you cite me, Justas Birgiolas, as the developer. The app comes with no warranty. 
 
