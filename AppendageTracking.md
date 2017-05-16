@@ -3,7 +3,7 @@
 SwarmSight Antenna Tracking module will analyze videos of restrained insects, filmed from the top-down view, and provide the user with the antenna and proboscis tip locations for each frame of the video.
 
 Insect heads filmed from the top-down view can be analyzed by the software. Below is an example setup for filming a honey bee that is delivered an odor stimulus. The bee and its head is restrained from movement, and the camera is positioned above the head on a tripod.
-![Experiment](Screenshots/experiment diagram.jpg)
+![Experiment](Screenshots/experiment%20diagram.jpg)
 
 The user positions the Antenna Sensor widget, adjusts the filter, and exclusion zone settings.
 ![UI](Screenshots/AntennaTracking.JPG)
