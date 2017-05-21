@@ -21,3 +21,7 @@ The app can be launched from Start Menu > SwarmSight > SwarmSight Antenna Tracki
 
 # Society for Neuroscience 2016 Poster
 You can download the conference [poster](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Poster.pdf) and the [abstract](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Abstract.pdf) describing the software validation and findings.
+
+# Funding
+
+Development of this software was supported in part by grant R01MH1006674 from NIH to SM Crook and NSF Ideas lab project on ‘Cracking the olfactory Code’ to BH Smith. 
