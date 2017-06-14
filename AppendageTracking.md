@@ -11,13 +11,14 @@ The user positions the Antenna Sensor widget, adjusts the filter, and exclusion 
 The program computes the antenna and proboscis tip locations, and saves the data into a .CSV file that can be opened with most statistical software packages.
 ![Result](Screenshots/output.jpg)
 
-# Download & Install
+# Download, Install, and Analyze Example Video
 
 1. Download the latest [SwarmSight Antenna Tracking installer](https://github.com/JustasB/SwarmSight/raw/master/Setup/AntennaTracking/setup.exe) 
-2. Open the installer in Windows OS, and follow the steps on screen
-3. The installer will download, install, create shortcuts, and launch the app
-
-The app can be launched from Start Menu > SwarmSight > SwarmSight Antenna Tracking.
+2. Download [an example video](https://github.com/JustasB/SwarmSight/raw/master/Examples/Appendage%20Tracking/B1-Feb22-heptanal.mov)
+3. Open the installer in Windows OS, and follow the steps on screen
+4. The installer will download, install, create shortcuts, and launch the app. The app can be launched from Start Menu > SwarmSight > SwarmSight Antenna Tracking
+5. Using the app, open the example video, position/scale/rotate the AntennaSensor widget over the head, and play the video. You may need to adjust filter settings in the "Filters" panel on the right.
+6. Once the video finishes playing, save the tracking data using the "Save" panel on the right. The .csv file will be saved in the same folder as the video.
 
 # Society for Neuroscience 2016 Poster
 You can download the conference [poster](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Poster.pdf) and the [abstract](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Abstract.pdf) describing the software validation and findings.
