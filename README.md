@@ -15,7 +15,7 @@ SwarmSight is an open-source video analysis tool with modules for:
 # Problems
 If you run into problems, please [report them as issues](https://github.com/justasb/SwarmSight/issues). To ensure efficient support, please include screenshots and steps to reproduce the problem, whenever possible.
 
-# Source
+# Source Code
 
 The app is written in C#. To make changes, you will need [.Net Framework](https://www.microsoft.com/net) and [Visual Studio (free)](https://www.visualstudio.com/products/visual-studio-community-vs).
 
