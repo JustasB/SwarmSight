@@ -39,4 +39,4 @@ The app can be launched from Start Menu > SwarmSight > SwarmSight Motion Analysi
 
 # Educational Materials and Examples
 
-A sample video with example analysis and a presentation with examples of how the activity data could be used is located in the [Examples folder](Examples)
+A sample video with example analysis and a presentation with examples of how the activity data could be used is located in the [Examples folder](https://github.com/JustasB/SwarmSight/tree/master/Examples/Motion%20Analysis)
