@@ -1,3 +1,8 @@
+---
+layout: subpage
+title: SwarmSight Antenna and Proboscis Extension Reflex Tracking Software
+---
+
 # Insect Antenna and Proboscis Location Tracking
 
 SwarmSight Antenna Tracking module will analyze videos of restrained insects, filmed from the top-down view, and provide the user with the antenna and proboscis tip locations for each frame of the video.
