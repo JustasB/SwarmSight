@@ -19,7 +19,7 @@ If you run into problems, please [report them as issues](https://github.com/just
 
 The app is written in C#. To make changes, you will need [.Net Framework](https://www.microsoft.com/net) and [Visual Studio (free)](https://www.visualstudio.com/products/visual-studio-community-vs).
 
-Once you get the [source code](https://github.com/justasb/SwarmSight/tree/master/Source), click on SwarmSight.sln to load the project into Visual Studio. Then click "Start" to launch the app.
+Once you [clone](https://github.com/JustasB/SwarmSight) or [download](https://github.com/JustasB/SwarmSight/archive/master.zip) the respository, locate SwarmSight.sln to load the project into Visual Studio. Then click "Start" to launch the app.
 
 If you run into problems, please [report them as issues](https://github.com/justasb/SwarmSight/issues).
 
