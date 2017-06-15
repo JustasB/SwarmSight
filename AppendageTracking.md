@@ -24,7 +24,7 @@ The program computes the antenna and proboscis tip locations, and saves the data
 [![Tutorials](Screenshots/SwarmSight%20Appendage%20Tracking%20Tutorials.jpg)](https://www.youtube.com/playlist?list=PLGOMalOIacj3D5QkkzYop7O_JR-ojcJpl)
 
 # Output File Reference
-The columns of the output .CSV file are described in [the Output Column Reference](Examples/Appendage%20Tracking/ColumnReference.md). See video tutorials for how to analyze the .CSV files.
+The columns of the output .CSV file are described in [the Output Column Reference](Examples/Appendage%20Tracking/ColumnReference). See video tutorials for how to analyze the .CSV files.
 
 # Society for Neuroscience 2016 Poster
 You can download the conference [poster](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Poster.pdf) and the [abstract](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Abstract.pdf) describing the software validation and findings.
