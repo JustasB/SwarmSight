@@ -1,3 +1,8 @@
+---
+layout: subpage
+title: SwarmSight Aggregate Motion Assessment Software
+---
+
 ## Citation
 
 When using the software in your research, please cite the following publication: [J Birgiolas, CM Jernigan, BH Smith, SM Crook, SwarmSight: Measuring the temporal progression of animal group activity levels from natural-scene and laboratory videos, Behavior Research Methods, 1-12](http://link.springer.com/article/10.3758/s13428-016-0732-2)
