@@ -11,7 +11,12 @@
   </head>
   <body>
     <section class="page-header" style="padding: 1rem;">
-      <a style="color: white;" href="/"><h1 class="project-name">{{ site.title | default: site.github.repository_name }}</h1></a>
+      <a style="color: white;" href="/">
+        <h1 class="project-name">
+          <img style="height: 38px; padding: 0 16px;" src="https://raw.githubusercontent.com/JustasB/SwarmSight/master/Screenshots/swarm-sight-logo.png"/>
+          {{ site.title | default: site.github.repository_name }}
+        </h1>
+      </a>
     </section>
     <section class="main-content">
       {{ content }}
