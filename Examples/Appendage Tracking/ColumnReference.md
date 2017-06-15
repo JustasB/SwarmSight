@@ -1,3 +1,8 @@
+---
+layout: subpage
+title: SwarmSight Appendage Tracking CSV File Column Reference
+---
+
 # SwarmSight Appendage Tracking Output File Column Reference
 
 The .CSV file saved by the [SwarmSight Appendage Tracking](../AppendageTracking.md) module contains a set of columns with values of measurements obtained from the processed video.
