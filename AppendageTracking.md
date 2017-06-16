@@ -38,4 +38,6 @@ You can download the conference [poster](https://github.com/JustasB/SwarmSight/r
 
 # Funding
 
-Development of this software was supported in part by grant R01MH1006674 from NIH to SM Crook and NSF Ideas lab project on ‘Cracking the olfactory Code’ to BH Smith. 
+Development of this software was supported in part by NIH grant R01MH1006674 to SM Crook, NIH R01EB021711
+to RC Gerkin, and NSF Ideas lab project on ‘Cracking the olfactory Code’ to BH Smith. 
+
