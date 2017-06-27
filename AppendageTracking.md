@@ -34,7 +34,7 @@ Files used in the tutorial can be found in [the Examples folder](https://github.
 The columns of the output .CSV file are described in [the Output Column Reference](Examples/Appendage%20Tracking/ColumnReference). See video tutorials for how to analyze the .CSV files.
 
 # Society for Neuroscience 2016 Poster
-You can download the conference [poster](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Poster.pdf) and the [abstract](https://github.com/JustasB/SwarmSight/raw/master/Examples/SwarmSight%20Antenna%20Tracking%20Abstract.pdf) describing the software validation and findings.
+You can download the conference [poster](https://github.com/JustasB/SwarmSight/raw/master/Examples/Appendage%20Tracking/SwarmSight%20Antenna%20Tracking%20Poster.pdf) and the [abstract](https://github.com/JustasB/SwarmSight/raw/master/Examples/Appendage%20Tracking/SwarmSight%20Antenna%20Tracking%20Abstract.pdf) describing the software validation and findings.
 
 # Funding
 
