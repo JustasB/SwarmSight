@@ -3,9 +3,16 @@ layout: subpage
 title: SwarmSight Antenna and Proboscis Extension Reflex Tracking Software
 ---
 
-# Insect Antenna and Proboscis Location Tracking
+# Insect Antenna Tracking Software: Free Software for Tracking Antenna Movements of Honey Bees, Bumble Bees, Crickets, Locusts, Ants, and Other Insects
 
-SwarmSight Antenna Tracking module will analyze videos of restrained insects, filmed from the top-down view, and provide the user with the antenna and proboscis tip locations for each frame of the video.
+The SwarmSight Appendage Tracking module will analyze videos of restrained insects, filmed from the top-down view, and provide the user with the antenna and proboscis tip locations for each frame of the video. The software:
+
+ 1. Tracks antenna movements in real-time (30-60 FPS)
+ 1. Has same or better accuracy than human trackers (consistent, fatigue-free performance)
+ 2. Is free, open-source, and easy to install (no command line or special setup needed)
+ 3. Does not require painting of antenna tips (head must be restrained)
+ 3. Does not require special equipment (average web camera and a Windows PC will do)
+
 
 Insect heads filmed from the top-down view can be analyzed by the software. Below is an example setup for filming a honey bee that is delivered an odor stimulus. The bee and its head is restrained from movement, and the camera is positioned above the head on a tripod.
 ![Experiment](Screenshots/experiment%20diagram.jpg)
