@@ -1,14 +1,7 @@
 # Run this R file to generate Figure 5 Right of Birgiolas, et.al. (2017)
-library(TTR)
-library(spdep)
-library(TSA)
-library(seewave)
-library(signal)
-library(reshape2)
-library(stats)
-library(fields)
-library(scales)
-library(MASS)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(TTR, spdep, TSA, seewave, signal, reshape2, stats, fields, scales, MASS)
+
 
 filter = stats::filter
 
@@ -48,16 +41,39 @@ getOdorOnsetFrame = function(indexInFilesToRunFile, largeChange = 30)
   print(paste("File index: ", f))
   print(paste("File name: ", file))
   print("Frames with large brightness changes (confirm visualy to find the LED onset): ")
-  which(abs(deriv) > largeChange)
+  print(which(abs(deriv) > largeChange))
+  print(which.max(deriv))
+  print(which.min(deriv))
 }
 
 # Call this function to find the odor onset frame for each .csv file listed in FilesToRun.csv
 # The first frame with a large change in brightness is usually due to LED onset
 # Confirm visually to rule out other brightness fluctuations (shadows, people, etc...)
 # Record the onset frame in BuzzerStartRow column of FilesToRun.csv
-getOdorOnsetFrame(indexInFilesToRunFile = 10)
+getOdorOnsetFrame(indexInFilesToRunFile = 1)
 
 # Begin processing. Initialize lists to pool aligned measurements across individuals in each condition
+maxLag = function(subjectFrames, frames, plot=TRUE,lag.max=100)
+{
+  r = ccf(subjectFrames$LeftTipAngle[frames],subjectFrames$RightTipAngle[frames],plot=FALSE,lag.max = lag.max)
+  
+  signal = (r$acf)
+  
+  if(plot)
+  {
+    plot(signal,type="l",ylim=c(-1,1))
+  }      
+  
+  maxLoc = which.max(abs(signal))
+  
+  return(c(r$lag[maxLoc],r$acf[maxLoc]))
+}
+
+leftWaveAmps = matrix(0, nrow=300,ncol=113)
+rightWaveAmps = matrix(0, nrow=300,ncol=113)
+
+
+
 pooledDFs = list()
 pooledCounts = list()
 pooledSpectrogramsR = list()
@@ -68,11 +84,36 @@ pooledFrameAngles = list()
 framesPre = 100
 framesPost = 200
 
+#For figure 3, random files selected for each condition:
+#Condition	RandNum	File Index
+#heptanol	11	54
+#0.2M-heptanol	13	66
+#air	3	12
+#0.2M-heptanal	11	45
+#heptanal	10	53
+
+
+
 # For debuging
-f=2
+f=13
+
+baseLagA = c()
+baseLagAsig = c()
+
+baseLagB = c()
+onAlags = c()
+onAlagssig = c()
+
+onBlags = c()
+postLagC = c()
+postLagA = c()
+postLagAsig = c()
+postLagB = c()
 
 dfPeaks = as.data.frame(matrix(rep(NA,10),nrow = 1, ncol = 10))
 names(dfPeaks) = c("file","condition","baselineValue","peakVal","peakTime","recoverTime","baselineValueA","peakValA","peakTimeA","recoverTimeA")
+
+dfCols = data.frame(matrix(nrow = framesPre+framesPost,ncol=0))
 
 for(f in seq(1:length(files$File)))
 {
@@ -129,21 +170,21 @@ for(f in seq(1:length(files$File)))
   subjectFrames$RightBaseAdjustedY = rbpts[,2]
   
   # Visualy confirm (red = tips, blue = base of flagelli)
-  plot(subjectFrames$RightTipAdjustedX,
-       subjectFrames$RightTipAdjustedY,type="p",
-       xlim=c(-120,120), ylim=c(-120,120),col=rgb(0.5, 0, 0, 0.5), pch=16) 
-  
-  points(subjectFrames$LeftTipAdjustedX, 
-         subjectFrames$LeftTipAdjustedY,
-       xlim=c(-120,120), ylim=c(-120,120),col=rgb(0.5, 0, 0, 0.5), pch=16) 
-  
-  points(subjectFrames$LeftBaseAdjustedX, 
-         subjectFrames$LeftBaseAdjustedY,
-         xlim=c(-120,120), ylim=c(-120,120),col=rgb(0, 0, 0.5, 0.5), pch=16) 
-  
-  points(subjectFrames$RightBaseAdjustedX, 
-         subjectFrames$RightBaseAdjustedY,
-         xlim=c(-120,120), ylim=c(-120,120),col=rgb(0, 0, 0.5, 0.5), pch=16) 
+  # plot(subjectFrames$RightTipAdjustedX,
+  #      subjectFrames$RightTipAdjustedY,type="p",
+  #      xlim=c(-120,120), ylim=c(-120,120),col=rgb(0.5, 0, 0, 0.5), pch=16) 
+  # 
+  # points(subjectFrames$LeftTipAdjustedX, 
+  #        subjectFrames$LeftTipAdjustedY,
+  #      xlim=c(-120,120), ylim=c(-120,120),col=rgb(0.5, 0, 0, 0.5), pch=16) 
+  # 
+  # points(subjectFrames$LeftBaseAdjustedX, 
+  #        subjectFrames$LeftBaseAdjustedY,
+  #        xlim=c(-120,120), ylim=c(-120,120),col=rgb(0, 0, 0.5, 0.5), pch=16) 
+  # 
+  # points(subjectFrames$RightBaseAdjustedX, 
+  #        subjectFrames$RightBaseAdjustedY,
+  #        xlim=c(-120,120), ylim=c(-120,120),col=rgb(0, 0, 0.5, 0.5), pch=16) 
   
   # Compute the angle formed by tips & bases of each antennae
   subjectFrames$LeftTipAngle = (atan2(
@@ -161,37 +202,43 @@ for(f in seq(1:length(files$File)))
   subjectFrames$RightTipAngle = ifelse(subjectFrames$RightTipAngle < -180, subjectFrames$RightTipAngle + 360, subjectFrames$RightTipAngle)
   subjectFrames$LeftTipAngle = -subjectFrames$LeftTipAngle
   
+  #Remove tracking artifacts with a 3-frame rolling median filter
+  #subjectFrames$LeftTipAngle = c(runmed(subjectFrames$LeftTipAngle, 3))
+  #subjectFrames$RightTipAngle = c(runmed(subjectFrames$RightTipAngle, 3))
   
    #Sanity checks
    #plot(subjectFrames$LeftTipAngle,type="l")
    #plot(subjectFrames$RightTipAngle,type="l")
     
     #Plot left & right angles separately and superimposed (Figure 3)
-    x = (seq(1,300)-100)/30*1000
+    x = (seq(1,framesPre+framesPost)-framesPre)/30*1000
+
+    #First & 2nd &4th files
+    par(mfrow=c(5,1),mai=c(0.05,0.8,0.1,0.1),oma=c(1,0,0,0))
     
-    par(mfrow=c(3,1),mai=c(0.05,0.8,0.1,0.1),oma=c(1,0,0,0))
-    plot(x,subjectFrames$RightTipAngle,type="l",ylab="",xlab="",main="",col="blue",lwd=2,xaxt="n",ylim=c(170,-10))
+    plot(x,subjectFrames$RightTipAngle,type="l",ylab="",xlab="",main="",col="blue",lwd=2,xaxt="n",ylim=c(170,-10),xaxp=c(-3000,6500,19))
     polygon(c(0,0,4000,4000),c(1500,-150,-150,1500),border=NA,col=rgb(0,0,0,0.08))
-    text(-3200,150,"Right Antenna",adj=0,cex=1.5)
-    text(2000, 160, "odor ON", cex=1.5)
+    lines(x,subjectFrames$LeftTipAngle,type="l",col="red",lwd=2,xaxt="n",ylim=c(170,-10))
+    text(2000,10,condition,cex=1.5)
     
+    #3Rd file
     par(mai=c(0.05,0.8,0,0.1))
-    plot(x,subjectFrames$LeftTipAngle,type="l",ylab="",col="red",lwd=2,yaxt="s",xaxt="n",ylim=c(170,-10))
+    plot(x,subjectFrames$RightTipAngle,type="l",ylab="",xlab="",main="",col="blue",lwd=2,xaxt="n",ylim=c(170,-10),xaxp=c(-3000,6500,19))
     polygon(c(0,0,4000,4000),c(1500,-150,-150,1500),border=NA,col=rgb(0,0,0,0.08))
-    text(-3200,150,"Left",adj=0,cex=1.5)
+    lines(x,subjectFrames$LeftTipAngle,type="l",col="red",lwd=2,xaxt="n",ylim=c(170,-10))
+    text(2000,10,condition,cex=1.5)
     mtext("Antenna Angle (degrees)",side=2,line=2.5,cex=0.8)
     
+    #Last File
     par(mai=c(0.5,0.8,0,0.1))
     plot(x,subjectFrames$RightTipAngle,type="l",ylab="",xlab="",main="",col="blue",lwd=2,xaxt="s",ylim=c(170,-10),xaxp=c(-3000,6500,19))
     polygon(c(0,0,4000,4000),c(1500,-150,-150,1500),border=NA,col=rgb(0,0,0,0.08))
     lines(x,subjectFrames$LeftTipAngle,type="l",col="red",lwd=2,xaxt="n",ylim=c(170,-10))
-    text(-3200,150,"Both",adj=0,cex=1.5)
+    text(2000,10,condition,cex=1.5)
     mtext("Time after Odor Onset (ms)",side=1,line=2.2,cex=0.8)
     
-    
-    
-    
-
+      
+      
   # Add measurements to the pool  
   if(!(condition %in% names(pooledDFs)))
   {
@@ -224,7 +271,10 @@ for(f in seq(1:length(files$File)))
 #    lines(subjectFrames$RightSector,type="l",col="gray")
 #    plot(pooledDFs[[condition]]$LeftSector,type="l")
 #    lines(pooledDFs[[condition]]$RightSector,type="l",col="gray")
+       
+
 }
+
 
 #Divide the pooled sums to get the averages
 par(mfrow=c(1,1),mai=c(0.5,1.2,0.5,0.5))
@@ -252,7 +302,7 @@ for(k in seq(length(names(pooledDFs))))
 # density plots has the same scale for all conditions
 ranges = c()
 k = 1
-plotQuality = 6 #5-8 are low-high values (high values take longer to compute)
+plotQuality = 8 #5-8 are low-high values (high values take longer to compute)
 
 
 
@@ -260,6 +310,7 @@ plotQuality = 6 #5-8 are low-high values (high values take longer to compute)
 library(RColorBrewer)
 rf <- colorRampPalette((rev(brewer.pal(11,'RdYlBu'))))
 r <- rf(32)
+
 
 # Rerun starting here if color scales different
 par(mfrow=c(5,1),mai=c(0.1,0.5,0,0),oma=c(1,1,0,0))
@@ -288,7 +339,7 @@ for(k in seq(length(distinctConditions)))
     image.plot(densityKernel,col=r,main="",ylim=c(135,10),zlim=range((ranges)),xaxt=ifelse(k==5,"s","n"),xaxp=c(-3000,6500,19))
     
     # odor on/off lines
-    polygon(c(0,0,4000,4000),c(150,0,0,150),col=rgb(0,0,0,0.2),border = NA)
+    polygon(c(0,0,3600,3600),c(150,0,0,150),col=rgb(0,0,0,0.2),border = NA)
     text(2000,30,key,cex = 1.5,col="white")
   
     # Show the frame-by-frame average angle 
@@ -297,6 +348,16 @@ for(k in seq(length(distinctConditions)))
     # Show pre-odor baseline
     baseline = mean(bothAvg[1:framesPre],na.rm = TRUE)
     abline(h = baseline,col=rgb(0,0,0,0.5))
+    
+
+    # Return to baseline times    
+    # x = seq(300)
+    # y = bothAvg - baseline
+    # plot(x,y,xlim=c(100,250),xaxp=c(100,250,10))
+    # lines(smooth.spline(x,y, spar = 0.8))
+    # abline(h = 0,col=rgb(0,0,0,0.5))
+    # print(key)
+    
     
     # Plot labels
     if(k == 3)
