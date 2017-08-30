@@ -8,7 +8,7 @@ title: SwarmSight Appendage Tracking CSV File Column Reference
 The .CSV file saved by the [SwarmSight Appendage Tracking](../AppendageTracking.md) module contains a set of columns with values of measurements obtained from the processed video.
 
 ## .CSV File Location
-The software saves the .csv file in the same folder as the video file. It appends "Tracker", the name of the logged in user, date, and time to the file name.  
+By default, the software saves the .csv file in the same folder as the video file. It appends "Tracker", the name of the logged in user, date, and time to the file name.  
 
 ![SwarmSight Antenna Proboscis Tracking CSV file location](https://raw.githubusercontent.com/JustasB/SwarmSight/master/Examples/Appendage%20Tracking/CsvLocation.jpg)
 
@@ -27,8 +27,11 @@ The following table describes each column in detail. All X,Y coordinates are in 
 | Frame                   | Frame number. Starts with 1. Time can be determined by dividing this value by the video frame rate (e.g. 30 fps). | 
 | TreatmentSensor         | Brightness value of the pixel in the center of the "Treatment Sensor". Value ranges between 0 and 255, with 255 indicating maximum brightness. | 
 | PER-X/Y                 | The X,Y position of the detected proboscis. If no proboscis is detected, the X,Y values will point to the edge of the mandibles. | 
-| Left/RightSector        | The 36 degree sector (1-5) on either side of the head, which contained the largest number of "likely antenna" points. Can be useful if antenna x, y measures are too noisy. | 
-| LeftFlagellumTip-X/Y    | The X,Y position of the tip of the antenna. | 
+| PER-Length              | The normalized length of the proboscis. The value will range between 0-50 and will not depend on scale. Units are arbitrary. |
+| Left/RightSector        | The 36 degree sector (1-5) on either side of the head, which contained the largest number of "likely antenna" points. Can be useful if antenna x, y measures are too noisy. This is the coarsest, but most reliable antenna orientation measure. | 
+| Left/RightSectorMode    | The angle in degrees with the strongest activation by likely antenna points. The angle is measured from the midpoint of the bases of the scape ("the center of the head"). This measure is always positive and does not take the position of the flagellum base into account. |
+| Left/RightAngle         | The angle in degrees formed by the detected tip and base of the flagellum. This measure reflects the orientation of the flagellum most accurately, but is sensitive to problems detecting the flagellum tip or base locations, and can be more noisy than the Mode and Sector measures. Using a [3-frame rolling median filter](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/runmed.html) can reduce the noise. |
+| LeftFlagellumTip-X/Y    | The X,Y position of the tip of the antenna in the video frame. | 
 | LeftFlagellumBase-X/Y   | The X,Y position of the part of the flagellum that did not overlap the head (see diagram below). | 
 | RightFlagellumTip-X/Y   | See LeftFlagellumTip-X/Y. | 
 | RightFlagellumBase-X/Y  | See LeftFlagellumBase-X/Y. | 
