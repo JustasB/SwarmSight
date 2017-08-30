@@ -84,7 +84,7 @@ namespace SwarmSight.VideoPlayer
             VideoInfo = new VideoInfo(VideoPath);
         }
 
-        public void Start(bool open = true, string customArgs = "")
+        public void Start(bool open = true, string customArgs = "", int? FrameBufferCapacity = null, int? MinimumWorkingFrames = null)
         {
             if(open)
                 Open(VideoPath);
@@ -102,8 +102,13 @@ namespace SwarmSight.VideoPlayer
                 PixelFormat.Format24bppRgb
             );
 
-            if (BufferInitialized != null)
-                BufferInitialized(this, null);
+            if (FrameBufferCapacity != null)
+                FrameDecoder.FrameBufferCapacity = (int)FrameBufferCapacity;
+
+            if (MinimumWorkingFrames != null)
+                FrameDecoder.MinimumWorkingFrames = (int)MinimumWorkingFrames;
+
+            BufferInitialized?.Invoke(this, null);
 
             FrameDecoder.Processor = Processor;
             FrameDecoder.FrameReady += OnFrameReady;
@@ -207,7 +212,7 @@ namespace SwarmSight.VideoPlayer
             {
                 var result = FrameBuffer.First;
 
-                FrameBuffer.RemoveFirst();
+                //FrameBuffer.RemoveFirst();
 
                 return result;
             }

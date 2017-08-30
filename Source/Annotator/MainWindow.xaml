@@ -64,6 +64,7 @@
             <Grid Margin="608,38,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Height="98" Width="98">
                 <Image x:Name="zoomClip" HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="98" Stretch="Fill"/>
             </Grid>
+            <TextBox x:Name="txtCoords" Background="#7FFFFFFF" Width="98" Height="21" Text="(0, 0)" Margin="608,140,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" TextAlignment="Center" BorderBrush="{x:Null}" BorderThickness="0" />
             <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="98" Margin="608,38,0,0" VerticalAlignment="Top" Width="48" Stroke="#7FFFFF00"/>
             <Rectangle Fill="Transparent" HorizontalAlignment="Left" Width="98" Margin="608,38,0,0" VerticalAlignment="Top" Height="48" Stroke="#7FFFFF00"/>
             <Rectangle Fill="Transparent" HorizontalAlignment="Left" Height="51" Margin="655,85,0,0" VerticalAlignment="Top" Width="51" Stroke="#7FFFFF00"/>

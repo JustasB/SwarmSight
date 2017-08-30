@@ -124,9 +124,7 @@ namespace SwarmSight
             }
 
             _decoder.SeekTo(iterator.BurstBeginFrameIndex);
-            _decoder.Start();
-            _decoder.FrameDecoder.FrameBufferCapacity = 1;
-            _decoder.FrameDecoder.MinimumWorkingFrames = 1;
+            _decoder.Start(FrameBufferCapacity: 1, MinimumWorkingFrames: 1);
         }
 
         private void SeekTo(int frame)
@@ -531,9 +529,7 @@ namespace SwarmSight
 
             if (!skipped)
             {
-                var pos = Mouse.GetPosition(videoCanvas).ToDrawingPoint();
-                _capturedMousePosition = RelativeToVideo(pos);
-                //_capturedMousePosition.Value.Offset(-1, -1);
+                _capturedMousePosition = GetMousePositionRelativeToVideo();
             }
             else
             {
@@ -544,6 +540,10 @@ namespace SwarmSight
 
             counter++;
             Debug.WriteLine((iterator.BurstPositionCount - counter) + " - " + iterator.FramesTillEndOfBurst);
+        }
+        private Point GetMousePositionRelativeToVideo()
+        {
+            return RelativeToVideo(Mouse.GetPosition(videoCanvas).ToDrawingPoint());
         }
 
         private void SaveCSV(object videoFileName, bool autoSave = false)
@@ -626,7 +626,7 @@ namespace SwarmSight
                             sb.Append(",NA,NA");
                     });
 
-                    writer.WriteLine(f + sb.ToString());
+                    writer.WriteLine((f+1) + sb.ToString());
                 }
 
                 writer.Flush();
@@ -640,6 +640,7 @@ namespace SwarmSight
 
         public static int zoomWidth = 30;
         public WriteableBitmap zoomImage;
+        public object bitmapLock = new object();
         private void videoCanvas_MouseMove(object sender, MouseEventArgs e)
         {
 
@@ -652,15 +653,21 @@ namespace SwarmSight
             topLeft.X = Math.Max(0, Math.Min(topLeft.X, currentFrame.Width - zoomSize.X));
             topLeft.Y = Math.Max(0, Math.Min(topLeft.Y, currentFrame.Height - zoomSize.Y));
 
-            using (var clip = currentFrame.SubClipped(topLeft.X, topLeft.Y, zoomSize.X, zoomSize.Y))
-            {
-                if (zoomImage == null)
-                {
-                    zoomImage = new WriteableBitmap(zoomSize.X, zoomSize.Y, 96, 96, PixelFormats.Bgr24, null);
-                    zoomClip.Source = zoomImage;
-                }
+            var cursorLocation = GetMousePositionRelativeToVideo();
+            txtCoords.Text = string.Format("({0}, {1})", cursorLocation.X, cursorLocation.Y);
 
-                clip.CopyToWriteableBitmap(zoomImage);
+            lock (bitmapLock)
+            {
+                using (var clip = currentFrame.SubClipped(topLeft.X, topLeft.Y, zoomSize.X, zoomSize.Y))
+                {
+                    if (zoomImage == null)
+                    {
+                        zoomImage = new WriteableBitmap(zoomSize.X, zoomSize.Y, 96, 96, PixelFormats.Bgr24, null);
+                        zoomClip.Source = zoomImage;
+                    }
+
+                    clip.CopyToWriteableBitmap(zoomImage);
+                }
             }
         }
 
