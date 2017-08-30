@@ -42,6 +42,7 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Xaml" />
     <Reference Include="TestStack.White, Version=0.13.0.0, Culture=neutral, PublicKeyToken=2672efbf3e161801, processorArchitecture=MSIL">
       <HintPath>..\packages\TestStack.White.0.13.3\lib\net40\TestStack.White.dll</HintPath>
@@ -66,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SwarmSight.AntennaTracking.UI.Tests.cs" />
+    <Compile Include="SwarmSight.AntennaTracking.UI.BatchTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="SwarmSight.Motion.UI.Tests.cs" />
@@ -80,6 +82,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SwarmSight.Common.UI\SwarmSight.Common.UI.csproj">
+      <Project>{d5f724c3-2bc1-40d9-9834-9e7b26a8e5fd}</Project>
+      <Name>SwarmSight.Common.UI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SwarmSight.Motion\SwarmSight.Motion.UI.csproj">
       <Project>{74412f3e-6822-40d4-99c0-965946f688d3}</Project>
       <Name>SwarmSight.Motion.UI</Name>
@@ -93,6 +99,9 @@
     <Content Include="expected.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="manualAppendageCoords.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Choose>

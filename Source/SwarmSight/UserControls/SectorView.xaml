@@ -10,7 +10,9 @@
         <Image x:Name="image" Margin="10,0" Width="100" Height="100" VerticalAlignment="Bottom"/>
         <Label x:Name="label" Content="Dominant Sectors" HorizontalAlignment="Center" Margin="8,-4,8,0" VerticalAlignment="Top" Height="24"/>
         <Label x:Name="rightDomSec" Content="2" HorizontalAlignment="Right" Height="26" VerticalAlignment="Bottom"/>
-        <Label x:Name="leftDomSec" Content="4" HorizontalAlignment="Left" Width="16" Height="26" VerticalAlignment="Bottom"/>
+        <Label x:Name="rightSecMode" Content="180" HorizontalAlignment="Right" Height="26" VerticalAlignment="Bottom" Margin="0,0,17,0"/>
+        <Label x:Name="leftDomSec" Content="4" HorizontalAlignment="Left" Height="26" VerticalAlignment="Bottom"/>
+        <Label x:Name="leftSecMode" Content="180" HorizontalAlignment="Left" Height="26" VerticalAlignment="Bottom" Margin="16,0,0,0"/>
 
     </Grid>
 </UserControl>

@@ -10,6 +10,9 @@ using System.Linq;
 using TestStack.White.UIItems.Finders;
 using TestStack.White.UIItems.WindowItems;
 using System;
+using TestStack.White.InputDevices;
+using SwarmSight.Common.UI;
+using System.Data;
 
 namespace SwarmSight.AntennaTracking.UI
 {
@@ -18,6 +21,7 @@ namespace SwarmSight.AntennaTracking.UI
 	{
         public static FileInfo TestVideoFileInfo;
         public static FileInfo ExpectedDataFile;
+        public static FileInfo ManualDataFile;
         public static Application application;
         public static Window window;
         public static FileInfo csvFile;
@@ -27,6 +31,8 @@ namespace SwarmSight.AntennaTracking.UI
         {
             TestVideoFileInfo = new FileInfo("test.mov");
             ExpectedDataFile = new FileInfo("expected.csv");
+            ManualDataFile = new FileInfo("manualAppendageCoords.csv");
+
             application = Application.Launch("SwarmSight Antenna Tracking.exe");
             window = application.GetWindow("SwarmSight Antenna Tracking", InitializeOption.NoCache);
             
@@ -66,9 +72,9 @@ namespace SwarmSight.AntennaTracking.UI
 
             var expFilters = window.Get<GroupBox>("expFilters");
             expFilters.Click();
-            SetSliderValue(expFilters, "sliderFast", 10);
-            SetSliderValue(expFilters, "sliderSlow", 10);
-            SetSliderValue(expFilters, "sliderStationary", 233);
+            SetSliderValue(expFilters, "sliderFast", 2);
+            SetSliderValue(expFilters, "sliderSlow", 2);
+            SetSliderValue(expFilters, "sliderStationary", 255);
             expFilters.Items[1].Click();
 
 
@@ -98,15 +104,65 @@ namespace SwarmSight.AntennaTracking.UI
 
             Thread.Sleep(200);
 
+            //Save as default csv file
+            Keyboard.Instance.PressSpecialKey(TestStack.White.WindowsAPI.KeyboardInput.SpecialKeys.RETURN);
+
+            Thread.Sleep(200);
+
             //get the saved csv file name
             csvFile = new DirectoryInfo(".").GetFiles("test.mov*.csv")[0];
 
-            var result = CompareCSVfiles(csvFile, ExpectedDataFile);
+            //Compare manual-to-tracker
+            var manualResult = CompareToManual(csvFile.FullName, ManualDataFile.FullName);
+            Assert.IsTrue(manualResult < 10); 
 
-            Assert.IsTrue(result > 0.99);
+            //Compare tracker-to-tracker - should be identical between runs
+            var trackerResult = CompareCSVfiles(csvFile, ExpectedDataFile);
+            Assert.IsTrue(trackerResult == 1); 
         }
 
-        private double CompareCSVfiles(FileInfo csvFile, FileInfo expectedDataFile)
+        private double CompareToManual(string trackerFile, string manualFile)
+        {
+            var manualDT = CSV.ToDataTable(manualFile);
+            var trackerDT = CSV.ToDataTable(trackerFile);
+            var totDist = 0.0;
+
+            for(var r = 0; r < manualDT.Rows.Count; r++)
+            {
+                var rowManual = manualDT.Rows[r];
+                var rowTracker = trackerDT.Rows[r];
+
+                Assert.IsTrue(rowManual["Frame"].ToString() == rowTracker["Frame"].ToString(), "Frame numbers in both files must be the same");
+
+                var lxm = int.Parse(rowManual["Left Flagellum TipX"].ToString());
+                var lym = int.Parse(rowManual["Left Flagellum TipY"].ToString());
+
+                var rxm = int.Parse(rowManual["Right Flagellum TipX"].ToString());
+                var rym = int.Parse(rowManual["Right Flagellum TipY"].ToString());
+
+                int lxt = 0;
+                int.TryParse(rowTracker["LeftFlagellumTip-X"].ToString(), out lxt);
+
+                int lyt = 0;
+                int.TryParse(rowTracker["LeftFlagellumTip-Y"].ToString(), out lyt);
+
+                int rxt = 0;
+                int.TryParse(rowTracker["RightFlagellumTip-X"].ToString(), out rxt);
+
+                int ryt = 0;
+                int.TryParse(rowTracker["RightFlagellumTip-Y"].ToString(), out ryt);
+
+                var lDist = Math.Sqrt(Math.Pow((lxm - lxt), 2) + Math.Pow((lym - lyt), 2));
+                var rDist = Math.Sqrt(Math.Pow((rxm - rxt), 2) + Math.Pow((rym - ryt), 2));
+
+                totDist += (lDist + rDist);
+            }
+
+            //Average dist of L and R tips
+            return totDist / (2 * manualDT.Rows.Count);
+        }
+
+        public static double CompareCSVfiles(FileInfo csvFile, FileInfo expectedDataFile)
         {
             var act = ParseCSV(csvFile);
             var exp = ParseCSV(expectedDataFile);
@@ -136,7 +192,7 @@ namespace SwarmSight.AntennaTracking.UI
             return result;
         }
 
-        private double[][] ParseCSV(FileInfo csvFile)
+        private static double[][] ParseCSV(FileInfo csvFile)
         {
             return 
                 File
@@ -156,7 +212,7 @@ namespace SwarmSight.AntennaTracking.UI
                 .ToArray();
         }
 
-        private static void SetSliderValue(GroupBox expander, string ucName, double value)
+        public static void SetSliderValue(GroupBox expander, string ucName, double value)
         {
             var uc = (expander.GetMultiple(SearchCriteria.ByAutomationId(ucName)))[0];
             var slider = uc.Get<WPFSlider>("slider");

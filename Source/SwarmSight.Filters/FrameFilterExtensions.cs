@@ -20,7 +20,7 @@ namespace SwarmSight.Filters
 {
     public unsafe static class FrameFilterExtensions
     {
-        public static void MarkSectors(this Frame target, double[] sectors, int headCtrX, int headCtrY, int headHeight, double headAngle, Color color, bool isRight = true)
+        public static void MarkSectors(this Frame target, int[] sectors, int headCtrX, int headCtrY, int headHeight, double headAngle, Color color, bool isRight = true)
         {
             var startingAngleRad = headAngle / 180.0 * PI;
             var sectorWidth = PI / sectors.Length;
@@ -549,6 +549,24 @@ namespace SwarmSight.Filters
             size);
         }
 
+        public static int MaxIndex<T>(this IEnumerable<T> sequence) where T : IComparable<T>
+        {
+            int maxIndex = -1;
+            T maxValue = default(T); // Immediately overwritten anyway
+
+            int index = 0;
+            foreach (T value in sequence)
+            {
+                if (value.CompareTo(maxValue) > 0 || maxIndex == -1)
+                {
+                    maxIndex = index;
+                    maxValue = value;
+                }
+                index++;
+            }
+            return maxIndex;
+        }
+
         public static Frame MedianBlur(this Frame target, int size = 2)
         {
             return target.ReMap((p, c) =>
@@ -559,7 +577,7 @@ namespace SwarmSight.Filters
             });
         }
 
-        public static List<Tuple<Point, double>> MedianFilter(this List<Tuple<Point,double>> target, int radius = 2)
+        public static List<Tuple<Point, double>> MedianFilter(this List<Tuple<Point,double>> target, int radius = 2, int degree = 9999)
         {
             if (target.Count == 0)
                 return target;
@@ -593,7 +611,18 @@ namespace SwarmSight.Filters
             var height = max.Y - min.Y + 1;
             var grid = new int[width, height];
 
-            Parallel.ForEach(target, i => grid[i.Item1.X-min.X, i.Item1.Y-min.Y] = (int)i.Item2);
+
+
+            //Don't parallelize this - with duplicate coords, parallel threads will change order and the value saved to the grid
+            //Pre-sort to ensure same order
+            target = target.OrderBy(p => p.Item1.X).ThenBy(p => p.Item1.Y).ThenBy(p => p.Item2).ToList();
+            target.ForEach(i => 
+            {
+                var gx = i.Item1.X - min.X;
+                var gy = i.Item1.Y - min.Y;
+
+                grid[gx, gy] = (int)i.Item2;
+            });
             
             var length = radius * 2 + 1;
             var totalHalf = length * length / 2;
@@ -601,7 +630,7 @@ namespace SwarmSight.Filters
 
             Parallel.For(0, height, new ParallelOptions()
             {
-                //MaxDegreeOfParallelism = 1
+                MaxDegreeOfParallelism = 1//degree
             }, 
             gy =>
             {
@@ -633,7 +662,7 @@ namespace SwarmSight.Filters
                                 balance--;
 
                             if (Abs(balance) > totalHalf)
-                                goto doneWithPixel;
+                                goto doneWithPixel; //Yes, a GOTO(!) statement - to break out of two nested loops
                         }
                     }
 
@@ -647,9 +676,33 @@ namespace SwarmSight.Filters
                     }
                 }
 
-                lock(result) { result.AddRange(rowResult); }
+                if (rowResult.Count > 0)
+                {
+                    lock (result)
+                    {
+                        result.AddRange(rowResult);
+                    }
+                }
             });
-            
+
+            //PARALLEL DEBUG
+            //if (degree == 9999)
+            //{
+            //    var sres = target.MedianFilter(radius, degree: 1);
+
+            //    if (result.Count != sres.Count)
+            //        throw new Exception();
+            //    else
+            //    {
+            //        result = result.OrderBy(p => p.Item1.X).ThenBy(p => p.Item1.Y).ThenBy(p => p.Item2).ToList();
+            //        sres = sres.OrderBy(p => p.Item1.X).ThenBy(p => p.Item1.Y).ThenBy(p => p.Item2).ToList();
+
+            //        var difcount = result.Zip(sres, (a, b) => a.Item2 != b.Item2 ? 1 : 0).Sum();
+
+            //        if (difcount > 0)
+            //            throw new Exception();
+            //    }
+            //}
 
             return result;
         }
@@ -917,7 +970,9 @@ namespace SwarmSight.Filters
         {
             var firstPx = target.FirstPixelPointer;
 
-            points.AsParallel().ForAll(p =>
+            Parallel.ForEach(points, 
+                //new ParallelOptions { MaxDegreeOfParallelism = 1 }, 
+                p =>
             {
                 var offset = 3*p.X + p.Y*target.Stride;
 

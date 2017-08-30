@@ -22,6 +22,8 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 
 namespace SwarmSight.HeadPartsTracking
 {
@@ -29,6 +31,7 @@ namespace SwarmSight.HeadPartsTracking
     {
         public class TipAndPERResult
         {
+            public SpaceManager RecordingConditions;
             public SideResult Left;
             public SideResult Right;
             public PartResult Proboscis;
@@ -37,15 +40,10 @@ namespace SwarmSight.HeadPartsTracking
 
         public class PartResult
         {
+            public SpacePoint Base;
             public SpacePoint Tip;
             public List<SpacePoint> DetectedPoints;
-        }
-
-        public class SideResult : PartResult
-        {
-            public SpacePoint Base;
-            public double[] SectorCounts;
-
+            
             public double Angle
             {
                 get
@@ -64,6 +62,20 @@ namespace SwarmSight.HeadPartsTracking
                     return result;
                 }
             }
+
+            public double Length
+            {
+                get
+                {
+                    return Base.StandardPoint.Distance(Tip.StandardPoint);
+                }
+            }
+        }
+
+        public class SideResult : PartResult
+        {
+            public int[] SectorCounts;
+            public int TopAngle;
 
             public int DominantSector
             {
@@ -153,7 +165,7 @@ namespace SwarmSight.HeadPartsTracking
 
             if (subclippedHead == null)
             {
-                subclippedHead = new Frame(Space.HeadDims.X, Space.HeadDims.Y);
+                subclippedHead = new Frame(Space.AntennaSensorDims.X, Space.AntennaSensorDims.Y);
             }
 
             if (stdHeadClip == null)
@@ -195,16 +207,18 @@ namespace SwarmSight.HeadPartsTracking
 
         private void InitSpace()
         {
-            Space = new SpaceManager();
-            Space.HeadOffset = new DPoint(AppSettings.Default.HeadX, AppSettings.Default.HeadY);
-            Space.HeadAngle = AppSettings.Default.HeadAngle;
-            Space.ScaleX = AppSettings.Default.HeadScale;
-            Space.ScapeDistanceAtScale1 = AppSettings.Default.ScapeDistanceAtScale1;
+            var newSpace = new SpaceManager();
+            newSpace.AntennaSensorOffset = new DPoint(AppSettings.Default.HeadX, AppSettings.Default.HeadY);
+            newSpace.HeadAngle = AppSettings.Default.HeadAngle;
+            newSpace.ScaleX = AppSettings.Default.HeadScale;
+            newSpace.ScapeDistanceAtScale1 = AppSettings.Default.ScapeDistanceAtScale1;
+
+            Space = newSpace;
         }
 
         public override void OnProcessing(Frame frame)
         {
-            if(frame.FramePercentage > 1)
+            if (frame.FramePercentage > 1)
             {
                 frame.IsReadyForRender = true;
                 return;
@@ -216,6 +230,7 @@ namespace SwarmSight.HeadPartsTracking
             Init();
 
             //Treatment Sensor - read brightness from the target point before the rest of the frame is discarded
+            result.RecordingConditions = Space;
             result.TreatmentSensorValue = (int)Round(currentFrame.GetColor(AppSettings.Default.TreatmentSensorX, AppSettings.Default.TreatmentSensorY).GetBrightness() * 100, 0);
             currentFrame.ProcessorResult = result;
 
@@ -236,9 +251,7 @@ namespace SwarmSight.HeadPartsTracking
 
             //Fast motion model - 3 frame op
             UpdateFastMotionModel();
-
             UpdateProboscisModel();
-
             UpdateStationaryModel();
 
             //Ensure background has been updated
@@ -250,7 +263,7 @@ namespace SwarmSight.HeadPartsTracking
             //Append to the result of the previous frame
             var prevResult = (TipAndPERResult)previousFrame.ProcessorResult;
 
-            //In parallel, get left and right tip coords:    
+            ////In parallel, get left and right tip coords:    
             var leftThread = new Thread(() =>
             {
                 prevResult.Left = GetCoords(leftSide: true);
@@ -267,7 +280,7 @@ namespace SwarmSight.HeadPartsTracking
             prevResult.Proboscis = GetProbLoc();
 
             rightThread.Join();
-            leftThread.Join();            
+            leftThread.Join();
 
             //To be used in CSV saving
             Results[previousFrame.FrameIndex] = prevResult;
@@ -364,9 +377,9 @@ namespace SwarmSight.HeadPartsTracking
                 g.DrawPolygon(black, new[]
                 {
                     AppSettings.Default.Origin.ToPointF(),
-                    AppSettings.Default.Origin.Moved(Space.HeadDims.X, 0).ToPointF(),
-                    AppSettings.Default.Origin.Moved(Space.HeadDims.X, Space.HeadDims.Y).ToPointF(),
-                    AppSettings.Default.Origin.Moved(0, Space.HeadDims.Y).ToPointF()
+                    AppSettings.Default.Origin.Moved(Space.AntennaSensorDims.X, 0).ToPointF(),
+                    AppSettings.Default.Origin.Moved(Space.AntennaSensorDims.X, Space.AntennaSensorDims.Y).ToPointF(),
+                    AppSettings.Default.Origin.Moved(0, Space.AntennaSensorDims.Y).ToPointF()
                 });
 
                 //Detected tip locations
@@ -433,7 +446,6 @@ namespace SwarmSight.HeadPartsTracking
                 .FromPointList(FastMotionModel, activePoints)
                 .GetTail(TailPercent, AppSettings.Default.FastThreshold);
 
-
             //Slow tail
             var slowTail = SlowMotionHist
                 .FromPointList(SlowMotionModel, activePoints)
@@ -483,7 +495,7 @@ namespace SwarmSight.HeadPartsTracking
                 .FromPriorSpace(new WPoint(leftSide ? -0.5 : 0.5, 0))
                 .StandardPoint;
 
-            //Could do with lookup table
+            //Could optimize with a lookup table
             var tip = CrawlToTip(crawlSurface, centroid, ctr, 1, AppSettings.Default.TipCrawlerRadius.Rounded(), AppSettings.Default.MaxTipCrawlerHop);
             var baseLoc = CrawlToTip(crawlSurface, centroid, ctr, 1, AppSettings.Default.TipCrawlerRadius.Rounded(), AppSettings.Default.MaxTipCrawlerHop, crawlingAway: false);
 
@@ -501,7 +513,8 @@ namespace SwarmSight.HeadPartsTracking
                 Tip = new SpacePoint(Space).FromStandardSpace(tip),
                 Base = new SpacePoint(Space).FromStandardSpace(baseLoc),
                 DetectedPoints = pointList.Select(sp => new SpacePoint(Space).FromStandardSpace(sp)).ToList(),
-                SectorCounts = sectors
+                SectorCounts = sectors.Item1,
+                TopAngle = sectors.Item2
             };
 
             if (leftSide)
@@ -563,6 +576,7 @@ namespace SwarmSight.HeadPartsTracking
             
             return new PartResult
             {
+                Base = new SpacePoint(Space).FromStandardSpace(ProboscisHullBase.StandardPoint),
                 Tip = new SpacePoint(Space).FromStandardSpace(tip),
                 DetectedPoints = pointList.Select(sp => new SpacePoint(Space).FromStandardSpace(sp)).ToList()
             };
@@ -596,7 +610,7 @@ namespace SwarmSight.HeadPartsTracking
 
             //Subclip head
             subclippedHead.DrawFrame(currentFrame, 0, 0, 1, 0,
-                Space.HeadOffset.X, Space.HeadOffset.Y);
+                Space.AntennaSensorOffset.X, Space.AntennaSensorOffset.Y);
 
             //Resize to standard into stdHeadClip
             subclippedHead.ScaleHQ(Space.StandardWidth, Space.StandardHeight, stdHeadClip.Bitmap);
@@ -849,13 +863,15 @@ namespace SwarmSight.HeadPartsTracking
             queue.Enqueue(start);
 
 
-            while (queue.Count > 0 && loopCount < 500)
+            while (queue.Count > 0 && loopCount < 500) //<-- loop end will depend on thread order
             {
                 loopCount++;
                 var point = queue.Dequeue();
-                var candidates = getCandidateLocations(point, maxHopDistance);
+                var candidates = getCandidateLocations(point, maxHopDistance); 
 
-                Parallel.ForEach(candidates, p =>
+                Parallel.ForEach(candidates, 
+                    new ParallelOptions { MaxDegreeOfParallelism = 1 }, //Parallelizing this results in inconsistent output
+                    p =>
                 {
                     //Check bounds
                     if (p.X < 0 || p.X >= target.Width ||
@@ -871,7 +887,7 @@ namespace SwarmSight.HeadPartsTracking
                     //Check if already checked
                     var visitedX = p.X - visitedOffsetX;
                     var visitedY = p.Y - visitedOffsetY;
-                    var exists = visited[visitedX][visitedY];
+                    var exists = visited[visitedX][visitedY]; //<-- this probably needs to be locked
 
                     if (exists)
                         return;
@@ -925,7 +941,9 @@ namespace SwarmSight.HeadPartsTracking
         {
             var result = new List<DPoint>(maxHopDistance * maxHopDistance);
 
-            Parallel.For(point.X - maxHopDistance, point.X + maxHopDistance + 1, x =>
+            Parallel.For(point.X - maxHopDistance, point.X + maxHopDistance + 1, 
+                new ParallelOptions { MaxDegreeOfParallelism = 1 },  //Parallelizing this results in inconsistent output
+                x =>
             {
                 var rowResult = result.Take(0).ToList();
 
@@ -937,23 +955,28 @@ namespace SwarmSight.HeadPartsTracking
                     rowResult.Add(new DPoint(x, y));
                 }
 
-                lock (result)
+                if (rowResult.Count > 0)
                 {
-                    result.AddRange(rowResult);
+                    lock (result)
+                    {
+                        result.AddRange(rowResult);
+                    }
                 }
             });
 
             return result;
         }
 
-        private double[] ComputeSectorWeights(List<Tuple<DPoint, double>> points, int width, int height, double angle)
+        private Tuple<int[], int> ComputeSectorWeights(List<Tuple<DPoint, double>> points, int width, int height, double angle)
         {
             var ctrX = width / 2;
             var ctrY = height / 2;
 
             var sectors = 5;
             var sectorContribution = sectors / 180.0;
-            var histogram = new double[sectors];
+            var histogram = new int[sectors];
+            var histogramLock = new object[sectors].Select(i => new object()).ToArray();
+            var anglesHistogram = new int[180];
 
             Parallel.ForEach(points, new ParallelOptions
             {
@@ -986,10 +1009,14 @@ namespace SwarmSight.HeadPartsTracking
                 else if (sector >= sectors)
                     sector = sectors - 1;
 
-                histogram[(int)sector] += p.Item2;
-            });
+                var activation = (int)p.Item2;
 
-            return histogram;
+                //Ensure thread-safe addition
+                Interlocked.Add(ref histogram[(int)sector], activation);
+                Interlocked.Add(ref anglesHistogram[(int)priorAngle], activation);
+            });
+            
+            return new Tuple<int[], int>(histogram, anglesHistogram.MaxIndex());
         }
 
         #region Hull Operations
@@ -1206,7 +1233,7 @@ namespace SwarmSight.HeadPartsTracking
 
             ConvexHullsPrior.Keys.ForEach(k =>
                 ConvexHullsFrame[k].AddRange(ConvexHullsPrior[k].Select(pv =>
-                    Space.ToHeadSpaceFromPriorSpace(pv)
+                    Space.ToSubclippedSpaceFromPriorSpace(pv)
                 ))
             );
 
@@ -1215,7 +1242,7 @@ namespace SwarmSight.HeadPartsTracking
 
             ConvexHullsPrior.Keys.ForEach(k =>
                 ConvexHullsStandard[k].AddRange(ConvexHullsFrame[k].Select(pv =>
-                    Space.ToStandardSpaceFromHeadSpace(pv)
+                    Space.ToStandardSpaceFromSubclippedSpace(pv)
                 ))
             );
 

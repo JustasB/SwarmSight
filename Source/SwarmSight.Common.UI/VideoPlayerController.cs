@@ -409,7 +409,7 @@ namespace SwarmSight
 
         public string GetCSVfileEnding()
         {
-            return Environment.UserName + "_" + DateTime.Now.ToString("yyyy-MM-dd hh-mm") + ".csv";
+            return Environment.UserName + "_" + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".csv";
         }
     }
 }

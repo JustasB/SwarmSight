@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using SwarmSight.HeadPartsTracking;
+using SwarmSight.Filters;
 
 namespace SwarmSight.UserControls
 {
@@ -28,34 +29,35 @@ namespace SwarmSight.UserControls
 
         internal void Show(EfficientTipAndPERdetector.TipAndPERResult processorResult)
         {
+
             if (processorResult?.Left?.Tip != null)
             {
-                leftLine.X1 = processorResult.Left.Tip.StandardPoint.X;
-                leftLine.Y1 = processorResult.Left.Tip.StandardPoint.Y;
+                leftLine.X1 = processorResult.Left.Tip.ModelPoint.X;
+                leftLine.Y1 = processorResult.Left.Tip.ModelPoint.Y;
 
-                leftLine.X2 = processorResult.Left.Base.StandardPoint.X;
-                leftLine.Y2 = processorResult.Left.Base.StandardPoint.Y;
+                leftLine.X2 = processorResult.Left.Base.ModelPoint.X;
+                leftLine.Y2 = processorResult.Left.Base.ModelPoint.Y;
 
                 leftAngle.Content = processorResult.Left.Angle.ToString("N0") + "°";
             }
 
             if (processorResult?.Right?.Tip != null)
             {
-                rightLine.X1 = processorResult.Right.Tip.StandardPoint.X;
-                rightLine.Y1 = processorResult.Right.Tip.StandardPoint.Y;
+                rightLine.X1 = processorResult.Right.Tip.ModelPoint.X;
+                rightLine.Y1 = processorResult.Right.Tip.ModelPoint.Y;
 
-                rightLine.X2 = processorResult.Right.Base.StandardPoint.X;
-                rightLine.Y2 = processorResult.Right.Base.StandardPoint.Y;
+                rightLine.X2 = processorResult.Right.Base.ModelPoint.X;
+                rightLine.Y2 = processorResult.Right.Base.ModelPoint.Y;
 
                 rightAngle.Content = (-processorResult.Right.Angle).ToString("N0") + "°";
             }
 
             if(processorResult?.Proboscis != null)
             {
-                prob.X2 = processorResult.Proboscis.Tip.StandardPoint.X;
-                prob.Y2 = processorResult.Proboscis.Tip.StandardPoint.Y;
+                prob.X2 = processorResult.Proboscis.Tip.ModelPoint.X;
+                prob.Y2 = processorResult.Proboscis.Tip.ModelPoint.Y;
 
-                probLength.Content = 100 - 4 * processorResult.Proboscis.Tip.StandardPoint.Y;
+                probLength.Content = processorResult.Proboscis.Length.Rounded();
             }
         }
     }

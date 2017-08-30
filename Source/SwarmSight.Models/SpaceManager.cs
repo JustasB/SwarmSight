@@ -16,8 +16,8 @@ namespace SwarmSight.HeadPartsTracking
         public int StandardWidth = 100;
         public int StandardHeight = 100;
 
-        public DPoint HeadOffset;
-        public DPoint HeadDims
+        public DPoint AntennaSensorOffset;
+        public DPoint AntennaSensorDims
         {
             get
             {
@@ -35,49 +35,49 @@ namespace SwarmSight.HeadPartsTracking
         public double ScaleX;
         public double ScapeDistanceAtScale1;
 
-        public WPoint ToPriorSpaceFromHeadSpace(WPoint p)
+        public WPoint ToPriorSpaceFromSubclippedSpace(WPoint p)
         {
-            return p.ToPriorSpace(new WPoint(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
+            return p.ToPriorSpace(new WPoint(AntennaSensorDims.X, AntennaSensorDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
 
-        public System.Drawing.Point ToHeadSpaceFromPriorSpace(WPoint p)
+        public System.Drawing.Point ToSubclippedSpaceFromPriorSpace(WPoint p)
         {
-            return p.ToHeadSpace(new WPoint(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
+            return p.ToSubclippedSpace(new WPoint(AntennaSensorDims.X, AntennaSensorDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
-        public WPoint ToPriorSpaceFromHeadSpace(System.Drawing.Point p)
+        public WPoint ToPriorSpaceFromSubclippedSpace(System.Drawing.Point p)
         {
-            return p.ToWindowsPoint().ToPriorSpace(new WPoint(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
-        }
-
-        public System.Drawing.Point ToHeadSpaceFromPriorSpace(System.Drawing.Point p)
-        {
-            return p.ToWindowsPoint().ToHeadSpace(new WPoint(HeadDims.X, HeadDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
+            return p.ToWindowsPoint().ToPriorSpace(new WPoint(AntennaSensorDims.X, AntennaSensorDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
         }
 
-        public DPoint ToStandardSpaceFromHeadSpace(DPoint p)
+        public System.Drawing.Point ToSubclippedSpaceFromPriorSpace(System.Drawing.Point p)
         {
-            var x = (int)Round(1.0 * p.X / HeadDims.X * StandardWidth, 0);
-            var y = (int)Round(1.0 * p.Y / HeadDims.Y * StandardHeight, 0);
+            return p.ToWindowsPoint().ToSubclippedSpace(new WPoint(AntennaSensorDims.X, AntennaSensorDims.Y), HeadAngle, ScaleX, ScaleX, OffsetX, OffsetY, PriorAngle, ScapeDistanceAtScale1);
+        }
+
+        public DPoint ToStandardSpaceFromSubclippedSpace(DPoint p)
+        {
+            var x = (int)Round(1.0 * p.X / AntennaSensorDims.X * StandardWidth, 0);
+            var y = (int)Round(1.0 * p.Y / AntennaSensorDims.Y * StandardHeight, 0);
 
             return new DPoint(x, y);
         }
 
-        public DPoint ToHeadSpaceFromStandardSpace(DPoint p)
+        public DPoint ToSubclippedSpaceFromStandardSpace(DPoint p)
         {
-            var x = (int)Round(1.0 * p.X / StandardWidth * HeadDims.X, 0);
-            var y = (int)Round(1.0 * p.Y / StandardHeight * HeadDims.Y, 0);
+            var x = (int)Round(1.0 * p.X / StandardWidth * AntennaSensorDims.X, 0);
+            var y = (int)Round(1.0 * p.Y / StandardHeight * AntennaSensorDims.Y, 0);
 
             return new DPoint(x, y);
         }
 
-        public DPoint ToFrameSpaceFromHeadSpace(DPoint p)
+        public DPoint ToFrameSpaceFromSubclippedSpace(DPoint p)
         {
-            return new DPoint(p.X + HeadOffset.X, p.Y + HeadOffset.Y);
+            return new DPoint(p.X + AntennaSensorOffset.X, p.Y + AntennaSensorOffset.Y);
         }
 
-        public DPoint ToHeadSpaceFromFrameSpace(DPoint p)
+        public DPoint ToSubclippedSpaceFromFrameSpace(DPoint p)
         {
-            return new DPoint(p.X - HeadOffset.X, p.Y - HeadOffset.Y);
+            return new DPoint(p.X - AntennaSensorOffset.X, p.Y - AntennaSensorOffset.Y);
         }
     }
 

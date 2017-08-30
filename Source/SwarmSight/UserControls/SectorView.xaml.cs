@@ -64,10 +64,12 @@ namespace SwarmSight.UserControls
                 );
 
                 leftDomSec.Content = processorResult.Left.DominantSector;
+                leftSecMode.Content = processorResult.Left.TopAngle + "°";
             }
             else
             {
                 leftDomSec.Content = "-";
+                leftSecMode.Content = "-";
             }
 
 
@@ -85,10 +87,12 @@ namespace SwarmSight.UserControls
                 );
 
                 rightDomSec.Content = processorResult.Right.DominantSector;
+                rightSecMode.Content = processorResult.Right.TopAngle + "°";
             }
             else
             {
                 rightDomSec.Content = "-";
+                rightSecMode.Content = "-";
             }
 
             clearFrame.CopyToWriteableBitmap(canvasBuffer);

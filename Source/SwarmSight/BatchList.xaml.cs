@@ -245,7 +245,7 @@ namespace SwarmSight
                     if(reachedEndOfVideo)
                     {
                         currentItem.Status = BatchItemStatus.Finished;
-                        WindowManager.ProcessorWindow.SaveCSV(currentItem.File);
+                        WindowManager.ProcessorWindow.SaveCSV((object)currentItem.File);
 
                         var timeTaken = DateTime.Now - currentItem.TimeStarted;
                         var fps = currentItem.TotalFrames / timeTaken.TotalSeconds;

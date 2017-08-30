@@ -89,7 +89,7 @@ namespace SwarmSight.Filters
 
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static System.Drawing.Point ToHeadSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
+        public static System.Drawing.Point ToSubclippedSpace(this Point target, Point windowDims, double headAngle, double scaleX, double scaleY, double offsetX, double offsetY, double priorAngle, double scapeDistance)
         {
             target = target.Multiply(scaleX * scapeDistance, scaleY * scapeDistance);
             target = target.Rotate(headAngle - priorAngle);

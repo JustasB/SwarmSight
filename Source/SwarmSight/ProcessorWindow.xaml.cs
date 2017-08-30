@@ -399,32 +399,68 @@ namespace SwarmSight
             if (prevData != null)
                 Processor.Results = prevData;
         }
-        
-        private void btnSaveActivity_Click(object sender, RoutedEventArgs e)
+
+
+
+        /// <summary>
+        /// CSVs are saved in same folder as the video, with "_tracker_", username, and timestamp appended.
+        /// </summary>
+        private FileInfo GetDefaultCsvPath(string videoFile)
         {
-            new Thread(SaveCSV) {IsBackground = true}.Start(txtFileName.Text);
+            var csvFile = new FileInfo(videoFile).FullName + "_Tracker_" + Controller.GetCSVfileEnding();
+
+            return new FileInfo(csvFile);
         }
 
-        public void SaveCSV(object videoFileName)
+        private void btnSaveActivity_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(videoFileName.ToString()))
+            var videoPath = txtFileName.Text;
+            if (string.IsNullOrWhiteSpace(videoPath))
                 return;
 
+            var defaultCSV = GetDefaultCsvPath(videoPath);
+
+            var dlg = new Microsoft.Win32.SaveFileDialog()
+            {
+                InitialDirectory = defaultCSV.DirectoryName,
+                FileName = defaultCSV.Name,
+                DefaultExt = ".csv",
+                Filter = "Comma Separated Values (CSV) Files|*.csv"
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                new Thread((path) => { SaveCSV((string)path); }) { IsBackground = true }.Start(dlg.FileName);
+            }
+        }
+
+        public void SaveCSV(object baseFileName)
+        {
+            if (string.IsNullOrWhiteSpace(baseFileName.ToString()))
+                return;
+
+            var path = GetDefaultCsvPath(baseFileName.ToString());
+
+            SaveCSV(path.FullName);
+        }
+
+        public void SaveCSV(string csvFile)
+        {
             if(AppSettings.Default.VideoLabelColumn.Split(',').Length != AppSettings.Default.VideoLabel.Split(',').Length)
             {
                 MessageBox.Show("Make sure the number of commas (',') is the same in both the column label and column value field.");
                 return;
             }
 
-            var fileInfo = new FileInfo(videoFileName.ToString());
-
-            using (var writer = new StreamWriter(fileInfo.FullName + "_Tracker_" + Controller.GetCSVfileEnding(), false))
+            using (var writer = new StreamWriter(csvFile, false))
             {
                 writer.WriteLine
                 (
                     AppSettings.Default.VideoLabelColumn + ", Frame, TreatmentSensor, " + 
-                    "PER-X, PER-Y, " +
+                    "PER-X, PER-Y, PER-Length, " +
                     "LeftSector, RightSector, " +
+                    "LeftSectorMode, RightSectorMode, " +
+                    "LeftAngle, RightAngle, " +
                     "LeftFlagellumTip-X, LeftFlagellumTip-Y, RightFlagellumTip-X, RightFlagellumTip-Y, " +
                     "LeftFlagellumBase-X, LeftFlagellumBase-Y, RightFlagellumBase-X, RightFlagellumBase-Y, " +
                     "RotationAngle, AntennaSensorWidth, AntennaSensorHeight, " +
@@ -444,17 +480,24 @@ namespace SwarmSight
                 frames.ForEach(frameIndex =>
                 {
                     var value = data[frameIndex];
-                    var recordingConditions = value?.Left?.Tip?.Space;
-
+                    var recordingConditions = value?.RecordingConditions;
+                    
                     var line = string.Join(",", new object[]
                     {
                         AppSettings.Default.VideoLabel, frameIndex, value?.TreatmentSensorValue,
 
                         value?.Proboscis?.Tip?.FramePoint.X,
                         value?.Proboscis?.Tip?.FramePoint.Y,
+                        value?.Proboscis?.Length,
 
                         value?.Left?.DominantSector,
                         value?.Right?.DominantSector,
+
+                        value?.Left?.TopAngle,
+                        value?.Right?.TopAngle,
+
+                        value?.Left?.Angle,
+                        -value?.Right?.Angle,
 
                         value?.Left?.Tip?.FramePoint.X, value?.Left?.Tip?.FramePoint.Y,
                         value?.Right?.Tip?.FramePoint.X, value?.Right?.Tip?.FramePoint.Y,
@@ -464,11 +507,11 @@ namespace SwarmSight
 
                         recordingConditions?.HeadAngle,
 
-                        recordingConditions?.HeadDims.X,
-                        recordingConditions?.HeadDims.Y,
+                        recordingConditions?.AntennaSensorDims.X,
+                        recordingConditions?.AntennaSensorDims.Y,
 
-                        recordingConditions?.HeadOffset.X,
-                        recordingConditions?.HeadOffset.Y,
+                        recordingConditions?.AntennaSensorOffset.X,
+                        recordingConditions?.AntennaSensorOffset.Y,
 
                         recordingConditions?.ScaleX,
                         recordingConditions?.ScaleX

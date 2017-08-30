@@ -50,31 +50,33 @@ namespace SwarmSight.Filters
             var chan = (int)channel;
 
             Count = 0;
-            BinPoints.AsParallel().ForAll(bin => bin.Clear());
+            Parallel.ForEach(BinPoints, 
+                //new ParallelOptions { MaxDegreeOfParallelism = 1 }, 
+                bin => bin.Clear());
 
-            points
-                .AsParallel()
-                .ForAll(p =>
+            Parallel.ForEach(points, 
+                //new ParallelOptions { MaxDegreeOfParallelism = 1 }, 
+                p =>
+            {
+                var x = p.X;
+                var y = p.Y;
+
+                var offset = y * stride + 3 * x + chan;
+                var bin = firstPx[offset];
+
+                //Don't track empties
+                if (bin != 0)
                 {
-                    var x = p.X;
-                    var y = p.Y;
+                    var binList = BinPoints[bin];
 
-                    var offset = y * stride + 3 * x + chan;
-                    var bin = firstPx[offset];
-
-                    //Don't track empties
-                    if (bin != 0)
+                    lock (binList)
                     {
-                        var binList = BinPoints[bin];
-
-                        lock (binList)
-                        {
-                            binList.Add(p);
-                        }
+                        binList.Add(p);
                     }
+                }
+            });
 
-                    Count++;
-                });
+            Count = points.Count;
 
             return this;
         }
