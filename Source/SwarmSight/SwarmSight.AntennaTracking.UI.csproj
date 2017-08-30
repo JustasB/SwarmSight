@@ -15,11 +15,11 @@
     <WarningLevel>4</WarningLevel>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <IsWebBootstrapper>true</IsWebBootstrapper>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <ApplicationReSight>1</ApplicationReSight>
-    <PublishUrl>Y:\Documents\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\AntennaTracking\</PublishUrl>
+    <PublishUrl>E:\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\AntennaTracking\</PublishUrl>
     <Install>true</Install>
-    <InstallFrom>Web</InstallFrom>
+    <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
     <UpdateMode>Foreground</UpdateMode>
     <UpdateInterval>7</UpdateInterval>
@@ -27,7 +27,6 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <InstallUrl>https://raw.githubusercontent.com/JustasB/SwarmSight/master/Setup/AntennaTracking/</InstallUrl>
     <ErrorReportUrl>https://github.com/JustasB/SwarmSight/Issues</ErrorReportUrl>
     <TargetCulture>en-US</TargetCulture>
     <ProductName>SwarmSight Antenna Tracking</ProductName>
