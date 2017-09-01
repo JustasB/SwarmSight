@@ -232,3 +232,5 @@ $RECYCLE.BIN/
 *.lnk
 *.Rhistory
 *.RData
+
+_site/

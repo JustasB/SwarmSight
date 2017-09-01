@@ -3,27 +3,23 @@ layout: subpage
 title: SwarmSight Aggregate Motion Assessment Software
 ---
 
-## Citation
-
-When using the software in your research, please cite the following publication: [J Birgiolas, CM Jernigan, BH Smith, SM Crook, SwarmSight: Measuring the temporal progression of animal group activity levels from natural-scene and laboratory videos, Behavior Research Methods, 1-12](http://link.springer.com/article/10.3758/s13428-016-0732-2)
-
-## Analyze Video Motion
+# SwarmSight Analyzes Aggregate Video Motion
 
 SwarmSight provides frame-by-frame motion data from any video. Vary the sensitivity to find just the moving objects you want. Amplify the size of the detected motion to quickly spot fast moving objects. Pick between processing speed or accuracy. You can even restrict to a specific region in the video.
 
-![Main UI](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Main.JPG)
+![SwarmSight Motion Analysis Screenshot](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Main.JPG)
 
 Motion of fast-moving [stingless bees](https://en.wikipedia.org/wiki/Tetragonisca_angustula) shown in yellow & blue.
 
-[![Watch SwarmSight Perform Bee Swarm Motion Analysis](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Screen.Shot.2016-02-26.at.12.32.59.PM.png)](https://www.youtube.com/watch?v=YAQ1Dp97Q_M)
+[![SwarmSight Detecting the Aggregate Motion of a Swarm of Bees](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Screen.Shot.2016-02-26.at.12.32.59.PM.png)](https://www.youtube.com/watch?v=YAQ1Dp97Q_M)
 
-## Compare Motion
+# Use SwarmSight to Detect Changes to Aggregate Movement
 
 Have videos with a control and treatment group? Load their motion activity files and compare the two. SwarmSight will also compare parts of the same video. Just load it twice and pick different times in the video to compare.
 
-![SwarmSight Compare Videos UI](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Compare.JPG)
+![SwarmSight Compares Videos Motion Screenshot](https://raw.githubusercontent.com/justasb/SwarmSight/master/Screenshots/Compare.JPG)
 
-## Motion Comparison Statistics
+# Compute Motion Comparison Statistics
 
 To compare two videos, load the saved video motion data, select the frames to compare, and click "Compute Statistics". You'll get a the results of summary statistics for each frame range and a chart of the average video activity levels.
 
@@ -40,3 +36,8 @@ The app can be launched from Start Menu > SwarmSight > SwarmSight Motion Analysi
 # Educational Materials and Examples
 
 A sample video with example analysis and a presentation with examples of how the activity data could be used is located in the [Examples folder](https://github.com/JustasB/SwarmSight/tree/master/Examples/Motion%20Analysis)
+
+# Citation
+
+When using SwarmSight in your research, please cite the following publication: [J Birgiolas, CM Jernigan, BH Smith, SM Crook, SwarmSight: Measuring the temporal progression of animal group activity levels from natural-scene and laboratory videos, Behavior Research Methods, 1-12](http://link.springer.com/article/10.3758/s13428-016-0732-2)
+
