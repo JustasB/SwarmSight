@@ -1,4 +1,9 @@
-﻿# SwarmSight Publications
+﻿---
+layout: subpage
+title: SwarmSight Aggregate Motion Assessment Software
+---
+
+# SwarmSight Publications
 
 SwarmSight Antenna Tracking and Motion Analysis modules have been described in the following scientific works:
 
