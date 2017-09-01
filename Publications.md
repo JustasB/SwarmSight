@@ -1,4 +1,4 @@
-# SwarmSight Publications
+﻿# SwarmSight Publications
 
 SwarmSight Antenna Tracking and Motion Analysis modules have been described in the following scientific works:
 
@@ -11,7 +11,7 @@ SwarmSight Antenna Tracking and Motion Analysis modules have been described in t
 # Motion Analysis
 
  - Jernigan, C. M., Birgiolas, J., McHugh, C., Roubik, D. W., Weislo, W. T., & Smith, B. H. (in review). Colony-level non-associative plasticity of alarm responses in the stingless bee, Tetragonisca angustula.
- - [Birgiolas, J., Jernigan, C. M., Smith, B. H., & Crook, S. M. (2016). SwarmSight: Measuring the temporal progression of animal group activity levels from natural-scene and laboratory videos. Behavior Research Methods, 1�12.](https://www.researchgate.net/profile/Justas_Birgiolas/publication/301742636_SwarmSight_Measuring_the_temporal_progression_of_animal_group_activity_levels_from_natural-scene_and_laboratory_videos/links/5727ac3b08aee491cb414b16.pdf)
+ - [Birgiolas, J., Jernigan, C. M., Smith, B. H., & Crook, S. M. (2016). SwarmSight: Measuring the temporal progression of animal group activity levels from natural-scene and laboratory videos. Behavior Research Methods, 1–12.](https://www.researchgate.net/profile/Justas_Birgiolas/publication/301742636_SwarmSight_Measuring_the_temporal_progression_of_animal_group_activity_levels_from_natural-scene_and_laboratory_videos/links/5727ac3b08aee491cb414b16.pdf)
 
 
 
