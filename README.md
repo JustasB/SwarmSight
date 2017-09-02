@@ -1,4 +1,4 @@
-# SwarmSight Antenna and Proboscis Tracking and Activity Assessment Software
+# SwarmSight Insect Antenna and Proboscis Tracking and Activity Assessment Software
 
 SwarmSight is an open-source video analysis tool with modules for:
 
