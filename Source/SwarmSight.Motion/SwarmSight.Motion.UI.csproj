@@ -16,7 +16,7 @@
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <IsWebBootstrapper>true</IsWebBootstrapper>
-    <PublishUrl>Y:\Documents\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\MotionAnalysis\</PublishUrl>
+    <PublishUrl>E:\Dropbox\Research\Chris Jernigan\SwarmSight\Setup\MotionAnalysis\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -26,11 +26,12 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <InstallUrl>https://raw.githubusercontent.com/JustasB/SwarmSight/master/Setup/MotionAnalysis/</InstallUrl>
+    <InstallUrl>https://github.com/JustasB/SwarmSight/tree/master/Setup/MotionAnalysis/</InstallUrl>
     <ErrorReportUrl>https://github.com/JustasB/SwarmSight/Issues</ErrorReportUrl>
     <TargetCulture>en</TargetCulture>
     <ProductName>SwarmSight Motion Analysis</ProductName>
     <PublisherName>SwarmSight</PublisherName>
+    <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <ApplicationRevision>20</ApplicationRevision>
