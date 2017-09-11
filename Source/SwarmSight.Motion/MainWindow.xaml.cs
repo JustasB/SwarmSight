@@ -173,17 +173,32 @@ namespace SwarmSight
 
         private void ComputeComparisonStats()
         {
+            comparisonTable.Clear();
+            comparisonChart.Clear();
+
+            var activityA = chartA.Activity;
+            var activityB = chartB.Activity;
+
             if (TTest.Busy ||
-                chartA.Activity == null || chartB.Activity == null ||
-                chartA.Activity.Count <= 1 || chartB.Activity.Count <= 1)
+                activityA == null || activityB == null ||
+                activityA.Count <= 1 || activityB.Count <= 1)
                 return;
+
+            var firstValue = activityA[0].Y;
+            var allSame = activityA.Zip(activityB, (a, b) => a.Y == b.Y && a.Y == firstValue).All(i => i);
+
+            if (allSame)
+            {
+                MessageBox.Show("The selected activity sets are identical and of singular value.");
+                return;
+            }
 
             //Compute T-test
             var tTest = TTest.Perform
-                (
-                    chartA.Activity.Select(p => p.Y).ToList(),
-                    chartB.Activity.Select(p => p.Y).ToList()
-                );
+            (
+                activityA.Select(p => p.Y).ToList(),
+                activityB.Select(p => p.Y).ToList()
+            );
 
             //Update table
             comparisonTable.lblAvgA.Content = tTest.TTest.FirstSeriesMean.ToString("N2");
@@ -196,7 +211,7 @@ namespace SwarmSight
             comparisonTable.lblStDevB.Content = tTest.SecondSeriesStandardDeviation.ToString("N2");
 
             comparisonTable.lblAvgDiff.Content = (tTest.MeanDifference > 0 ? "+" : "") +
-                                                 tTest.MeanDifference.ToString("N2");
+                                                    tTest.MeanDifference.ToString("N2");
 
             if (tTest.TTest.FirstSeriesMean != 0)
                 comparisonTable.lblAvgPercent.Content = tTest.PercentMeanDifference.ToString("P2");
@@ -205,10 +220,10 @@ namespace SwarmSight
 
             //Update Chart
             comparisonChart.UpdateChart
-                (
-                    tTest.TTest.FirstSeriesMean, tTest.FirstSeries95ConfidenceBound,
-                    tTest.TTest.SecondSeriesMean, tTest.SecondSeries95ConfidenceBound
-                );
+            (
+                tTest.TTest.FirstSeriesMean, tTest.FirstSeries95ConfidenceBound,
+                tTest.TTest.SecondSeriesMean, tTest.SecondSeries95ConfidenceBound
+            );
         }
 
         private void SetupPlayer()

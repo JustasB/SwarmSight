@@ -83,6 +83,7 @@ namespace SwarmSight.Stats
         private static object lockpad = new object();
 
         private readonly List<DataPoint> _pointBuffer = new List<DataPoint>();
+
         public void AddPoint(int x, int y)
         {
             lock (_pointBuffer)
@@ -114,6 +115,9 @@ namespace SwarmSight.Stats
         }
 
         public PlotModel MyModel { get; private set; }
+        public int FrameMin;
+        public int FrameMax;
+        public int FrameRange { get { return FrameMax - FrameMin; } }
 
         public void Stop()
         {

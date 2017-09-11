@@ -31,12 +31,12 @@ namespace SwarmSight.UserControls
 
         public int LowerBound
         {
-            get { return (int) (Math.Round(SelectionBeginPercent*_activity.Count, 0)); }
+            get { return (int) (Math.Round(SelectionBeginPercent*_chart.FrameRange+_chart.FrameMin, 0)); }
         }
 
         public int UpperBound
         {
-            get { return (int) (Math.Round(SelectionEndPercent*_activity.Count, 0)); }
+            get { return (int) (Math.Round(SelectionEndPercent * _chart.FrameRange + _chart.FrameMin, 0)); }
         }
 
         public double SelectionBeginPercent
@@ -78,6 +78,9 @@ namespace SwarmSight.UserControls
 
             _chart.Clear();
             _activity.ForEach(p => _chart.AddPoint((int) p.X, (int) p.Y));
+            _chart.FrameMin = (int)_activity.Min(p => p.X);
+            _chart.FrameMax = (int)_activity.Max(p => p.X);
+            _chart.SetRange(_chart.FrameMin, _chart.FrameMax);
 
             UpdateBoundsLabels();
         }

@@ -24,5 +24,17 @@ namespace SwarmSight.UserControls
         {
             InitializeComponent();
         }
+
+        internal void Clear()
+        {
+            lblAvgA.Content =
+            lblStDevA.Content =
+            lblNA.Content =
+            lblAvgB.Content =
+            lblStDevB.Content =
+            lblNB.Content =
+            lblAvgDiff.Content =
+            lblAvgPercent.Content = "-";
+        }
     }
 }

@@ -79,5 +79,12 @@ namespace SwarmSight.UserControls
 
             model.InvalidatePlot(true);
         }
+
+        internal void Clear()
+        {
+            series.Items.Clear();
+
+            model.InvalidatePlot(true);
+        }
     }
 }
