@@ -7,7 +7,7 @@ title: SwarmSight Antenna and Proboscis Extension Reflex Tracking Software
 
 SwarmSight Appendage Tracking module will analyze videos of restrained insects, filmed from the top-down view, and provide the user with the antenna and proboscis tip locations for each frame of the video.
 
-# SwarmSight Anppendage Tracking Features
+# SwarmSight Appendage Tracking Features
 
  1. **Fast:** Tracks antenna and proboscis movements in real-time (30+ fps)
  1. **Accurate:** Has same or better accuracy than human trackers (consistent, fatigue-free performance)
