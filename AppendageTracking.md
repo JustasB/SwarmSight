@@ -43,6 +43,11 @@ Files used in the tutorial can be found in [the Examples folder](https://github.
 # Output File Reference
 The columns of the output .CSV file are described in [the Output Column Reference](Examples/Appendage%20Tracking/ColumnReference). See video tutorials for how to analyze the .CSV files.
 
+# Citation
+When using this software in your research, please cite the following publication:
+
+[Birgiolas, J., Jernigan, C. M., Gerkin, R. C., Smith, B. H., & Crook, S. (2017). SwarmSight: Real-time Tracking of Insect Antenna Movements and Proboscis Extension Reflex Using a Common Preparation and Conventional Hardware. JoVE, 130. http://dx.doi.org/10.3791/56803](https://www.jove.com/video/56803/swarmsight-real-time-tracking-insect-antenna-movements-proboscis)
+
 # [Society for Neuroscience](http://www.sfn.org/) Conference Poster
 Description of software comparison to human trackers and effects of odor presentation on antenna movements can be found in the [SFN 2016 conference poster](https://github.com/JustasB/SwarmSight/raw/master/Examples/Appendage%20Tracking/SwarmSight%20Antenna%20Tracking%20Poster.pdf) and the [abstract](https://github.com/JustasB/SwarmSight/raw/master/Examples/Appendage%20Tracking/SwarmSight%20Antenna%20Tracking%20Abstract.pdf).
 
