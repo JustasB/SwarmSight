@@ -1742,10 +1742,9 @@ namespace SwarmSight.Filters
             return result;
         }
 
+        private static List<int>[] _changeExtentPointsResult = new List<int>[0]; //An array of integer lists
         public static List<Point> ChangeExtentPoints(this Frame bitmapA, Frame bitmapB, int threshold, Rect? regionOfInterest = null)
         {
-            var result = new List<Point>(1000);
-
             //Performance optimizations
             var aFirstPx = bitmapA.FirstPixelPointer;
             var bFirstPx = bitmapB.FirstPixelPointer;
@@ -1767,12 +1766,28 @@ namespace SwarmSight.Filters
                 yMax = (int)Math.Round(regionOfInterest.Value.Bottom);
             }
 
-            var rowTotals = new List<Point>[yMax-yMin];
+            var xRange = xMax - xMin;
+            var yRange = yMax - yMin;
+
+            //Initialize the result-tracking array with pre-allocated lists
+            if (_changeExtentPointsResult.Length == 0 || 
+                _changeExtentPointsResult.Length != yRange || 
+                (yRange > 0 && _changeExtentPointsResult[0].Count != xRange)) 
+            {
+                _changeExtentPointsResult = new List<int>[yRange];
+
+                for (int y = 0; y < yRange; y++)
+                {
+                    _changeExtentPointsResult[y] = new List<int>(xRange);
+                }
+            }
 
             //Do each row in parallel
             Parallel.For(yMin, yMax, new ParallelOptions() {/*MaxDegreeOfParallelism = 1*/}, (int y) =>
             {
-                rowTotals[y-yMin] = new List<Point>();
+                //Clear previous frame row result
+                _changeExtentPointsResult[y-yMin].Clear();
+
                 var rowStart = stride * y; //Stride is width*3 bytes
 
                 for (var x = xMin; x < xMax; x++)
@@ -1791,12 +1806,30 @@ namespace SwarmSight.Filters
 
                     if (colorDifference >= threshold)
                     {
-                        rowTotals[y-yMin].Add(new Point(x,y));
+                        _changeExtentPointsResult[y-yMin].Add(x);
                     }
                 }
             });
 
-            return rowTotals.SelectMany(y => y).ToList();
+
+            var numPoints = _changeExtentPointsResult.Sum(y => y.Count);
+            var result = new List<Point>(numPoints);
+
+            if (numPoints > 0)
+            {
+                for (int y = 0; y < yRange; y++)
+                {
+                    var rowPts = _changeExtentPointsResult[y];
+
+                    for (int x = 0; x < rowPts.Count; x++)
+                    {
+                        result.Add(new Point(rowPts[x], yMin + y));
+                    }
+                }
+
+            }
+            
+            return result;
         }
 
 
