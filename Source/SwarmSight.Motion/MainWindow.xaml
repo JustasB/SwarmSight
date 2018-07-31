@@ -136,7 +136,9 @@
                ToolTip="Current video playback position" Background="#7FFFFFFF" />
         <Grid x:Name="chartPlaceholder_Copy" HorizontalAlignment="Left" Height="85" Margin="20,365,0,0"
               VerticalAlignment="Top" Width="516"
-              ToolTip="A chart showing how many pixels have changed for each frame of the video" />
+              ToolTip="A chart showing how many pixels have changed for each frame of the video" >
+            <CheckBox x:Name="chkUpdatePlot" Content="Update Plot" Margin="0,0,0,70" HorizontalAlignment="Right" Width="90" Height="15" VerticalAlignment="Bottom" IsChecked="True"/>
+        </Grid>
         <Label x:Name="lblFPS" Content="FPS: 0" HorizontalAlignment="Left" Margin="229,421,0,0" VerticalAlignment="Top"
                Width="79" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                ToolTip="The processing speed at frames per second" Background="#7FFFFFFF" />

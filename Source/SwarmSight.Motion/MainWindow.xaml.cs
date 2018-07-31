@@ -108,12 +108,15 @@ namespace SwarmSight
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                try
+                if (chkUpdatePlot.IsChecked.Value)
                 {
-                    _chart.AddPoint(result.FrameIndex, result.ChangedPixelsCount);
-                }
-                catch
-                {
+                    try
+                    {
+                        _chart.AddPoint(result.FrameIndex, result.ChangedPixelsCount);
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 Activity.Add(new Point(result.FrameIndex, result.ChangedPixelsCount));
@@ -303,9 +306,33 @@ namespace SwarmSight
             }
         }
 
+        private FileInfo GetDefaultCsvPath(string videoFile)
+        {
+            var csvFile = new FileInfo(videoFile).FullName + "_Motion_" + Controller.GetCSVfileEnding();
+
+            return new FileInfo(csvFile);
+        }
+
         private void btnSaveActivity_Click(object sender, RoutedEventArgs e)
         {
-            new Thread(SaveCSV) { IsBackground = true }.Start(txtFileName.Text);
+            var videoPath = txtFileName.Text;
+            if (string.IsNullOrWhiteSpace(videoPath))
+                return;
+
+            var defaultCSV = GetDefaultCsvPath(videoPath);
+
+            var dlg = new Microsoft.Win32.SaveFileDialog()
+            {
+                InitialDirectory = defaultCSV.DirectoryName,
+                FileName = defaultCSV.Name,
+                DefaultExt = ".csv",
+                Filter = "Comma Separated Values (CSV) Files|*.csv"
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                new Thread((path) => { SaveCSV((string)path); }) { IsBackground = true }.Start(dlg.FileName);
+            }
         }
 
         private void SaveCSV(object videoFileName)
@@ -334,7 +361,7 @@ namespace SwarmSight
             {
                 IsBackground = true
             }
-                .Start();
+            .Start();
         }
 
         private void btnComputeStats_Click(object sender, RoutedEventArgs e)

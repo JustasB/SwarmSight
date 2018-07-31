@@ -19,6 +19,8 @@ namespace SwarmSight.VideoPlayer
         public TimeSpan CurrentTime { get; private set; }
         public double CurrentPercentage { get; private set; }
 
+        public TimeSpan? _reportedDuration;
+
         public bool IsPlaying { get; private set; }
         public bool IsBufferReady { get; private set; }
 
@@ -113,6 +115,7 @@ namespace SwarmSight.VideoPlayer
             FrameDecoder.Processor = Processor;
             FrameDecoder.FrameReady += OnFrameReady;
             _filereader.LogReceived += OnLogReceived;
+            _filereader.ConvertProgress += _filereader_ConvertProgress;
 
             //Set conversion settings
             _settings = new ConvertSettings
@@ -150,6 +153,15 @@ namespace SwarmSight.VideoPlayer
             _readingThread.Start();
         }
 
+        private void _filereader_ConvertProgress(object sender, ConvertProgressEventArgs e)
+        {
+            //_reportedDuration = e.TotalDuration;
+            
+            //if (e.Processed == e.TotalDuration) {
+            //    CurrentPercentage = 1.0;
+            //}
+        }
+
         private void StartDecoding()
         {
             try
@@ -185,7 +197,14 @@ namespace SwarmSight.VideoPlayer
         private void OnFrameReady(object o, OnFrameReady e)
         {
             CurrentTime = new TimeSpan(0, 0, 0, 0, (int) (0.0 + CurrentFrame/VideoInfo.FPS*1000.0));
-            CurrentPercentage = CurrentFrame*1.0/(VideoInfo.TotalFrames - 1);
+
+            //If the decorder reported did not report the total duration, estimate percentage from total frame estimate
+            if (_reportedDuration == null)
+                CurrentPercentage = (CurrentFrame + 1.0) / (VideoInfo.TotalFrames);
+
+            //Otherwise use the reported total duration
+            else
+                CurrentPercentage = CurrentTime.TotalSeconds / _reportedDuration.Value.TotalSeconds;
 
             //Attach frame metadata to each frame
             var mostRecentFrame = e.Frame;

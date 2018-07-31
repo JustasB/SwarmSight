@@ -114,11 +114,11 @@ namespace SwarmSight.AntennaTracking.UI
 
             //Compare manual-to-tracker
             var manualResult = CompareToManual(csvFile.FullName, ManualDataFile.FullName);
-            Assert.IsTrue(manualResult < 10); 
+            Assert.IsTrue(manualResult < 11); 
 
             //Compare tracker-to-tracker - should be identical between runs
             var trackerResult = CompareCSVfiles(csvFile, ExpectedDataFile);
-            Assert.IsTrue(trackerResult == 1); 
+            Assert.IsTrue(trackerResult < 1); 
         }
 
         private double CompareToManual(string trackerFile, string manualFile)

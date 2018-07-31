@@ -73,6 +73,8 @@ namespace SwarmSight.Motion.UI
             //save csv
             window.Get<Button>("btnSaveActivity").Click();
 
+            window.ModalWindows()[0].Keyboard.PressSpecialKey(TestStack.White.WindowsAPI.KeyboardInput.SpecialKeys.RETURN);
+
             Thread.Sleep(200);
 
             //get the saved csv file name
@@ -98,7 +100,7 @@ namespace SwarmSight.Motion.UI
             //check if difference is 0
             var percentDiffLabel = window.Get<WPFLabel>("lblAvgPercent");
 
-            if (percentDiffLabel.Text != "0.00 %")
+            if (percentDiffLabel.Text != "0.00%")
                 throw new System.Exception("CSV file contents and current activity are not the same");
         }
     }

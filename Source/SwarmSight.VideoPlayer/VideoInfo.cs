@@ -11,6 +11,7 @@ namespace SwarmSight.VideoPlayer
     public class VideoInfo
     {
         public double FPS;
+        public TimeSpan Start;
         public TimeSpan Duration;
         public int TotalFrames;
         public int Height;
@@ -45,6 +46,14 @@ namespace SwarmSight.VideoPlayer
 
             try
             {
+                Start = TimeSpan.FromSeconds(double.Parse(new Regex("start: (.*?),").Match(probeResult).Groups[1].Value));
+            }
+            catch
+            {
+            }
+
+            try
+            {
                 Height = int.Parse(new Regex(".*?, [0-9]{1,5}x([0-9]{1,5})").Match(probeResult).Groups[1].Value);
             }
             catch
@@ -59,7 +68,7 @@ namespace SwarmSight.VideoPlayer
             {
             }
 
-            TotalFrames = (int) Math.Ceiling(Duration.TotalSeconds*FPS)-1;
+            TotalFrames = (int) Math.Floor((Duration.TotalSeconds-Start.TotalSeconds)*FPS);
         }
 
         private string Runffprobe(string videoPath)
